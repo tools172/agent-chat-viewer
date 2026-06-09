@@ -3,6 +3,19 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/agent-chat-viewer"
+  },
+  "bugs": {
+    "url": "https://github.com/user/agent-chat-viewer/issues"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.4.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -12,7 +25,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "lint:eslint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -28,6 +44,7 @@
     "zustand": "^4.5.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tauri-apps/cli": "^2.0.0",
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^15.0.0",
@@ -36,12 +53,16 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
     "autoprefixer": "^10.4.19",
+    "eslint": "^10.4.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
     "jsdom": "^24.0.0",
     "postcss": "^8.4.38",
     "prettier": "^3.3.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.5.0",
+    "typescript-eslint": "^8.61.0",
     "vite": "^5.3.0",
     "vitest": "^1.6.0"
   }

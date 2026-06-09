@@ -44,11 +44,7 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# pnpm
-pnpm-lock.yaml
-
 # Tauri
-src-tauri/target/
 src-tauri/gen/
 
 # TypeScript
