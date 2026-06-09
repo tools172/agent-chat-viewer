@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded background -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#bg)"/>
+
+  <!-- Chat bubble (white) -->
+  <g transform="translate(256, 240)" fill="none" stroke="white" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Bubble body -->
+    <path d="M-130,-90 L130,-90 A30,30 0 0,1 160,-60 L160,35 A30,30 0 0,1 130,65 L40,65 L-10,115 L-10,65 L-130,65 A30,30 0 0,1 -160,35 L-160,-60 A30,30 0 0,1 -130,-90Z"/>
+  </g>
+
+  <!-- Three dots (AI thinking indicator) -->
+  <g fill="white">
+    <circle cx="220" cy="252" r="14"/>
+    <circle cx="256" cy="252" r="14"/>
+    <circle cx="292" cy="252" r="14"/>
+  </g>
+</svg>

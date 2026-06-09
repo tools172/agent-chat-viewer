@@ -1,0 +1,134 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "tauri: frontend dev",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["dev"],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": "^\\s*$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE.*ready in",
+          "endsPattern": "VITE.*ready in"
+        }
+      }
+    },
+    {
+      "label": "tauri: kill frontend dev",
+      "type": "shell",
+      "command": "echo",
+      "args": ["Frontend dev server stopped."]
+    },
+    {
+      "label": "cargo: build",
+      "type": "cargo",
+      "command": "build",
+      "args": ["--manifest-path=src-tauri/Cargo.toml"],
+      "problemMatcher": ["$rustc"],
+      "group": "build",
+      "presentation": {
+        "clear": true
+      }
+    },
+    {
+      "label": "cargo: check",
+      "type": "cargo",
+      "command": "check",
+      "args": ["--manifest-path=src-tauri/Cargo.toml"],
+      "problemMatcher": ["$rustc"],
+      "group": "build",
+      "presentation": {
+        "clear": true
+      }
+    },
+    {
+      "label": "cargo: test",
+      "type": "cargo",
+      "command": "test",
+      "args": ["--manifest-path=src-tauri/Cargo.toml"],
+      "problemMatcher": ["$rustc"],
+      "group": "test",
+      "presentation": {
+        "clear": true
+      }
+    },
+    {
+      "label": "cargo: clippy",
+      "type": "cargo",
+      "command": "clippy",
+      "args": ["--manifest-path=src-tauri/Cargo.toml", "--", "-D", "warnings"],
+      "problemMatcher": ["$rustc"],
+      "group": "build",
+      "presentation": {
+        "clear": true
+      }
+    },
+    {
+      "label": "pnpm: install",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["install"],
+      "presentation": {
+        "clear": true
+      }
+    },
+    {
+      "label": "pnpm: test",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["test"],
+      "group": "test",
+      "presentation": {
+        "clear": true
+      }
+    },
+    {
+      "label": "pnpm: lint",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["lint"],
+      "problemMatcher": ["$tsc"],
+      "group": "build",
+      "presentation": {
+        "clear": true
+      }
+    },
+    {
+      "label": "tauri: dev",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["tauri", "dev"],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "tauri",
+        "pattern": {
+          "regexp": "^\\s*$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": ".*"
+        }
+      },
+      "presentation": {
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "tauri: build",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["tauri", "build"],
+      "group": "build",
+      "presentation": {
+        "panel": "dedicated"
+      }
+    }
+  ]
+}

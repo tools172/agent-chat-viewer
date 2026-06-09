@@ -1,0 +1,145 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Tauri: Debug (lldb)",
+      "cargo": {
+        "args": ["build", "--manifest-path=src-tauri/Cargo.toml", "--no-default-features"]
+      },
+      "env": {
+        "WEBKIT_DISABLE_COMPOSITING_MODE": "1"
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "tauri: frontend dev",
+      "postDebugTask": "tauri: kill frontend dev",
+      "presentation": {
+        "group": "tauri",
+        "order": 1
+      }
+    },
+    {
+      "type": "cppvsdbg",
+      "request": "launch",
+      "name": "Tauri: Debug (MSVC)",
+      "cargo": {
+        "args": ["build", "--manifest-path=src-tauri/Cargo.toml", "--no-default-features"]
+      },
+      "env": {
+        "WEBKIT_DISABLE_COMPOSITING_MODE": "1"
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "tauri: frontend dev",
+      "postDebugTask": "tauri: kill frontend dev",
+      "presentation": {
+        "group": "tauri",
+        "order": 1
+      }
+    },
+    {
+      "type": "msedge",
+      "request": "launch",
+      "name": "Frontend: Debug (Edge)",
+      "url": "http://localhost:1420",
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*": "${webRoot}/*",
+        "webpack:///src/*": "${webRoot}/*"
+      },
+      "preLaunchTask": "tauri: frontend dev",
+      "presentation": {
+        "group": "frontend",
+        "order": 1
+      }
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Frontend: Debug (Chrome)",
+      "url": "http://localhost:1420",
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*": "${webRoot}/*",
+        "webpack:///src/*": "${webRoot}/*"
+      },
+      "preLaunchTask": "tauri: frontend dev",
+      "presentation": {
+        "group": "frontend",
+        "order": 2
+      }
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Rust: Test (lldb)",
+      "cargo": {
+        "args": ["test", "--manifest-path=src-tauri/Cargo.toml", "--no-fail-fast"]
+      },
+      "cwd": "${workspaceFolder}",
+      "presentation": {
+        "group": "test",
+        "order": 1
+      }
+    },
+    {
+      "type": "cppvsdbg",
+      "request": "launch",
+      "name": "Rust: Test (MSVC)",
+      "cargo": {
+        "args": ["test", "--manifest-path=src-tauri/Cargo.toml", "--no-fail-fast"]
+      },
+      "cwd": "${workspaceFolder}",
+      "presentation": {
+        "group": "test",
+        "order": 2
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Frontend: Test (Current File)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["vitest", "run", "${relativeFile}"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "presentation": {
+        "group": "test",
+        "order": 3
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Frontend: Test (All)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["vitest", "run"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "presentation": {
+        "group": "test",
+        "order": 4
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Tauri: Full Stack Debug",
+      "configurations": ["Tauri: Debug (MSVC)", "Frontend: Debug (Edge)"],
+      "presentation": {
+        "group": "tauri",
+        "order": 2
+      }
+    },
+    {
+      "name": "Test: All",
+      "configurations": ["Rust: Test (MSVC)", "Frontend: Test (All)"],
+      "presentation": {
+        "group": "test",
+        "order": 0
+      }
+    }
+  ]
+}

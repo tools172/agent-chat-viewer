@@ -1,0 +1,3 @@
+{"type":"mode","mode":"normal","sessionId":"test-session-001"}
+{"type":"user","message":{"role":"user","content":"Hello, can you help me?"},"uuid":"u-001","timestamp":"2026-06-09T10:00:00Z","sessionId":"test-session-001","parentUuid":null}
+{"type":"assistant","message":{"id":"msg-001","type":"message","role":"assistant","model":"claude-opus-4-8","content":[{"type":"text","text":"Hello! I'd be happy to help. What do you need?"}],"stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":15}},"uuid":"u-002","timestamp":"2026-06-09T10:00:01Z","sessionId":"test-session-001","parentUuid":"u-001"}

@@ -1,0 +1,4 @@
+{"type":"user","message":{"role":"user","content":"Valid line 1"},"uuid":"u-201","timestamp":"2026-06-09T12:00:00Z","sessionId":"test-session-003","parentUuid":null}
+this is not valid json at all
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Valid line 3"}]},"uuid":"u-202","timestamp":"2026-06-09T12:00:01Z","sessionId":"test-session-003","parentUuid":"u-201"}
+{broken json [[[
