@@ -19,6 +19,7 @@ import { ExportDialog } from '../export/ExportDialog';
 import { SettingsPanel } from '../settings/SettingsPanel';
 import { EmptyState } from '../common/EmptyState';
 import { ErrorBanner } from '../common/ErrorBanner';
+import { LoadingOverlay } from '../common/LoadingOverlay';
 import * as tauri from '../../utils/tauri';
 
 export const MainLayout: React.FC = () => {
@@ -348,6 +349,11 @@ export const MainLayout: React.FC = () => {
           onClose={() => setShowSettings(false)}
           onSettingsSaved={() => list.reload()}
         />
+      )}
+
+      {/* 首次加载会话数据 — 半透明遮罩浮在页面上方 */}
+      {list.isLoadingAll && list.allSessions.length === 0 && (
+        <LoadingOverlay />
       )}
     </div>
   );

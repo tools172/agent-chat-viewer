@@ -7,7 +7,7 @@ import { MessageSquare, RefreshCw } from 'lucide-react';
 const App: React.FC = () => {
   const { isLoaded, isLoading, error, load } = useSettings();
 
-  // 启动加载中
+  // 启动加载中（设置未就绪）
   if (!isLoaded && isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-50 gap-4">

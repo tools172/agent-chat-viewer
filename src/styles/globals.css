@@ -130,4 +130,49 @@
   .animation-delay-200 {
     animation-delay: 200ms;
   }
+
+  /* 加载进度条 — 无限滑动 */
+  @keyframes shimmer-slide {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
+
+  .animate-shimmer-slide {
+    animation: shimmer-slide 2s ease-in-out infinite;
+  }
+
+  /* 加载覆盖层 — 脉冲缩放 */
+  @keyframes pulse-scale {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.8;
+    }
+  }
+
+  .animate-pulse-scale {
+    animation: pulse-scale 2s ease-in-out infinite;
+  }
+
+  /* 渐变扫光 */
+  @keyframes sweep {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .animate-sweep {
+    background-size: 200% 100%;
+    animation: sweep 1.8s ease-in-out infinite;
+  }
 }

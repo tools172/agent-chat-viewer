@@ -14,6 +14,7 @@ import { TimelineView } from '../sessions/TimelineView';
 import { SearchPanel } from '../search/SearchPanel';
 import SortBar from '../filter/SortBar';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
+import { LoadingBar } from '../common/LoadingBar';
 import { version } from '../../../package.json';
 
 interface ViewDef {
@@ -92,6 +93,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className="flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full"
       style={{ width: `${sidebarWidth}px` }}
     >
+      {/* 重载进度条 */}
+      <LoadingBar
+        visible={
+          (isLoadingAll && allSessions.length > 0) ||
+          (isLoadingProject && projectSessions.length > 0)
+        }
+      />
+
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100">
         <div className="flex items-center justify-between mb-3">
