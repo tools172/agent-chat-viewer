@@ -3,6 +3,16 @@ import { useSessionStore } from '../stores/sessionStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import type { FilterConfig } from '../types';
 
+// 后端请求用：始终加载全部内容块，前端侧再做用户过滤
+const FULL_FILTER: FilterConfig = {
+  showThinking: true,
+  showToolCalls: true,
+  showToolResults: true,
+  hideEmptyToolResults: false,
+  showSystemMessages: false,
+  showFileSnapshots: false,
+};
+
 /**
  * Hook to load and manage session data.
  * Automatically loads projects on mount when settings are loaded.
@@ -49,18 +59,11 @@ export function useSessions() {
     [selectProject]
   );
 
+  // 始终用 FULL_FILTER 从后端加载全部内容块，
+  // 用户过滤在前端侧通过 filterEvents() 完成，避免切换时重新请求。
   const handleSelectSession = useCallback(
     (sessionPath: string) => {
-      selectSession(sessionPath, settings.defaultFilter, 'claude_code');
-    },
-    [selectSession, settings.defaultFilter]
-  );
-
-  // 带显式 filter 参数的版本，避免闭包陈旧值问题。
-  // 用于 FilterBar 切换后立即重新加载，此时 settings.defaultFilter 可能尚未更新。
-  const selectSessionWithFilter = useCallback(
-    (sessionPath: string, filter: FilterConfig) => {
-      selectSession(sessionPath, filter, 'claude_code');
+      selectSession(sessionPath, FULL_FILTER, 'claude_code');
     },
     [selectSession]
   );
@@ -89,7 +92,6 @@ export function useSessions() {
     reloadProjects,
     selectProject: handleSelectProject,
     selectSession: handleSelectSession,
-    selectSessionWithFilter,
     search: handleSearch,
     setViewMode,
     clearSelection,

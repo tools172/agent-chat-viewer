@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Folder, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
+import { Folder, ChevronDown, ChevronRight, FolderOpen, Copy, Check } from 'lucide-react';
 import type { Project, SessionSummary, SortConfig } from '../../types';
 import { multiSort } from '../../utils/sort';
 import { SessionItem } from '../sessions/SessionItem';
@@ -29,6 +29,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     new Set()
   );
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; projectPath: string } | null>(null);
+  const [copiedPath, setCopiedPath] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 点击外部关闭菜单
@@ -66,6 +67,19 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       await tauri.openContainingFolder(path);
     } catch (err) {
       console.error('打开文件夹失败:', err);
+    }
+  };
+
+  const handleCopyProjectPath = async () => {
+    if (!contextMenu) return;
+    const path = contextMenu.projectPath;
+    setContextMenu(null);
+    try {
+      await navigator.clipboard.writeText(path);
+      setCopiedPath(true);
+      setTimeout(() => setCopiedPath(false), 2000);
+    } catch (err) {
+      console.error('复制路径失败:', err);
     }
   };
 
@@ -143,6 +157,17 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           >
             <FolderOpen className="h-4 w-4 text-gray-400" />
             打开项目文件夹
+          </button>
+          <button
+            onClick={handleCopyProjectPath}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            {copiedPath ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Copy className="h-4 w-4 text-gray-400" />
+            )}
+            复制文件夹路径
           </button>
         </div>
       )}

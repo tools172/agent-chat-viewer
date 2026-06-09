@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Download, MessageSquare } from 'lucide-react';
 import { useSessions } from '../../hooks/useSessions';
 import { useSessionList } from '../../hooks/useSessionList';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { filterEvents } from '../../utils/filterEvents';
 import { Sidebar } from './Sidebar';
 import { FilterBar } from '../filter/FilterBar';
 import { ConversationView } from '../conversation/ConversationView';
@@ -22,7 +23,6 @@ export const MainLayout: React.FC = () => {
     isLoadingConversation,
     error,
     selectSession,
-    selectSessionWithFilter,
     clearSelection,
     clearError,
   } = useSessions();
@@ -99,19 +99,21 @@ export const MainLayout: React.FC = () => {
     [list]
   );
 
-  // 过滤器变更
+  // 过滤器变更 — 纯前端过滤，不重新请求后端
   const handleFilterChange = useCallback(
     (filterUpdate: Partial<typeof activeFilter>) => {
       const newFilter = { ...activeFilter, ...filterUpdate };
       setActiveFilter(newFilter);
       updateFilter(filterUpdate);
-      if (selectedSessionPath) {
-        // 使用 selectSessionWithFilter 传递显式的 newFilter，
-        // 避免 selectSession 闭包捕获到旧的 settings.defaultFilter
-        selectSessionWithFilter(selectedSessionPath, newFilter);
-      }
     },
-    [updateFilter, selectedSessionPath, selectSessionWithFilter, activeFilter]
+    [updateFilter, activeFilter]
+  );
+
+  // 前端侧过滤：后端返回全量事件，这里按 activeFilter 筛选
+  const filteredEvents = useMemo(
+    () =>
+      currentSession ? filterEvents(currentSession.events, activeFilter) : [],
+    [currentSession, activeFilter]
   );
 
   // 获取会话标题
@@ -190,7 +192,7 @@ export const MainLayout: React.FC = () => {
 
             <div className="flex-1 overflow-hidden">
               <ConversationView
-                events={currentSession.events}
+                events={filteredEvents}
                 isLoading={isLoadingConversation}
                 searchHighlight={activeSearchHighlight}
               />

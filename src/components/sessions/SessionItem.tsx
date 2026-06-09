@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, FolderOpen } from 'lucide-react';
+import { MessageSquare, FolderOpen, Copy, Check } from 'lucide-react';
 import { relativeTime } from '../../utils/time';
 import { getProviderLabel, getProviderColor } from '../../utils/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -25,6 +25,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
 }) => {
   const searchColors = useSettingsStore((s) => s.settings.searchColors);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [copiedPath, setCopiedPath] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 点击外部关闭菜单
@@ -50,6 +51,17 @@ export const SessionItem: React.FC<SessionItemProps> = ({
       await tauri.openContainingFolder(session.filePath);
     } catch (err) {
       console.error('打开文件夹失败:', err);
+    }
+  };
+
+  const handleCopyPath = async () => {
+    setContextMenu(null);
+    try {
+      await navigator.clipboard.writeText(session.filePath);
+      setCopiedPath(true);
+      setTimeout(() => setCopiedPath(false), 2000);
+    } catch (err) {
+      console.error('复制路径失败:', err);
     }
   };
 
@@ -120,6 +132,17 @@ export const SessionItem: React.FC<SessionItemProps> = ({
           >
             <FolderOpen className="h-4 w-4 text-gray-400" />
             打开所在文件夹
+          </button>
+          <button
+            onClick={handleCopyPath}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            {copiedPath ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Copy className="h-4 w-4 text-gray-400" />
+            )}
+            复制文件路径
           </button>
         </div>
       )}
