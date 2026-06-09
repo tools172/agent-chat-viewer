@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
-import { Folder, ChevronDown, ChevronRight } from 'lucide-react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { Folder, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
 import type { Project, SessionSummary, SortConfig } from '../../types';
 import { multiSort } from '../../utils/sort';
 import { SessionItem } from '../sessions/SessionItem';
+import * as tauri from '../../utils/tauri';
 
 interface ProjectListProps {
   projects: Project[];
@@ -27,6 +28,20 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
     new Set()
   );
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; projectPath: string } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // 点击外部关闭菜单
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [contextMenu]);
 
   const handleProjectClick = (projectPath: string) => {
     setExpandedProjects((prev) => {
@@ -36,6 +51,22 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       return next;
     });
     onSelectProject(projectPath);
+  };
+
+  const handleProjectContextMenu = (e: React.MouseEvent, projectPath: string) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, projectPath });
+  };
+
+  const handleOpenProjectFolder = async () => {
+    if (!contextMenu) return;
+    const path = contextMenu.projectPath;
+    setContextMenu(null);
+    try {
+      await tauri.openContainingFolder(path);
+    } catch (err) {
+      console.error('打开文件夹失败:', err);
+    }
   };
 
   // 对项目内的会话排序
@@ -54,6 +85,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           <div key={project.path}>
             <button
               onClick={() => handleProjectClick(project.path)}
+              onContextMenu={(e) => handleProjectContextMenu(e, project.path)}
               className={`flex items-center gap-2 w-full px-3 py-2 text-sm font-medium transition-colors ${
                 isSelected
                   ? 'bg-primary-50 text-primary-700'
@@ -97,6 +129,23 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           </div>
         );
       })}
+
+      {/* 项目右键菜单 */}
+      {contextMenu && (
+        <div
+          ref={menuRef}
+          className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={handleOpenProjectFolder}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <FolderOpen className="h-4 w-4 text-gray-400" />
+            打开项目文件夹
+          </button>
+        </div>
+      )}
     </div>
   );
 };

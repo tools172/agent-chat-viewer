@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Download, FileText, FileJson, X, Check } from 'lucide-react';
+import { save } from '@tauri-apps/plugin-dialog';
 import type { ExportFormat, ExportOptions, FilterConfig } from '../../types';
 import * as tauri from '../../utils/tauri';
 
@@ -31,6 +32,28 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     setError(null);
 
     try {
+      const ext = format === 'markdown' ? 'md' : 'json';
+      const safeTitle = sessionTitle
+        .replace(/[^a-zA-Z0-9一-龥]/g, '_')
+        .slice(0, 50);
+
+      // 使用原生保存对话框
+      const savePath = await save({
+        defaultPath: `session_${safeTitle}.${ext}`,
+        filters: [
+          {
+            name: format === 'markdown' ? 'Markdown' : 'JSON',
+            extensions: [ext],
+          },
+        ],
+      });
+
+      if (!savePath) {
+        // 用户取消了保存对话框
+        setIsExporting(false);
+        return;
+      }
+
       const exportFilter: FilterConfig = {
         showThinking: options.includeThinking,
         showToolCalls: options.includeToolCalls,
@@ -51,18 +74,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         content = await tauri.exportJson(sessionPath, 'claude_code');
       }
 
-      // Use a simple approach: create a blob and download
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const ext = format === 'markdown' ? '.md' : '.json';
-      const safeTitle = sessionTitle
-        .replace(/[^a-zA-Z0-9一-龥]/g, '_')
-        .slice(0, 50);
-      a.download = `session_${safeTitle}${ext}`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // 使用 Rust 命令写入文件
+      await tauri.writeTextFile(savePath, content);
 
       setSuccess(true);
       setTimeout(() => {

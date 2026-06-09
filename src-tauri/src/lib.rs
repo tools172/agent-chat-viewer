@@ -22,6 +22,8 @@ pub fn run() {
             commands::browser::search_sessions,
             commands::export::export_markdown,
             commands::export::export_json,
+            commands::export::write_text_file,
+            commands::export::open_containing_folder,
             commands::settings::get_default_paths,
             commands::settings::load_settings,
             commands::settings::save_settings,

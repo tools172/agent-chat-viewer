@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::PathBuf;
 
 use crate::models::FilterConfig;
@@ -70,4 +71,63 @@ pub async fn export_json(
     })
     .await
     .map_err(|e| format!("导出失败: {}", e))?
+}
+
+/// 写入文本内容到文件
+#[tauri::command]
+pub fn write_text_file(file_path: String, content: String) -> Result<(), String> {
+    let path = PathBuf::from(&file_path);
+    // 确保父目录存在
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("创建目录失败: {}", e))?;
+        }
+    }
+    fs::write(&path, &content)
+        .map_err(|e| format!("写入文件失败: {}", e))
+}
+
+/// 在文件管理器中打开文件所在文件夹（并选中文件）
+#[tauri::command]
+pub fn open_containing_folder(file_path: String) -> Result<(), String> {
+    let path = PathBuf::from(&file_path);
+
+    if !path.exists() {
+        return Err(format!("文件不存在: {}", file_path));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: explorer /select,<path> 打开文件夹并选中文件
+        let status = std::process::Command::new("explorer")
+            .arg("/select,")
+            .arg(path.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+        // explorer 进程启动后立即返回，不需要等待
+        drop(status);
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: open -R <path> 在 Finder 中显示文件
+        std::process::Command::new("open")
+            .arg("-R")
+            .arg(path.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: xdg-open 打开文件所在目录
+        let dir = path.parent().unwrap_or(&path);
+        std::process::Command::new("xdg-open")
+            .arg(dir.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    }
+
+    Ok(())
 }

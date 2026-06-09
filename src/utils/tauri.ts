@@ -109,3 +109,16 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 export async function listProviders(): Promise<ProviderInfo[]> {
   return invoke<ProviderInfo[]>('list_providers');
 }
+
+/** Write text content to a file at the given path */
+export async function writeTextFile(
+  filePath: string,
+  content: string
+): Promise<void> {
+  return invoke<void>('write_text_file', { filePath, content });
+}
+
+/** Open the containing folder in OS file explorer and select the file */
+export async function openContainingFolder(filePath: string): Promise<void> {
+  return invoke<void>('open_containing_folder', { filePath });
+}

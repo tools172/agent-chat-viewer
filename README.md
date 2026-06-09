@@ -111,6 +111,13 @@ impl ChatProvider for MyNewProvider {
 }
 ```
 
+## 📖 文档
+
+- [CI/CD 实现文档](docs/ci-cd.md) — 持续集成/交付方案设计
+- [开发指南](docs/development-guide.md) — 环境搭建、日常操作与发布流程
+- [贡献指南](CONTRIBUTING.md) — 如何参与项目贡献
+- [行为准则](CODE_OF_CONDUCT.md) — 社区行为规范
+
 ## 📄 License
 
 MIT
