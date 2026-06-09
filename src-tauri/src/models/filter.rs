@@ -67,6 +67,20 @@ pub struct AppSettings {
     pub provider_enabled: std::collections::HashMap<String, bool>,
     #[serde(default)]
     pub search_colors: SearchColors,
+    /// 左侧侧边栏宽度（px），默认 320
+    #[serde(default = "default_sidebar_width")]
+    pub sidebar_width: u32,
+    /// 右侧轮次导航宽度（px），默认 256
+    #[serde(default = "default_navigator_width")]
+    pub navigator_width: u32,
+}
+
+fn default_sidebar_width() -> u32 {
+    320
+}
+
+fn default_navigator_width() -> u32 {
+    256
 }
 
 impl Default for AppSettings {
@@ -80,6 +94,8 @@ impl Default for AppSettings {
             default_filter: FilterConfig::default(),
             provider_enabled,
             search_colors: SearchColors::default(),
+            sidebar_width: 320,
+            navigator_width: 256,
         }
     }
 }

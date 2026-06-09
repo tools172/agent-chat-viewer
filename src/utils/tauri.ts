@@ -118,6 +118,11 @@ export async function writeTextFile(
   return invoke<void>('write_text_file', { filePath, content });
 }
 
+/** Get the path to the settings file on disk */
+export async function getSettingsPath(): Promise<string> {
+  return invoke<string>('get_settings_path');
+}
+
 /** Open the containing folder in OS file explorer and select the file */
 export async function openContainingFolder(filePath: string): Promise<void> {
   return invoke<void>('open_containing_folder', { filePath });

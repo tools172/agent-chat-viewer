@@ -18,6 +18,8 @@ interface SettingsState {
   removeWatchDirectory: (path: string) => void;
   toggleProvider: (name: string, enabled: boolean) => void;
   updateSearchColors: (colors: Partial<import('../types').SearchColors>) => void;
+  updateSidebarWidth: (width: number) => void;
+  updateNavigatorWidth: (width: number) => void;
   resetSearchColors: () => void;
   resetFilter: () => void;
   clearError: () => void;
@@ -42,6 +44,8 @@ const defaultSettings: AppSettings = {
     search: '#fef08a',
     find: '#fed7aa',
   },
+  sidebarWidth: 320,
+  navigatorWidth: 256,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -131,6 +135,26 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         searchColors: { ...settings.searchColors, ...colors },
+      },
+    });
+  },
+
+  updateSidebarWidth: (width) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        sidebarWidth: Math.max(200, Math.min(600, width)),
+      },
+    });
+  },
+
+  updateNavigatorWidth: (width) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        navigatorWidth: Math.max(160, Math.min(400, width)),
       },
     });
   },

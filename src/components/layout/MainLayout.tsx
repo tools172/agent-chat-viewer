@@ -211,6 +211,7 @@ export const MainLayout: React.FC = () => {
         projectFilter={list.projectFilter}
         selectedProjectPath={list.projectFilter}
         selectedSessionPath={selectedSessionPath}
+        sidebarWidth={settings.sidebarWidth ?? 320}
         onViewModeChange={handleViewModeChange}
         onSortChange={handleSortChange}
         onSelectProject={handleSelectProject}
@@ -273,6 +274,7 @@ export const MainLayout: React.FC = () => {
               <TurnNavigator
                 events={filteredEvents}
                 containerRef={convScrollRef}
+                defaultWidth={settings.navigatorWidth ?? 256}
               />
             </div>
 

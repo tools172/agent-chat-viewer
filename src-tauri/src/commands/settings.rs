@@ -22,6 +22,14 @@ pub fn save_settings(settings: AppSettings) -> Result<(), String> {
     settings_service::save_settings(&settings)
 }
 
+/// Get the path to the settings file
+#[tauri::command]
+pub fn get_settings_path() -> String {
+    settings_service::settings_path()
+        .to_string_lossy()
+        .to_string()
+}
+
 /// List available providers
 #[tauri::command]
 pub fn list_providers(registry: tauri::State<'_, ProviderRegistry>) -> Vec<ProviderInfo> {

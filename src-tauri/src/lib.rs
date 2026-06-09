@@ -27,6 +27,7 @@ pub fn run() {
             commands::settings::get_default_paths,
             commands::settings::load_settings,
             commands::settings::save_settings,
+            commands::settings::get_settings_path,
             commands::settings::list_providers,
         ])
         .run(tauri::generate_context!())

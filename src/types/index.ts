@@ -85,7 +85,7 @@ export interface FilterConfig {
   showSystemMessages: boolean;
   showFileSnapshots: boolean;
   /** 合并连发：折叠同一角色的连续消息，只显示最后一条 */
-  collapseConsecutive: boolean;
+  collapseConsecutive?: boolean;
 }
 
 export interface SearchColors {
@@ -103,6 +103,10 @@ export interface AppSettings {
   defaultFilter: FilterConfig;
   providerEnabled: Record<string, boolean>;
   searchColors: SearchColors;
+  /** 左侧侧边栏默认宽度（px），200-600，默认 320 */
+  sidebarWidth?: number;
+  /** 右侧轮次导航默认宽度（px），160-400，默认 256 */
+  navigatorWidth?: number;
 }
 
 export interface ProviderInfo {

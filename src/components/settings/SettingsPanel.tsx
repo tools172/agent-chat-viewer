@@ -12,9 +12,12 @@ import {
   Copy,
   Check,
   Plus,
+  PanelLeft,
+  ExternalLink,
 } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../stores/settingsStore';
+import * as tauri from '../../utils/tauri';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -70,6 +73,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
     setTimeout(() => setSaveMessage(''), 2000);
     // 通知父组件设置已保存，以便刷新数据
     onSettingsSaved?.();
+  };
+
+  const handleOpenSettingsFile = async () => {
+    try {
+      const path = await tauri.getSettingsPath();
+      await tauri.openContainingFolder(path);
+    } catch (err) {
+      console.error('打开设置文件失败:', err);
+    }
   };
 
   return (
@@ -271,6 +283,58 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             </div>
           </section>
 
+          {/* 布局设置 */}
+          <section>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+              <PanelLeft className="h-4 w-4" />
+              布局
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-gray-600">
+                  侧边栏
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="range"
+                    min={200}
+                    max={600}
+                    step={10}
+                    value={settings.sidebarWidth ?? 320}
+                    onChange={(e) =>
+                      store.updateSidebarWidth(Number(e.target.value))
+                    }
+                    className="w-24 h-1.5 accent-primary-600 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-500 w-10 text-right tabular-nums">
+                    {settings.sidebarWidth ?? 320}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-gray-600">
+                  轮次导航
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="range"
+                    min={160}
+                    max={400}
+                    step={10}
+                    value={settings.navigatorWidth ?? 256}
+                    onChange={(e) =>
+                      store.updateNavigatorWidth(Number(e.target.value))
+                    }
+                    className="w-24 h-1.5 accent-primary-600 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-500 w-10 text-right tabular-nums">
+                    {settings.navigatorWidth ?? 256}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Provider settings */}
           <section>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">
@@ -307,27 +371,40 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-4 border-t bg-gray-50">
-          <div className="flex gap-2">
-            <button
-              onClick={store.resetFilter}
-              className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              重置过滤器
-            </button>
+        <div className="px-5 py-4 border-t bg-gray-50 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              <button
+                onClick={store.resetFilter}
+                className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                重置过滤器
+              </button>
+              <button
+                onClick={handleOpenSettingsFile}
+                className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1"
+                title="在资源管理器中打开 settings.json"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                打开设置文件所在目录
+              </button>
+            </div>
+            {saveMessage ? (
+              <span className="text-xs text-green-600">{saveMessage}</span>
+            ) : (
+              <button
+                onClick={handleSave}
+                className="px-4 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1"
+              >
+                <Save className="h-3.5 w-3.5" />
+                保存设置
+              </button>
+            )}
           </div>
-          {saveMessage ? (
-            <span className="text-xs text-green-600">{saveMessage}</span>
-          ) : (
-            <button
-              onClick={handleSave}
-              className="px-4 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1"
-            >
-              <Save className="h-3.5 w-3.5" />
-              保存设置
-            </button>
-          )}
+          <p className="text-[10px] text-gray-400 text-right">
+            设置保存在 AppData 目录，可手动编辑 JSON 文件
+          </p>
         </div>
       </div>
     </>

@@ -14,6 +14,7 @@ import { TimelineView } from '../sessions/TimelineView';
 import { SearchPanel } from '../search/SearchPanel';
 import SortBar from '../filter/SortBar';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
+import { version } from '../../../package.json';
 
 interface ViewDef {
   mode: ViewMode;
@@ -43,6 +44,7 @@ interface SidebarProps {
   projectFilter: string | null;
   selectedProjectPath: string | null;
   selectedSessionPath: string | null;
+  sidebarWidth?: number;
   onViewModeChange: (mode: ViewMode) => void;
   onSortChange: (config: SortConfig) => void;
   onSelectProject: (path: string, providerName: string) => void;
@@ -69,6 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   projectFilter,
   selectedProjectPath,
   selectedSessionPath,
+  sidebarWidth = 320,
   onViewModeChange,
   onSortChange,
   onSelectProject,
@@ -85,7 +88,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       : projects.reduce((s, p) => s + p.sessionCount, 0);
 
   return (
-    <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full">
+    <div
+      className="flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full"
+      style={{ width: `${sidebarWidth}px` }}
+    >
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100">
         <div className="flex items-center justify-between mb-3">
@@ -94,6 +100,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <h1 className="font-semibold text-sm text-gray-800">
               聊天记录浏览器
             </h1>
+            <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full font-mono">
+              v{version}
+            </span>
           </div>
           <button
             onClick={onOpenSettings}

@@ -35,6 +35,8 @@ interface Turn {
 interface TurnNavigatorProps {
   events: ChatEvent[];
   containerRef: { current: HTMLDivElement | null };
+  /** 导航面板默认宽度（px），来自设置 */
+  defaultWidth?: number;
 }
 
 function extractTurns(events: ChatEvent[]): Turn[] {
@@ -56,7 +58,7 @@ const MIN_WIDTH = 160;
 const DEFAULT_WIDTH = 256;
 const MAX_WIDTH = 400;
 
-export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerRef }) => {
+export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerRef, defaultWidth = DEFAULT_WIDTH }) => {
   const turns = useMemo(() => extractTurns(events), [events]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -64,7 +66,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
 
   // 折叠 / 宽度
   const [collapsed, setCollapsed] = useState(false);
-  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [width, setWidth] = useState(defaultWidth);
   const draggingRef = useRef(false);
   const startXRef = useRef(0);
   const startWRef = useRef(0);

@@ -23,6 +23,7 @@ describe('settingsStore', () => {
           openclaw: false,
         },
         searchColors: { search: '#fef08a', find: '#fed7aa' },
+        sidebarWidth: 320,
       },
       defaultPaths: {},
       isLoaded: false,
