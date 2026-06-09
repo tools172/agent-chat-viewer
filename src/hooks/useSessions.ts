@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useSessionStore } from '../stores/sessionStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import type { FilterConfig } from '../types';
 
 /**
  * Hook to load and manage session data.
@@ -55,6 +56,15 @@ export function useSessions() {
     [selectSession, settings.defaultFilter]
   );
 
+  // 带显式 filter 参数的版本，避免闭包陈旧值问题。
+  // 用于 FilterBar 切换后立即重新加载，此时 settings.defaultFilter 可能尚未更新。
+  const selectSessionWithFilter = useCallback(
+    (sessionPath: string, filter: FilterConfig) => {
+      selectSession(sessionPath, filter, 'claude_code');
+    },
+    [selectSession]
+  );
+
   const handleSearch = useCallback(
     (query: string) => {
       search(query, settings);
@@ -79,6 +89,7 @@ export function useSessions() {
     reloadProjects,
     selectProject: handleSelectProject,
     selectSession: handleSelectSession,
+    selectSessionWithFilter,
     search: handleSearch,
     setViewMode,
     clearSelection,

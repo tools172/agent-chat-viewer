@@ -22,6 +22,7 @@ export const MainLayout: React.FC = () => {
     isLoadingConversation,
     error,
     selectSession,
+    selectSessionWithFilter,
     clearSelection,
     clearError,
   } = useSessions();
@@ -105,10 +106,12 @@ export const MainLayout: React.FC = () => {
       setActiveFilter(newFilter);
       updateFilter(filterUpdate);
       if (selectedSessionPath) {
-        selectSession(selectedSessionPath);
+        // 使用 selectSessionWithFilter 传递显式的 newFilter，
+        // 避免 selectSession 闭包捕获到旧的 settings.defaultFilter
+        selectSessionWithFilter(selectedSessionPath, newFilter);
       }
     },
-    [updateFilter, selectedSessionPath, selectSession]
+    [updateFilter, selectedSessionPath, selectSessionWithFilter, activeFilter]
   );
 
   // 获取会话标题

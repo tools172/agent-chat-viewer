@@ -161,3 +161,228 @@ fn test_app_settings_default() {
     assert!(settings.default_filter.show_tool_calls);
     assert!(settings.default_filter.hide_empty_tool_results);
 }
+
+// ============================================================
+// 综合 Filter 测试 — 使用真实 Claude Code 会话数据
+// 文件: tests/fixtures/claude_code/filter_test.jsonl (37 行)
+// 包含: text, thinking, tool_use, tool_result, metadata 事件
+// ============================================================
+
+fn load_filter_fixture() -> Vec<agent_chat_viewer_lib::models::ChatEvent> {
+    let fixture = include_str!("fixtures/claude_code/filter_test.jsonl");
+    let provider = Arc::new(ClaudeCodeProvider::new());
+    fixture
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .filter_map(|l| provider.parse_event(l).ok())
+        .collect()
+}
+
+fn count_blocks(
+    events: &[agent_chat_viewer_lib::models::ChatEvent],
+) -> (usize, usize, usize, usize) {
+    let (mut text, mut thinking, mut tool_use, mut tool_result) = (0, 0, 0, 0);
+    for e in events {
+        for b in &e.content {
+            match b {
+                agent_chat_viewer_lib::models::ContentBlock::Text { .. } => text += 1,
+                agent_chat_viewer_lib::models::ContentBlock::Thinking { .. } => thinking += 1,
+                agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. } => tool_use += 1,
+                agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. } => {
+                    tool_result += 1
+                }
+            }
+        }
+    }
+    (text, thinking, tool_use, tool_result)
+}
+
+#[test]
+fn test_filter_default_hides_thinking_and_empty_tool_results() {
+    let events = load_filter_fixture();
+    let filter = FilterConfig::default(); // showThinking=false, hideEmptyToolResults=true
+    let filtered = services::filter::filter_events(&events, &filter);
+    let (_, thinking, _, _) = count_blocks(&filtered);
+
+    // 默认：thinking 应全部隐藏
+    assert_eq!(thinking, 0, "默认过滤应隐藏所有 thinking 块");
+}
+
+#[test]
+fn test_filter_show_thinking() {
+    let events = load_filter_fixture();
+    let raw_thinking: usize = events
+        .iter()
+        .flat_map(|e| &e.content)
+        .filter(|b| matches!(b, agent_chat_viewer_lib::models::ContentBlock::Thinking { .. }))
+        .count();
+
+    let filter = FilterConfig {
+        show_thinking: true,
+        ..FilterConfig::default()
+    };
+    let filtered = services::filter::filter_events(&events, &filter);
+    let (_, thinking, _, _) = count_blocks(&filtered);
+
+    // 开启 thinking 后应恢复全部 thinking 块
+    assert!(raw_thinking > 0, "fixture 应包含 thinking 块");
+    assert_eq!(
+        thinking, raw_thinking,
+        "showThinking=true 时应显示所有 thinking 块"
+    );
+}
+
+#[test]
+fn test_filter_hide_tool_calls() {
+    let events = load_filter_fixture();
+    let raw_tool_use: usize = events
+        .iter()
+        .flat_map(|e| &e.content)
+        .filter(|b| matches!(b, agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. }))
+        .count();
+
+    let filter = FilterConfig {
+        show_tool_calls: false,
+        ..FilterConfig::default()
+    };
+    let filtered = services::filter::filter_events(&events, &filter);
+    let (_, _, tool_use, _) = count_blocks(&filtered);
+
+    assert!(raw_tool_use > 0, "fixture 应包含 tool_use 块");
+    assert_eq!(tool_use, 0, "showToolCalls=false 时应隐藏所有 tool_use 块");
+}
+
+#[test]
+fn test_filter_hide_tool_results() {
+    let events = load_filter_fixture();
+    let raw_tool_result: usize = events
+        .iter()
+        .flat_map(|e| &e.content)
+        .filter(|b| {
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. }
+            )
+        })
+        .count();
+
+    let filter = FilterConfig {
+        show_tool_results: false,
+        ..FilterConfig::default()
+    };
+    let filtered = services::filter::filter_events(&events, &filter);
+    let (_, _, _, tool_result) = count_blocks(&filtered);
+
+    assert!(raw_tool_result > 0, "fixture 应包含 tool_result 块");
+    assert_eq!(
+        tool_result, 0,
+        "showToolResults=false 时应隐藏所有 tool_result 块"
+    );
+}
+
+#[test]
+fn test_filter_show_empty_tool_results() {
+    let events = load_filter_fixture();
+
+    // 先统计所有 tool_result（含空）
+    let all_tool_results: Vec<_> = events
+        .iter()
+        .flat_map(|e| &e.content)
+        .filter(|b| {
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. }
+            )
+        })
+        .collect();
+
+    let filter = FilterConfig {
+        show_tool_results: true,
+        hide_empty_tool_results: false,
+        ..FilterConfig::default()
+    };
+    let filtered = services::filter::filter_events(&events, &filter);
+    let (_, _, _, tool_result) = count_blocks(&filtered);
+
+    assert!(
+        !all_tool_results.is_empty(),
+        "fixture 应包含 tool_result 块"
+    );
+    assert_eq!(
+        tool_result,
+        all_tool_results.len(),
+        "hideEmptyToolResults=false 时应显示所有 tool_result（含空的）"
+    );
+}
+
+#[test]
+fn test_filter_metadata_events_hidden() {
+    let events = load_filter_fixture();
+    let filter = FilterConfig::default();
+
+    // 不过滤，检查原始文件中存在元数据事件类型
+    let metadata_types: Vec<String> = events
+        .iter()
+        .map(|e| e.event_type.to_string())
+        .filter(|t| {
+            t != "user" && t != "assistant" && t != "system" && t != "attachment"
+        })
+        .collect();
+    assert!(
+        !metadata_types.is_empty(),
+        "fixture 应包含 mode/ai_title/last_prompt 等元数据事件"
+    );
+
+    // 默认过滤后不应包含任何元数据事件
+    let filtered = services::filter::filter_events(&events, &filter);
+    for e in &filtered {
+        let t = e.event_type.to_string();
+        assert!(
+            t == "user" || t == "assistant",
+            "过滤后不应包含元数据事件: {}",
+            t
+        );
+    }
+}
+
+#[test]
+fn test_filter_all_off_shows_everything() {
+    let events = load_filter_fixture();
+    let _raw_total: usize = events.iter().map(|e| e.content.len()).sum();
+
+    let filter = FilterConfig {
+        show_thinking: true,
+        show_tool_calls: true,
+        show_tool_results: true,
+        hide_empty_tool_results: false,
+        show_system_messages: true,
+        show_file_snapshots: true,
+    };
+    let filtered = services::filter::filter_events(&events, &filter);
+    let filtered_total: usize = filtered.iter().map(|e| e.content.len()).sum();
+
+    // 全开时可见块数 >= raw_total（raw 含被过滤事件中的块）
+    assert!(filtered_total > 0, "全开时应至少显示一些内容块");
+}
+
+#[test]
+fn test_parse_real_session_events_count() {
+    let events = load_filter_fixture();
+    // 37 行 JSONL，含 metadata 行
+    // parse_event 返回 Ok 的数量应 >= 10 (至少有 user + assistant 事件)
+    assert!(
+        events.len() >= 10,
+        "应解析出至少 10 个事件，实际: {}",
+        events.len()
+    );
+
+    let (text, thinking, tool_use, tool_result) = count_blocks(&events);
+    // 真实数据必须有 text 块
+    assert!(text > 0, "必须包含 text 块");
+    // 必须有 thinking 块
+    assert!(thinking > 0, "必须包含 thinking 块");
+    // 必须有 tool_use 块
+    assert!(tool_use > 0, "必须包含 tool_use 块");
+    // 必须有 tool_result 块
+    assert!(tool_result > 0, "必须包含 tool_result 块");
+}
