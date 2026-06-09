@@ -10,6 +10,9 @@ pub struct FilterConfig {
     pub hide_empty_tool_results: bool,
     pub show_system_messages: bool,
     pub show_file_snapshots: bool,
+    /// 合并连发：折叠同一角色的连续消息，只显示最后一条
+    #[serde(default)]
+    pub collapse_consecutive: bool,
 }
 
 impl Default for FilterConfig {
@@ -21,6 +24,7 @@ impl Default for FilterConfig {
             hide_empty_tool_results: true,
             show_system_messages: false,
             show_file_snapshots: false,
+            collapse_consecutive: false,
         }
     }
 }

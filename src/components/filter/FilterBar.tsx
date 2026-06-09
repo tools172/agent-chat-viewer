@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, EyeOff, Brain, Wrench, FileOutput, Settings } from 'lucide-react';
+import { Eye, EyeOff, Brain, Wrench, FileOutput, Settings, Combine } from 'lucide-react';
 import type { FilterConfig } from '../../types';
 
 interface FilterBarProps {
@@ -67,6 +67,20 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filter, onChange }) => {
       >
         <EyeOff className="h-3 w-3" />
         <span>隐藏空结果</span>
+      </button>
+      <button
+        onClick={() =>
+          onChange({ collapseConsecutive: !filter.collapseConsecutive })
+        }
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+          filter.collapseConsecutive
+            ? 'bg-primary-100 text-primary-700 border border-primary-300'
+            : 'bg-gray-100 text-gray-400 border border-gray-200'
+        }`}
+        title={filter.collapseConsecutive ? '展开连续同角色消息' : '折叠连续同角色消息，只显示最后一条'}
+      >
+        <Combine className="h-3.5 w-3.5" />
+        <span>合并连发</span>
       </button>
     </div>
   );

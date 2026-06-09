@@ -32,6 +32,7 @@ const defaultSettings: AppSettings = {
     hideEmptyToolResults: true,
     showSystemMessages: false,
     showFileSnapshots: false,
+    collapseConsecutive: false,
   },
   providerEnabled: {
     claude_code: true,

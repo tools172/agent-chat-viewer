@@ -84,6 +84,8 @@ export interface FilterConfig {
   hideEmptyToolResults: boolean;
   showSystemMessages: boolean;
   showFileSnapshots: boolean;
+  /** 合并连发：折叠同一角色的连续消息，只显示最后一条 */
+  collapseConsecutive: boolean;
 }
 
 export interface SearchColors {

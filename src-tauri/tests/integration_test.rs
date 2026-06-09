@@ -358,6 +358,7 @@ fn test_filter_all_off_shows_everything() {
         hide_empty_tool_results: false,
         show_system_messages: true,
         show_file_snapshots: true,
+        collapse_consecutive: false,
     };
     let filtered = services::filter::filter_events(&events, &filter);
     let filtered_total: usize = filtered.iter().map(|e| e.content.len()).sum();
@@ -542,4 +543,72 @@ fn test_openclaw_app_settings_default() {
     assert!(!settings.provider_enabled.get("openclaw").unwrap_or(&true));
     // claude_code 默认启用
     assert!(settings.provider_enabled.get("claude_code").unwrap_or(&false));
+}
+
+// ============================================================
+// collapse_consecutive 字段测试
+// ============================================================
+
+#[test]
+fn test_filter_config_default_collapse_consecutive() {
+    let config = FilterConfig::default();
+    assert!(!config.collapse_consecutive, "collapse_consecutive 默认应为 false");
+}
+
+#[test]
+fn test_filter_config_collapse_consecutive_can_enable() {
+    let config = FilterConfig {
+        collapse_consecutive: true,
+        ..FilterConfig::default()
+    };
+    assert!(config.collapse_consecutive);
+}
+
+/// 验证旧版配置（不含 collapse_consecutive 字段）的反序列化兼容性
+#[test]
+fn test_deserialize_old_filter_config_without_collapse_consecutive() {
+    // 模拟旧版 JSON：不包含 collapseConsecutive 字段
+    let old_json = r#"{
+        "showThinking": false,
+        "showToolCalls": true,
+        "showToolResults": true,
+        "hideEmptyToolResults": true,
+        "showSystemMessages": false,
+        "showFileSnapshots": false
+    }"#;
+
+    let config: FilterConfig = serde_json::from_str(old_json).expect("旧版配置应能反序列化");
+    assert!(!config.show_thinking);
+    assert!(config.show_tool_calls);
+    assert!(config.show_tool_results);
+    assert!(config.hide_empty_tool_results);
+    assert!(!config.show_system_messages);
+    assert!(!config.show_file_snapshots);
+    // 关键：缺少的字段应为默认值 false
+    assert!(!config.collapse_consecutive, "旧版配置缺少 collapseConsecutive 字段时应默认为 false");
+}
+
+/// 验证新版配置（含 collapseConsecutive: true）可以正确序列化和反序列化
+#[test]
+fn test_serialize_roundtrip_with_collapse_consecutive() {
+    let config = FilterConfig {
+        show_thinking: true,
+        show_tool_calls: false,
+        show_tool_results: false,
+        hide_empty_tool_results: false,
+        show_system_messages: true,
+        show_file_snapshots: true,
+        collapse_consecutive: true,
+    };
+
+    let json = serde_json::to_string(&config).expect("序列化不应失败");
+    let parsed: FilterConfig = serde_json::from_str(&json).expect("反序列化不应失败");
+
+    assert!(parsed.show_thinking);
+    assert!(!parsed.show_tool_calls);
+    assert!(!parsed.show_tool_results);
+    assert!(!parsed.hide_empty_tool_results);
+    assert!(parsed.show_system_messages);
+    assert!(parsed.show_file_snapshots);
+    assert!(parsed.collapse_consecutive);
 }

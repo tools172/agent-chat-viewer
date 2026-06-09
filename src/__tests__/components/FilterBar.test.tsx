@@ -18,7 +18,7 @@ function makeFilter(overrides: Partial<FilterConfig> = {}): FilterConfig {
 describe('FilterBar', () => {
   // ======================== 渲染测试 ========================
 
-  it('渲染全部 4 个过滤按钮', () => {
+  it('渲染全部 5 个过滤按钮', () => {
     const onChange = vi.fn();
     render(<FilterBar filter={makeFilter()} onChange={onChange} />);
 
@@ -26,6 +26,7 @@ describe('FilterBar', () => {
     expect(screen.getByText('工具调用')).toBeInTheDocument();
     expect(screen.getByText('工具结果')).toBeInTheDocument();
     expect(screen.getByText('隐藏空结果')).toBeInTheDocument();
+    expect(screen.getByText('合并连发')).toBeInTheDocument();
   });
 
   it('思考按钮默认关闭状态', () => {
@@ -68,6 +69,37 @@ describe('FilterBar', () => {
 
     const btn = screen.getByText('隐藏空结果').closest('button')!;
     expect(btn.className).toContain('bg-amber-100');
+  });
+
+  // ======================== 合并连发 ========================
+
+  it('合并连发默认关闭状态', () => {
+    const onChange = vi.fn();
+    render(
+      <FilterBar
+        filter={makeFilter({ collapseConsecutive: false })}
+        onChange={onChange}
+      />
+    );
+
+    const btn = screen.getByText('合并连发').closest('button')!;
+    // 关闭时 collapseConsecutive=false → 灰色样式
+    expect(btn.className).toContain('bg-gray-100');
+    expect(btn.className).not.toContain('bg-primary');
+  });
+
+  it('合并连发开启状态', () => {
+    const onChange = vi.fn();
+    render(
+      <FilterBar
+        filter={makeFilter({ collapseConsecutive: true })}
+        onChange={onChange}
+      />
+    );
+
+    const btn = screen.getByText('合并连发').closest('button')!;
+    expect(btn.className).toContain('bg-primary');
+    expect(btn.className).not.toContain('bg-gray-100');
   });
 
   // ======================== 交互测试 ========================
@@ -139,7 +171,33 @@ describe('FilterBar', () => {
     });
   });
 
-  it('连续操作：依次切换 4 个按钮', () => {
+  it('点击合并连发按钮 → onChange({ collapseConsecutive: true })', () => {
+    const onChange = vi.fn();
+    render(
+      <FilterBar
+        filter={makeFilter({ collapseConsecutive: false })}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByText('合并连发'));
+    expect(onChange).toHaveBeenCalledWith({ collapseConsecutive: true });
+  });
+
+  it('再次点击合并连发按钮 → onChange({ collapseConsecutive: false })', () => {
+    const onChange = vi.fn();
+    render(
+      <FilterBar
+        filter={makeFilter({ collapseConsecutive: true })}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByText('合并连发'));
+    expect(onChange).toHaveBeenCalledWith({ collapseConsecutive: false });
+  });
+
+  it('连续操作：依次切换 5 个按钮', () => {
     const calls: Partial<FilterConfig>[] = [];
     const onChange = vi.fn().mockImplementation(
       (partial: Partial<FilterConfig>) => calls.push(partial),
@@ -151,12 +209,14 @@ describe('FilterBar', () => {
     fireEvent.click(screen.getByText('工具调用'));
     fireEvent.click(screen.getByText('工具结果'));
     fireEvent.click(screen.getByText('隐藏空结果'));
+    fireEvent.click(screen.getByText('合并连发'));
 
     expect(calls).toEqual([
       { showThinking: true },
       { showToolCalls: false },
       { showToolResults: false },
       { hideEmptyToolResults: false },
+      { collapseConsecutive: true },
     ]);
   });
 });

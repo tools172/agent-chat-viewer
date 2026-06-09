@@ -22,6 +22,7 @@ const defaultFilter: FilterConfig = {
   hideEmptyToolResults: true,
   showSystemMessages: false,
   showFileSnapshots: false,
+  collapseConsecutive: false,
 };
 
 describe('filterEvents (前端)', () => {

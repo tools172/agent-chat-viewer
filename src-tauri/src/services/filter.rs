@@ -165,4 +165,19 @@ mod tests {
         let filtered = filter_events(&events, &config);
         assert!(filtered.is_empty());
     }
+
+    #[test]
+    fn test_collapse_consecutive_defaults_to_false() {
+        let config = FilterConfig::default();
+        assert!(!config.collapse_consecutive);
+    }
+
+    #[test]
+    fn test_collapse_consecutive_can_be_set_true() {
+        let config = FilterConfig {
+            collapse_consecutive: true,
+            ..FilterConfig::default()
+        };
+        assert!(config.collapse_consecutive);
+    }
 }

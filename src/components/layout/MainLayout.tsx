@@ -10,7 +10,7 @@ import {
 import { useSessions } from '../../hooks/useSessions';
 import { useSessionList } from '../../hooks/useSessionList';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { filterEvents } from '../../utils/filterEvents';
+import { filterEvents, collapseConsecutiveEvents } from '../../utils/filterEvents';
 import { Sidebar } from './Sidebar';
 import { FilterBar } from '../filter/FilterBar';
 import { ConversationView } from '../conversation/ConversationView';
@@ -177,11 +177,14 @@ export const MainLayout: React.FC = () => {
   );
 
   // 前端侧过滤：后端返回全量事件，这里按 activeFilter 筛选
-  const filteredEvents = useMemo(
-    () =>
-      currentSession ? filterEvents(currentSession.events, activeFilter) : [],
-    [currentSession, activeFilter]
-  );
+  const filteredEvents = useMemo(() => {
+    if (!currentSession) return [];
+    const filtered = filterEvents(currentSession.events, activeFilter);
+    if (activeFilter.collapseConsecutive) {
+      return collapseConsecutiveEvents(filtered);
+    }
+    return filtered;
+  }, [currentSession, activeFilter]);
 
   // 获取会话标题
   const sessionTitle =
