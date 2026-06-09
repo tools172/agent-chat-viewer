@@ -45,8 +45,8 @@ interface SidebarProps {
   selectedSessionPath: string | null;
   onViewModeChange: (mode: ViewMode) => void;
   onSortChange: (config: SortConfig) => void;
-  onSelectProject: (path: string) => void;
-  onSelectSession: (path: string) => void;
+  onSelectProject: (path: string, providerName: string) => void;
+  onSelectSession: (path: string, providerName: string) => void;
   onSearchQueryChange: (query: string) => void;
   onSearch: (query: string) => void;
   onToggleHighlight: () => void;

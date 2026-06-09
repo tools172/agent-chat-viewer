@@ -12,8 +12,8 @@ interface ProjectListProps {
   selectedProjectPath: string | null;
   selectedSessionPath: string | null;
   isLoadingProject?: boolean;
-  onSelectProject: (path: string) => void;
-  onSelectSession: (path: string) => void;
+  onSelectProject: (path: string, providerName: string) => void;
+  onSelectSession: (path: string, providerName: string) => void;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = ({
@@ -44,14 +44,14 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     return () => document.removeEventListener('mousedown', handler);
   }, [contextMenu]);
 
-  const handleProjectClick = (projectPath: string) => {
+  const handleProjectClick = (projectPath: string, providerName: string) => {
     setExpandedProjects((prev) => {
       const next = new Set(prev);
       if (next.has(projectPath)) next.delete(projectPath);
       else next.add(projectPath);
       return next;
     });
-    onSelectProject(projectPath);
+    onSelectProject(projectPath, providerName);
   };
 
   const handleProjectContextMenu = (e: React.MouseEvent, projectPath: string) => {
@@ -98,7 +98,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         return (
           <div key={project.path}>
             <button
-              onClick={() => handleProjectClick(project.path)}
+              onClick={() => handleProjectClick(project.path, project.providerName)}
               onContextMenu={(e) => handleProjectContextMenu(e, project.path)}
               className={`flex items-center gap-2 w-full px-3 py-2 text-sm font-medium transition-colors ${
                 isSelected
@@ -134,7 +134,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                       isSelected={selectedSessionPath === session.filePath}
                       showProject={false}
                       showProvider={true}
-                      onClick={() => onSelectSession(session.filePath)}
+                      onClick={onSelectSession}
                     />
                   ))
                 )}

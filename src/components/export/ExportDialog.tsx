@@ -7,12 +7,14 @@ import * as tauri from '../../utils/tauri';
 interface ExportDialogProps {
   sessionPath: string;
   sessionTitle: string;
+  providerName: string;
   onClose: () => void;
 }
 
 export const ExportDialog: React.FC<ExportDialogProps> = ({
   sessionPath,
   sessionTitle,
+  providerName,
   onClose,
 }) => {
   const [format, setFormat] = useState<ExportFormat>('markdown');
@@ -68,10 +70,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         content = await tauri.exportMarkdown(
           sessionPath,
           exportFilter,
-          'claude_code'
+          providerName
         );
       } else {
-        content = await tauri.exportJson(sessionPath, 'claude_code');
+        content = await tauri.exportJson(sessionPath, providerName);
       }
 
       // 使用 Rust 命令写入文件

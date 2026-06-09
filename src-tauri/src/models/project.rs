@@ -8,4 +8,6 @@ pub struct Project {
     pub path: String,
     pub session_count: u32,
     pub last_activity: String,
+    /// Agent provider name (e.g. "claude_code", "openclaw")
+    pub provider_name: String,
 }

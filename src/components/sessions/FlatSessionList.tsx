@@ -9,7 +9,7 @@ interface FlatSessionListProps {
   selectedSessionPath: string | null;
   /** 搜索高亮词 */
   highlight?: string;
-  onSelectSession: (path: string) => void;
+  onSelectSession: (path: string, providerName: string) => void;
 }
 
 export const FlatSessionList: React.FC<FlatSessionListProps> = ({
@@ -42,7 +42,7 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
           showProject={true}
           showProvider={true}
           highlight={highlight}
-          onClick={() => onSelectSession(session.filePath)}
+          onClick={onSelectSession}
         />
       ))}
     </div>

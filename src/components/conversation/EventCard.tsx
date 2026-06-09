@@ -1,5 +1,5 @@
-import React from 'react';
-import { User, Bot, Clock, Copy, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { User, Bot, Clock, Copy, Check, FileJson, FileText } from 'lucide-react';
 import type { ChatEvent, ContentBlock } from '../../types';
 import { ThinkingBlock } from './ThinkingBlock';
 import { ToolCallBlock } from './ToolCallBlock';
@@ -22,14 +22,18 @@ interface EventCardProps {
 }
 
 /**
- * Format an ISO timestamp to local time string
+ * Format an ISO timestamp to full local date + time string
  */
 function formatTime(isoString: string): string {
   try {
     const date = new Date(isoString);
-    return date.toLocaleTimeString('zh-CN', {
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
     });
   } catch {
     return '';
@@ -74,11 +78,25 @@ export const EventCard: React.FC<EventCardProps> = ({
   findHighlight,
   searchColors,
 }) => {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [ctxAction, setCtxAction] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isUser = event.eventType === 'user';
 
-  const handleCopy = () => {
-    const text = event.content
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [contextMenu]);
+
+  const getEventText = () => {
+    return event.content
       .map((b) => {
         if (b.blockType === 'text') return b.text;
         if (b.blockType === 'thinking') return b.thinking;
@@ -89,10 +107,29 @@ export const EventCard: React.FC<EventCardProps> = ({
         return '';
       })
       .join('\n');
+  };
 
+  const handleCopy = () => {
+    const text = getEventText();
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleCopyEventText = () => {
+    setContextMenu(null);
+    navigator.clipboard.writeText(getEventText()).then(() => {
+      setCtxAction('text');
+      setTimeout(() => setCtxAction(null), 1500);
+    });
+  };
+
+  const handleCopyEventJson = () => {
+    setContextMenu(null);
+    navigator.clipboard.writeText(JSON.stringify(event, null, 2)).then(() => {
+      setCtxAction('json');
+      setTimeout(() => setCtxAction(null), 1500);
     });
   };
 
@@ -168,6 +205,10 @@ export const EventCard: React.FC<EventCardProps> = ({
       className={`group flex gap-3 px-4 py-3 ${
         isUser ? 'bg-blue-50/30' : 'bg-white'
       } hover:bg-gray-50/50 transition-colors`}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+      }}
     >
       {/* Avatar */}
       <div className="flex-shrink-0 mt-0.5">
@@ -213,6 +254,38 @@ export const EventCard: React.FC<EventCardProps> = ({
           )}
         </button>
       </div>
+
+      {/* 右键菜单 */}
+      {contextMenu && (
+        <div
+          ref={menuRef}
+          className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={handleCopyEventText}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            {ctxAction === 'text' ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <FileText className="h-4 w-4 text-gray-400" />
+            )}
+            复制事件文本
+          </button>
+          <button
+            onClick={handleCopyEventJson}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            {ctxAction === 'json' ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <FileJson className="h-4 w-4 text-gray-400" />
+            )}
+            复制事件 JSON
+          </button>
+        </div>
+      )}
     </div>
   );
 };

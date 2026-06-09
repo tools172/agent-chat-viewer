@@ -8,21 +8,39 @@ import {
   FileOutput,
   Save,
   RotateCcw,
+  FolderOpen,
+  Copy,
+  Check,
+  Plus,
 } from 'lucide-react';
+import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 interface SettingsPanelProps {
   onClose: () => void;
+  onSettingsSaved?: () => void;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSettingsSaved }) => {
   const store = useSettingsStore();
   const { settings } = store;
-  const [newDir, setNewDir] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
+  const [newDir, setNewDir] = useState('');
+  const [copiedPath, setCopiedPath] = useState<string | null>(null);
 
   // 防御：确保 searchColors 存在
   const searchColors = settings.searchColors || { search: '#fef08a', find: '#fed7aa' };
+
+  const handlePickDirectory = async () => {
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      if (selected && typeof selected === 'string') {
+        setNewDir(selected);
+      }
+    } catch (err) {
+      console.error('打开文件夹选择器失败:', err);
+    }
+  };
 
   const handleAddDirectory = () => {
     const trimmed = newDir.trim();
@@ -36,10 +54,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
     store.removeWatchDirectory(path);
   };
 
+  const handleCopyPath = async (path: string) => {
+    try {
+      await navigator.clipboard.writeText(path);
+      setCopiedPath(path);
+      setTimeout(() => setCopiedPath(null), 2000);
+    } catch (err) {
+      console.error('复制路径失败:', err);
+    }
+  };
+
   const handleSave = async () => {
     await store.save();
     setSaveMessage('设置已保存');
     setTimeout(() => setSaveMessage(''), 2000);
+    // 通知父组件设置已保存，以便刷新数据
+    onSettingsSaved?.();
   };
 
   return (
@@ -69,38 +99,68 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
               <FolderPlus className="h-4 w-4" />
               监控目录
             </h3>
-            <div className="space-y-1.5 mb-2">
+            <div className="space-y-1.5 mb-3">
+              {settings.watchDirectories.length === 0 && (
+                <p className="text-xs text-gray-400 py-2">
+                  暂无自定义监控目录
+                </p>
+              )}
               {settings.watchDirectories.map((dir) => (
                 <div
                   key={dir}
-                  className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 border rounded-lg"
+                  className="flex items-center gap-1 px-2 py-1.5 bg-gray-50 border rounded-lg group"
+                  title={dir}
                 >
                   <span className="flex-1 text-xs text-gray-600 truncate">
                     {dir}
                   </span>
                   <button
+                    onClick={() => handleCopyPath(dir)}
+                    className="p-0.5 hover:bg-blue-100 rounded text-gray-400 hover:text-blue-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="复制路径"
+                  >
+                    {copiedPath === dir ? (
+                      <Check className="h-3 w-3 text-green-500" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </button>
+                  <button
                     onClick={() => handleRemoveDirectory(dir)}
-                    className="p-0.5 hover:bg-red-100 rounded text-gray-400 hover:text-red-600"
+                    className="p-0.5 hover:bg-red-100 rounded text-gray-400 hover:text-red-600 flex-shrink-0"
+                    title="移除"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newDir}
-                onChange={(e) => setNewDir(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddDirectory()}
-                placeholder="输入目录路径..."
-                className="flex-1 px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+            {/* 输入行：文本输入 + 浏览按钮 + 添加按钮 */}
+            <div className="flex gap-1.5">
+              <div className="flex-1 flex items-center gap-1 px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-primary-500 bg-white">
+                <input
+                  type="text"
+                  value={newDir}
+                  onChange={(e) => setNewDir(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddDirectory()}
+                  placeholder="粘贴路径或点击浏览..."
+                  className="flex-1 border-none outline-none bg-transparent text-xs min-w-0"
+                />
+                <button
+                  onClick={handlePickDirectory}
+                  className="p-0.5 hover:bg-gray-100 rounded flex-shrink-0 text-gray-400 hover:text-gray-600"
+                  title="浏览文件夹"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <button
                 onClick={handleAddDirectory}
                 disabled={!newDir.trim()}
-                className="px-3 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                className="px-2.5 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center gap-1 flex-shrink-0"
+                title="添加文件夹"
               >
+                <Plus className="h-3.5 w-3.5" />
                 添加
               </button>
             </div>

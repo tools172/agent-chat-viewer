@@ -23,6 +23,7 @@ export interface Project {
   path: string;
   sessionCount: number;
   lastActivity: string;
+  providerName: string;
 }
 
 export interface SessionSummary {
@@ -42,6 +43,7 @@ export interface SessionDetail {
   id: string;
   filePath: string;
   events: ChatEvent[];
+  providerName?: string;
 }
 
 export interface ChatEvent {

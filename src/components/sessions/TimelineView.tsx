@@ -11,7 +11,7 @@ interface TimelineViewProps {
   /** 当前过滤上下文 */
   filterContext: 'all' | string;
   filterContextLabel?: string;
-  onSelectSession: (path: string) => void;
+  onSelectSession: (path: string, providerName: string) => void;
   onClearFilter?: () => void;
 }
 
@@ -150,7 +150,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     isSelected={selectedSessionPath === session.filePath}
                     showProject={filterContext === 'all'}
                     showProvider={true}
-                    onClick={() => onSelectSession(session.filePath)}
+                    onClick={onSelectSession}
                   />
                 ))}
               </div>

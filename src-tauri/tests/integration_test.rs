@@ -3,6 +3,7 @@ use std::sync::Arc;
 use agent_chat_viewer_lib::models::{AppSettings, FilterConfig};
 use agent_chat_viewer_lib::providers::base::ChatProvider;
 use agent_chat_viewer_lib::providers::claude_code::ClaudeCodeProvider;
+use agent_chat_viewer_lib::providers::openclaw::OpenClawProvider;
 use agent_chat_viewer_lib::services;
 
 #[test]
@@ -385,4 +386,160 @@ fn test_parse_real_session_events_count() {
     assert!(tool_use > 0, "必须包含 tool_use 块");
     // 必须有 tool_result 块
     assert!(tool_result > 0, "必须包含 tool_result 块");
+}
+
+// ============================================================
+// OpenClaw Provider 集成测试
+// ============================================================
+
+#[test]
+fn test_openclaw_parse_minimal_session() {
+    let fixture = include_str!("fixtures/openclaw/minimal.jsonl");
+    let provider = Arc::new(OpenClawProvider::new());
+
+    let events: Vec<_> = fixture
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .filter_map(|l| provider.parse_event(l).ok())
+        .collect();
+
+    // session metadata + user + assistant = 3 events
+    assert_eq!(events.len(), 3);
+
+    let user_events: Vec<_> = events
+        .iter()
+        .filter(|e| matches!(e.event_type, agent_chat_viewer_lib::models::EventType::User))
+        .collect();
+    let assistant_events: Vec<_> = events
+        .iter()
+        .filter(|e| matches!(e.event_type, agent_chat_viewer_lib::models::EventType::Assistant))
+        .collect();
+    let system_events: Vec<_> = events
+        .iter()
+        .filter(|e| matches!(e.event_type, agent_chat_viewer_lib::models::EventType::System))
+        .collect();
+
+    assert_eq!(user_events.len(), 1);
+    assert_eq!(assistant_events.len(), 1);
+    assert_eq!(system_events.len(), 1); // session metadata
+}
+
+#[test]
+fn test_openclaw_parse_session_with_tools() {
+    let fixture = include_str!("fixtures/openclaw/with_tools.jsonl");
+    let provider = Arc::new(OpenClawProvider::new());
+
+    let events: Vec<_> = fixture
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .filter_map(|l| provider.parse_event(l).ok())
+        .collect();
+
+    // session + model_change + user + assistant(toolCall) + toolResult + assistant = 6
+    assert_eq!(events.len(), 6);
+
+    // Check tool_use is parsed from toolCall
+    let has_tool_use = events.iter().any(|e| {
+        e.content.iter().any(|b| {
+            matches!(b, agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. })
+        })
+    });
+    assert!(has_tool_use, "OpenClaw toolCall should map to ToolUse");
+
+    // Check tool_result is parsed
+    let has_tool_result = events.iter().any(|e| {
+        e.content.iter().any(|b| {
+            matches!(b, agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. })
+        })
+    });
+    assert!(has_tool_result, "OpenClaw toolResult should map to ToolResult");
+}
+
+#[test]
+fn test_openclaw_export_markdown() {
+    let fixture = include_str!("fixtures/openclaw/minimal.jsonl");
+    let provider = Arc::new(OpenClawProvider::new());
+
+    let events: Vec<_> = fixture
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .filter_map(|l| provider.parse_event(l).ok())
+        .collect();
+
+    let md = services::exporter::export_to_markdown(&events, "OpenClaw Test", "test-agent");
+
+    assert!(md.contains("# OpenClaw Test"));
+    assert!(md.contains("test-agent"));
+    assert!(md.contains("Hello, OpenClaw"));
+    assert!(md.contains("Hi there!"));
+}
+
+#[test]
+fn test_openclaw_filter_default() {
+    let fixture = include_str!("fixtures/openclaw/with_tools.jsonl");
+    let provider = Arc::new(OpenClawProvider::new());
+
+    let events: Vec<_> = fixture
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .filter_map(|l| provider.parse_event(l).ok())
+        .collect();
+
+    let default_filter = FilterConfig::default();
+    let filtered = services::filter::filter_events(&events, &default_filter);
+
+    // 默认过滤后应仍包含 user/assistant 事件
+    let has_user = filtered.iter().any(|e| {
+        matches!(e.event_type, agent_chat_viewer_lib::models::EventType::User)
+    });
+    let has_assistant = filtered.iter().any(|e| {
+        matches!(e.event_type, agent_chat_viewer_lib::models::EventType::Assistant)
+    });
+
+    assert!(has_user, "过滤后应包含 user 事件");
+    assert!(has_assistant, "过滤后应包含 assistant 事件");
+
+    // 默认条件下 System 事件应被过滤
+    for event in &filtered {
+        assert!(
+            !matches!(event.event_type, agent_chat_viewer_lib::models::EventType::System),
+            "默认过滤应隐藏 System 事件"
+        );
+    }
+}
+
+#[test]
+fn test_openclaw_detect_format() {
+    let provider = OpenClawProvider::new();
+
+    // Use the actual home directory so starts_with matches
+    let home = if cfg!(target_os = "windows") {
+        std::env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\default".to_string())
+    } else {
+        std::env::var("HOME").unwrap_or_else(|_| "/home/default".to_string())
+    };
+    let openclaw_path = std::path::PathBuf::from(home)
+        .join(".openclaw")
+        .join("agents")
+        .join("main")
+        .join("sessions")
+        .join("s.jsonl");
+
+    assert!(
+        provider.detect_format(&openclaw_path),
+        "Should detect path under ~/.openclaw: {}",
+        openclaw_path.display()
+    );
+
+    // Should not detect paths outside .openclaw
+    assert!(!provider.detect_format(std::path::Path::new("/tmp/test.jsonl")));
+}
+
+#[test]
+fn test_openclaw_app_settings_default() {
+    let settings = AppSettings::default();
+    // openclaw 默认禁用
+    assert!(!settings.provider_enabled.get("openclaw").unwrap_or(&true));
+    // claude_code 默认启用
+    assert!(settings.provider_enabled.get("claude_code").unwrap_or(&false));
 }

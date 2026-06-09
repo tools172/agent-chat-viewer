@@ -58,13 +58,15 @@ describe('SettingsPanel', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('输入目录并点击添加', () => {
+  it('显示添加文件夹按钮', () => {
     render(<SettingsPanel onClose={vi.fn()} />);
-    fireEvent.change(screen.getByPlaceholderText('输入目录路径...'), {
-      target: { value: '/new/dir' },
-    });
-    fireEvent.click(screen.getByText('添加'));
-    expect(mockStore.addWatchDirectory).toHaveBeenCalledWith('/new/dir');
+    expect(screen.getByText('添加')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('粘贴路径或点击浏览...')).toBeInTheDocument();
+  });
+
+  it('显示已添加的监控目录', () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    expect(screen.getByTitle('/test/dir')).toBeInTheDocument();
   });
 
   it('恢复默认配色', () => {

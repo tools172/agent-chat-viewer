@@ -53,8 +53,8 @@ export function useSessions() {
   }, [settings, loadProjects]);
 
   const handleSelectProject = useCallback(
-    (projectPath: string) => {
-      selectProject(projectPath, 'claude_code');
+    (projectPath: string, providerName: string) => {
+      selectProject(projectPath, providerName);
     },
     [selectProject]
   );
@@ -62,8 +62,8 @@ export function useSessions() {
   // 始终用 FULL_FILTER 从后端加载全部内容块，
   // 用户过滤在前端侧通过 filterEvents() 完成，避免切换时重新请求。
   const handleSelectSession = useCallback(
-    (sessionPath: string) => {
-      selectSession(sessionPath, FULL_FILTER, 'claude_code');
+    (sessionPath: string, providerName: string) => {
+      selectSession(sessionPath, FULL_FILTER, providerName);
     },
     [selectSession]
   );

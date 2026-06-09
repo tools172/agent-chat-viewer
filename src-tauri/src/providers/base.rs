@@ -16,7 +16,11 @@ pub enum ParseError {
 /// Core trait that all chat providers must implement.
 ///
 /// This is the Strategy pattern — each agent (Claude Code, OpenClaw, etc.)
-/// provides its own implementation of this trait.
+/// provides its own implementation of this trait. To add a new provider:
+///
+/// 1. Implement this trait with agent-specific parsing logic
+/// 2. Register it in `ProviderRegistry::new()`
+/// 3. Add visual metadata in frontend `PROVIDER_META`
 pub trait ChatProvider: Send + Sync {
     /// Unique name for this provider (e.g., "claude_code", "openclaw")
     fn name(&self) -> &'static str;
@@ -39,5 +43,34 @@ pub trait ChatProvider: Send + Sync {
     /// File extension for session files
     fn session_extension(&self) -> &'static str {
         "jsonl"
+    }
+
+    /// Extract session ID from a file path (default: file stem)
+    fn extract_session_id(&self, file_path: &Path) -> Option<String> {
+        file_path.file_stem()?.to_str().map(String::from)
+    }
+
+    /// Enumerate all session files within a project/agent directory.
+    ///
+    /// Default: scan the directory directly for `.jsonl` files.
+    /// Providers with nested structures (e.g. OpenClaw's `sessions/` subdirectory)
+    /// should override this method.
+    fn enumerate_session_files(&self, project_dir: &Path) -> Vec<PathBuf> {
+        let mut files = Vec::new();
+        if let Ok(entries) = std::fs::read_dir(project_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && self.is_session_file(&path) {
+                    files.push(path);
+                }
+            }
+        }
+        files
+    }
+
+    /// Check if a given file is a session file of this provider.
+    fn is_session_file(&self, path: &Path) -> bool {
+        path.extension()
+            .map_or(false, |ext| ext.eq_ignore_ascii_case(self.session_extension()))
     }
 }

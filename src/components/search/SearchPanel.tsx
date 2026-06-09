@@ -11,7 +11,7 @@ interface SearchPanelProps {
   highlightEnabled: boolean;
   onQueryChange: (query: string) => void;
   onSearch: (query: string) => void;
-  onSelectSession: (path: string) => void;
+  onSelectSession: (path: string, providerName: string) => void;
   onToggleHighlight: () => void;
   selectedSessionPath: string | null;
 }
@@ -123,7 +123,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
                 showProject={true}
                 showProvider={true}
                 highlight={highlightEnabled ? query : undefined}
-                onClick={() => onSelectSession(session.filePath)}
+                onClick={onSelectSession}
               />
             ))}
           </div>

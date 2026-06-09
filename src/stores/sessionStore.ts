@@ -85,11 +85,13 @@ export const useSessionStore = create<SessionState>((set) => ({
       error: null,
     });
     try {
-      const currentSession = await tauri.getConversation(
+      const detail = await tauri.getConversation(
         sessionPath,
         filter,
         provider
       );
+      // Attach provider name to loaded session detail
+      const currentSession = { ...detail, providerName: provider };
       set({ currentSession, isLoadingConversation: false });
     } catch (err) {
       set({ error: String(err), isLoadingConversation: false });

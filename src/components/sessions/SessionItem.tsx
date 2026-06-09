@@ -12,7 +12,7 @@ interface SessionItemProps {
   showProject?: boolean;
   highlight?: string;
   showProvider?: boolean;
-  onClick: () => void;
+  onClick: (path: string, providerName: string) => void;
 }
 
 export const SessionItem: React.FC<SessionItemProps> = ({
@@ -68,7 +68,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   return (
     <>
       <button
-        onClick={onClick}
+        onClick={() => onClick(session.filePath, session.providerName)}
         onContextMenu={handleContextMenu}
         className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors duration-150 group ${
           isSelected
