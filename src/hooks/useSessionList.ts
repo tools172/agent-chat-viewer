@@ -17,12 +17,19 @@ export function useSessionList() {
   }, [isSettingsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reload = useCallback(() => {
-    store.loadProjects(settings);
-    store.loadAllSessions(settings);
+    store.refresh(settings);
   }, [settings, store]);
+
+  // 合并的刷新状态：用于 UI 指示器
+  const isRefreshing =
+    store.isLoadingAll ||
+    store.isLoadingProjects ||
+    (store.viewMode === 'search' && store.isLoadingSearch) ||
+    (!!store.projectFilter && store.isLoadingProject);
 
   return {
     ...store,
     reload,
+    isRefreshing,
   };
 }

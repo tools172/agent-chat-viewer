@@ -95,7 +95,7 @@ agent-chat-viewer/
 │   │   ├── conversation/         # 对话渲染 (EventCard, MarkdownRenderer, ...)
 │   │   ├── export/               # 导出对话框
 │   │   ├── filter/               # 过滤器组件
-│   │   ├── layout/               # 布局 (Sidebar, MainLayout)
+│   │   ├── layout/               # 布局 (SessionNavigator, MainLayout)
 │   │   ├── projects/             # 项目列表视图
 │   │   ├── search/               # 搜索面板
 │   │   ├── sessions/             # 会话列表 / 时间线视图

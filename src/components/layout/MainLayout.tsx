@@ -1,17 +1,19 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   Download,
   MessageSquare,
   FolderOpen,
+  Folder,
   Copy,
   Check,
   Hash,
+  RefreshCw,
 } from 'lucide-react';
 import { useSessions } from '../../hooks/useSessions';
 import { useSessionList } from '../../hooks/useSessionList';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { filterEvents, collapseConsecutiveEvents } from '../../utils/filterEvents';
-import { Sidebar } from './Sidebar';
+import { SessionNavigator } from './SessionNavigator';
 import { FilterBar } from '../filter/FilterBar';
 import { ConversationView } from '../conversation/ConversationView';
 import { TurnNavigator } from '../conversation/TurnNavigator';
@@ -64,6 +66,21 @@ export const MainLayout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, [convContextMenu]);
 
+  // 调整菜单位置不超出视口边界
+  useLayoutEffect(() => {
+    if (!convContextMenu || !convMenuRef.current) return;
+    const rect = convMenuRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const gap = 8;
+    if (convContextMenu.x + rect.width > vw) {
+      convMenuRef.current.style.left = `${Math.max(gap, vw - rect.width - gap)}px`;
+    }
+    if (convContextMenu.y + rect.height > vh) {
+      convMenuRef.current.style.top = `${Math.max(gap, vh - rect.height - gap)}px`;
+    }
+  }, [convContextMenu]);
+
   const handleConvContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     setConvContextMenu({ x: e.clientX, y: e.clientY });
@@ -100,6 +117,22 @@ export const MainLayout: React.FC = () => {
       setTimeout(() => setCopiedPath(false), 2000);
     } catch (err) {
       console.error('复制会话ID失败:', err);
+    }
+  };
+
+  const handleRefreshSession = () => {
+    setConvContextMenu(null);
+    if (!currentSession?.filePath || !currentSession?.providerName) return;
+    selectSession(currentSession.filePath, currentSession.providerName);
+  };
+
+  const handleOpenProjectFolder = async () => {
+    setConvContextMenu(null);
+    if (!currentProjectPath) return;
+    try {
+      await tauri.openProjectFolder(currentProjectPath);
+    } catch (err) {
+      console.error('打开项目文件夹失败:', err);
     }
   };
 
@@ -194,10 +227,20 @@ export const MainLayout: React.FC = () => {
       ?.content?.find((b) => b.blockType === 'text')?.text?.slice(0, 60) ||
     'Untitled';
 
+  // 从会话列表查找当前会话的项目目录（优先 cwd，即实际工作目录）
+  const currentProjectPath = useMemo(() => {
+    if (!selectedSessionPath) return null;
+    const session = list.allSessions.find(
+      (s) => s.filePath === selectedSessionPath
+    );
+    if (!session) return null;
+    return session.cwd || session.projectPath;
+  }, [selectedSessionPath, list.allSessions]);
+
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar
+      {/* 会话导航 */}
+      <SessionNavigator
         viewMode={list.viewMode}
         sortConfig={list.sortConfig}
         projects={list.projects}
@@ -209,6 +252,7 @@ export const MainLayout: React.FC = () => {
         isSearching={list.isLoadingSearch}
         isLoadingAll={list.isLoadingAll}
         isLoadingProject={list.isLoadingProject}
+        isRefreshing={list.isRefreshing}
         projectFilter={list.projectFilter}
         selectedProjectPath={list.projectFilter}
         selectedSessionPath={selectedSessionPath}
@@ -222,6 +266,7 @@ export const MainLayout: React.FC = () => {
         onToggleHighlight={list.toggleHighlight}
         onClearProjectFilter={handleClearProjectFilter}
         onOpenSettings={() => setShowSettings(true)}
+        onRefresh={list.reload}
       />
 
       {/* Main content */}
@@ -287,11 +332,26 @@ export const MainLayout: React.FC = () => {
                 style={{ left: convContextMenu.x, top: convContextMenu.y }}
               >
                 <button
+                  onClick={handleRefreshSession}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <RefreshCw className="h-4 w-4 text-gray-400" />
+                  刷新
+                </button>
+                <div className="border-t border-gray-100 my-1" />
+                <button
                   onClick={handleOpenSessionFolder}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                 >
                   <FolderOpen className="h-4 w-4 text-gray-400" />
                   打开所在文件夹
+                </button>
+                <button
+                  onClick={handleOpenProjectFolder}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <Folder className="h-4 w-4 text-gray-400" />
+                  打开项目文件夹
                 </button>
                 <button
                   onClick={handleCopySessionPath}

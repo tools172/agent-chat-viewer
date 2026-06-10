@@ -254,6 +254,22 @@ describe('TurnNavigator', () => {
 
   // ========== containerRef is null ==========
 
+  // ========== 轮次总数显示 ==========
+
+  it('显示轮次总数', () => {
+    const events = [
+      makeEvent('u1', '第一条消息'),
+      makeEvent('a1', '回复', 'assistant'),
+      makeEvent('u2', '第二条消息'),
+    ];
+
+    render(<TurnNavigator events={events} containerRef={containerRef} />);
+
+    expect(screen.getByText('共 2 轮')).toBeInTheDocument();
+  });
+
+  // ========== containerRef is null ==========
+
   it('containerRef 为 null 时不崩溃', () => {
     const events = [makeEvent('u1', '一条消息')];
     const nullRef = { current: null };

@@ -6,6 +6,7 @@ import {
   Search,
   MessageSquare,
   Database,
+  RefreshCw,
 } from 'lucide-react';
 import type { ViewMode, Project, SessionSummary, SortConfig } from '../../types';
 import { FlatSessionList } from '../sessions/FlatSessionList';
@@ -30,7 +31,7 @@ const VIEWS: ViewDef[] = [
   { mode: 'search', label: '搜索', icon: <Search className="h-4 w-4" /> },
 ];
 
-interface SidebarProps {
+interface SessionNavigatorProps {
   viewMode: ViewMode;
   sortConfig: SortConfig;
   projects: Project[];
@@ -42,6 +43,7 @@ interface SidebarProps {
   isSearching: boolean;
   isLoadingAll: boolean;
   isLoadingProject: boolean;
+  isRefreshing?: boolean;
   projectFilter: string | null;
   selectedProjectPath: string | null;
   selectedSessionPath: string | null;
@@ -55,9 +57,10 @@ interface SidebarProps {
   onToggleHighlight: () => void;
   onClearProjectFilter: () => void;
   onOpenSettings: () => void;
+  onRefresh: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
+export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   viewMode,
   sortConfig,
   projects,
@@ -69,6 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isSearching,
   isLoadingAll,
   isLoadingProject,
+  isRefreshing = false,
   projectFilter,
   selectedProjectPath,
   selectedSessionPath,
@@ -82,6 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleHighlight,
   onClearProjectFilter,
   onOpenSettings,
+  onRefresh,
 }) => {
   const totalSessions =
     allSessions.length > 0
@@ -97,7 +102,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <LoadingBar
         visible={
           (isLoadingAll && allSessions.length > 0) ||
-          (isLoadingProject && projectSessions.length > 0)
+          (isLoadingProject && projectSessions.length > 0) ||
+          (isSearching && searchResults.length > 0)
         }
       />
 
@@ -113,13 +119,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
               v{version}
             </span>
           </div>
-          <button
-            onClick={onOpenSettings}
-            className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
-            title="设置"
-          >
-            ⚙️
-          </button>
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              title="刷新列表"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+              />
+            </button>
+            <button
+              onClick={onOpenSettings}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
+              title="设置"
+            >
+              ⚙️
+            </button>
+          </div>
         </div>
 
         {/* 视图 Tab（4个） */}
@@ -166,6 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <ProjectList
               projects={projects}
               sessions={projectSessions}
+              allSessions={allSessions}
               sortConfig={sortConfig}
               selectedProjectPath={selectedProjectPath}
               selectedSessionPath={selectedSessionPath}

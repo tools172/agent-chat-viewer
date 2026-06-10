@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, FolderOpen, Copy, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder } from 'lucide-react';
 import { relativeTime } from '../../utils/time';
 import { getProviderLabel, getProviderColor } from '../../utils/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -26,6 +26,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   const searchColors = useSettingsStore((s) => s.settings.searchColors);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [copiedPath, setCopiedPath] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 点击外部关闭菜单
@@ -38,6 +39,21 @@ export const SessionItem: React.FC<SessionItemProps> = ({
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [contextMenu]);
+
+  // 调整菜单位置不超出视口边界
+  useLayoutEffect(() => {
+    if (!contextMenu || !menuRef.current) return;
+    const rect = menuRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const gap = 8;
+    if (contextMenu.x + rect.width > vw) {
+      menuRef.current.style.left = `${Math.max(gap, vw - rect.width - gap)}px`;
+    }
+    if (contextMenu.y + rect.height > vh) {
+      menuRef.current.style.top = `${Math.max(gap, vh - rect.height - gap)}px`;
+    }
   }, [contextMenu]);
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -62,6 +78,28 @@ export const SessionItem: React.FC<SessionItemProps> = ({
       setTimeout(() => setCopiedPath(false), 2000);
     } catch (err) {
       console.error('复制路径失败:', err);
+    }
+  };
+
+  const handleOpenProjectFolder = async () => {
+    setContextMenu(null);
+    try {
+      // cwd 是会话记录中实际的项目工作目录，projectPath 只是 .jsonl 文件的存放目录
+      const projectDir = session.cwd || session.projectPath;
+      await tauri.openProjectFolder(projectDir);
+    } catch (err) {
+      console.error('打开项目文件夹失败:', err);
+    }
+  };
+
+  const handleCopySessionId = async () => {
+    setContextMenu(null);
+    try {
+      await navigator.clipboard.writeText(session.id);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch (err) {
+      console.error('复制会话ID失败:', err);
     }
   };
 
@@ -134,6 +172,14 @@ export const SessionItem: React.FC<SessionItemProps> = ({
             打开所在文件夹
           </button>
           <button
+            onClick={handleOpenProjectFolder}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <Folder className="h-4 w-4 text-gray-400" />
+            打开项目文件夹
+          </button>
+          <div className="border-t border-gray-100 my-1" />
+          <button
             onClick={handleCopyPath}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
@@ -143,6 +189,17 @@ export const SessionItem: React.FC<SessionItemProps> = ({
               <Copy className="h-4 w-4 text-gray-400" />
             )}
             复制文件路径
+          </button>
+          <button
+            onClick={handleCopySessionId}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            {copiedId ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Hash className="h-4 w-4 text-gray-400" />
+            )}
+            复制会话 ID
           </button>
         </div>
       )}

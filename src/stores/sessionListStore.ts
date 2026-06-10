@@ -48,6 +48,7 @@ interface SessionListState {
     query: string,
     settings: AppSettings
   ) => Promise<void>;
+  refresh: (settings: AppSettings) => Promise<void>;
   setSearchQuery: (query: string) => void;
   clearError: () => void;
 }
@@ -141,6 +142,27 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
       set({ searchResults, isLoadingSearch: false });
     } catch (err) {
       set({ error: String(err), isLoadingSearch: false });
+    }
+  },
+
+  /** 刷新当前视图的数据：重载项目列表 + 全部会话，并根据当前视图状态重载搜索/项目会话 */
+  refresh: async (settings: AppSettings) => {
+    const { viewMode, searchQuery, projectFilter } = get();
+    // 并行重载基础数据
+    await Promise.all([
+      get().loadProjects(settings),
+      get().loadAllSessions(settings),
+    ]);
+    // 根据视图/状态重载特定数据
+    if (viewMode === 'search' && searchQuery.trim()) {
+      await get().search(searchQuery, settings);
+    }
+    if (projectFilter) {
+      const { projects } = get();
+      const project = projects.find((p) => p.path === projectFilter);
+      if (project) {
+        await get().selectProject(projectFilter, project.providerName);
+      }
     }
   },
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SessionItem } from '../../components/sessions/SessionItem';
 
@@ -17,7 +17,20 @@ vi.mock('../../stores/settingsStore', () => ({
   }),
 }));
 
+// Mock tauri utils
+const mockedOpenContainingFolder = vi.fn();
+const mockedOpenProjectFolder = vi.fn();
+
+vi.mock('../../utils/tauri', () => ({
+  openContainingFolder: (...args: unknown[]) => mockedOpenContainingFolder(...args),
+  openProjectFolder: (...args: unknown[]) => mockedOpenProjectFolder(...args),
+}));
+
 describe('SessionItem', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   const mockSession = {
     id: 'test-session',
     projectName: 'test-project',
@@ -103,5 +116,97 @@ describe('SessionItem', () => {
     );
     const marks = document.querySelectorAll('mark');
     expect(marks.length).toBeGreaterThan(0);
+  });
+
+  // ============================================================
+  // 右键菜单 — 打开项目文件夹 (cwd 优先)
+  // ============================================================
+
+  it('右键菜单：打开项目文件夹 使用 cwd', () => {
+    render(
+      <SessionItem
+        session={mockSession}
+        isSelected={false}
+        onClick={() => {}}
+      />
+    );
+
+    fireEvent.contextMenu(screen.getByRole('button'));
+    const menuItem = screen.getByText('打开项目文件夹');
+    fireEvent.click(menuItem);
+
+    // cwd 存在时优先使用
+    expect(mockedOpenProjectFolder).toHaveBeenCalledWith('/test');
+  });
+
+  it('右键菜单：打开项目文件夹 在 cwd 为空时回退到 projectPath', () => {
+    const sessionNoCwd = { ...mockSession, cwd: '' };
+
+    render(
+      <SessionItem
+        session={sessionNoCwd}
+        isSelected={false}
+        onClick={() => {}}
+      />
+    );
+
+    fireEvent.contextMenu(screen.getByRole('button'));
+    const menuItem = screen.getByText('打开项目文件夹');
+    fireEvent.click(menuItem);
+
+    // 回退到 projectPath
+    expect(mockedOpenProjectFolder).toHaveBeenCalledWith('/test/project');
+  });
+
+  it('右键菜单：打开所在文件夹 打开包含文件的文件夹', () => {
+    render(
+      <SessionItem
+        session={mockSession}
+        isSelected={false}
+        onClick={() => {}}
+      />
+    );
+
+    fireEvent.contextMenu(screen.getByRole('button'));
+    const menuItem = screen.getByText('打开所在文件夹');
+    fireEvent.click(menuItem);
+
+    expect(mockedOpenContainingFolder).toHaveBeenCalledWith(
+      '/test/session.jsonl'
+    );
+  });
+
+  it('右键菜单：包含所有菜单项', () => {
+    render(
+      <SessionItem
+        session={mockSession}
+        isSelected={false}
+        onClick={() => {}}
+      />
+    );
+
+    fireEvent.contextMenu(screen.getByRole('button'));
+
+    expect(screen.getByText('打开所在文件夹')).toBeInTheDocument();
+    expect(screen.getByText('打开项目文件夹')).toBeInTheDocument();
+    expect(screen.getByText('复制文件路径')).toBeInTheDocument();
+    expect(screen.getByText('复制会话 ID')).toBeInTheDocument();
+  });
+
+  it('右键菜单：点击外部关闭菜单', () => {
+    render(
+      <SessionItem
+        session={mockSession}
+        isSelected={false}
+        onClick={() => {}}
+      />
+    );
+
+    fireEvent.contextMenu(screen.getByRole('button'));
+    expect(screen.getByText('打开项目文件夹')).toBeInTheDocument();
+
+    // 点击外部 → 菜单关闭
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByText('打开项目文件夹')).not.toBeInTheDocument();
   });
 });

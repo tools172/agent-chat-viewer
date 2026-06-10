@@ -201,7 +201,10 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
   // ---- 折叠状态：只显示展开按钮 ----
   if (collapsed) {
     return (
-      <div className="flex-shrink-0 border-l border-gray-200 bg-gray-50/30 flex flex-col items-center py-2 gap-2">
+      <div
+        className="flex-shrink-0 border-l border-gray-200 bg-gray-50/30 flex flex-col items-center py-2 gap-2"
+        onContextMenu={(e) => e.stopPropagation()}
+      >
         <button
           onClick={() => setCollapsed(false)}
           className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-gray-600"
@@ -217,6 +220,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
     <div
       className="flex-shrink-0 border-l border-gray-200 bg-gray-50/30 flex flex-col h-full relative"
       style={{ width }}
+      onContextMenu={(e) => e.stopPropagation()}
     >
       {/* 拖拽手柄（左边缘） */}
       <div
@@ -228,6 +232,9 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
 
       {/* 顶部按钮行 */}
       <div className="flex items-center border-b border-gray-200">
+        <span className="pl-2 text-[10px] text-gray-400 whitespace-nowrap select-none">
+          共 {turns.length} 轮
+        </span>
         <button
           onClick={scrollToTop}
           className="flex-1 flex items-center justify-center py-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"

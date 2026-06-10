@@ -24,6 +24,7 @@ pub fn run() {
             commands::export::export_json,
             commands::export::write_text_file,
             commands::export::open_containing_folder,
+            commands::export::open_project_folder,
             commands::settings::get_default_paths,
             commands::settings::load_settings,
             commands::settings::save_settings,

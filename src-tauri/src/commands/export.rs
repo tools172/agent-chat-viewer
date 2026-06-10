@@ -131,3 +131,42 @@ pub fn open_containing_folder(file_path: String) -> Result<(), String> {
 
     Ok(())
 }
+
+/// 在文件管理器中直接打开项目文件夹（不选中特定文件）
+#[tauri::command]
+pub fn open_project_folder(folder_path: String) -> Result<(), String> {
+    let path = PathBuf::from(&folder_path);
+
+    if !path.is_dir() {
+        return Err(format!("文件夹不存在: {}", folder_path));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: explorer <path> 直接打开文件夹
+        std::process::Command::new("explorer")
+            .arg(path.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: open <path> 在 Finder 中打开文件夹
+        std::process::Command::new("open")
+            .arg(path.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: xdg-open <path> 打开文件夹
+        std::process::Command::new("xdg-open")
+            .arg(path.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    }
+
+    Ok(())
+}

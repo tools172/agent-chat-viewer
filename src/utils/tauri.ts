@@ -127,3 +127,8 @@ export async function getSettingsPath(): Promise<string> {
 export async function openContainingFolder(filePath: string): Promise<void> {
   return invoke<void>('open_containing_folder', { filePath });
 }
+
+/** Open the project folder directly in OS file explorer */
+export async function openProjectFolder(folderPath: string): Promise<void> {
+  return invoke<void>('open_project_folder', { folderPath });
+}

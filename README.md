@@ -31,6 +31,19 @@
 - 🔌 **多 Agent 支持** — Claude Code / OpenClaw 可切换启用
 - 📁 **打开设置文件** — 一键在资源管理器中打开 settings.json
 
+## 📖 核心概念
+
+在开始使用之前，了解这几个术语会很有帮助：
+
+| 术语 | 是什么 | 例子 |
+|---|---|---|
+| **项目 (Project)** | 一个存放聊天记录的**文件夹**，通常在设置里配置监控目录后由应用自动发现。一个项目 = 一次 Agent 任务的根目录。 | `~/claude-projects/my-website/` |
+| **会话 (Session)** | 项目文件夹里的一个 `.jsonl` 文件，记录了一次完整的对话。 | `agent-2026-06-11.jsonl` |
+| **提供者 (Provider)** | 解析不同 Agent 聊天格式的**适配器**。不同 Agent（Claude Code、OpenClaw 等）写入的文件格式不同，Provider 负责统一解析。 | `claude_code`、`openclaw` |
+| **刷新 🔄** | 重新从磁盘扫描所有数据源：**项目列表**（项目名称、会话数量等元信息）和**全部会话列表**（所有 `.jsonl` 文件的摘要）。如果当前在搜索视图且有活跃关键词，还会重新执行搜索；如果选中了某个项目，也会重新加载该项目的会话列表。 | 点击侧边栏顶部的刷新按钮 |
+
+> 💡 **简单说**：「项目」就是文件夹，「会话」就是文件，「刷新」就是重新扫描磁盘确保列表是最新的。
+
 ## 🛠 技术栈
 
 | 层 | 技术 |
@@ -94,7 +107,7 @@ pnpm tauri build
 ```
 ├── src/                    # React 前端代码
 │   ├── components/         # UI 组件
-│   │   ├── layout/         # 布局组件 (Sidebar, MainLayout)
+│   │   ├── layout/         # 布局组件 (SessionNavigator, MainLayout)
 │   │   ├── projects/       # 项目列表
 │   │   ├── sessions/       # 会话列表、时间线
 │   │   ├── conversation/   # 对话视图、消息渲染

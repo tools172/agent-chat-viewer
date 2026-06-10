@@ -2,8 +2,8 @@
 
 ## 体验优化
 
-### 侧边栏可拖拽调整宽度
-- 类似 TurnNavigator 的拖拽手柄，在 Sidebar 右侧边缘
+### 会话导航可拖拽调整宽度
+- 类似 TurnNavigator 的拖拽手柄，在 SessionNavigator 右侧边缘
 - 拖拽时实时调整宽度，松开后存储到设置
 - 可替代当前滑块设置，或两者并存
 

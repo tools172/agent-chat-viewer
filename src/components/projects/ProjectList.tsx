@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Folder, ChevronDown, ChevronRight, FolderOpen, Copy, Check } from 'lucide-react';
+import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { Folder, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
 import type { Project, SessionSummary, SortConfig } from '../../types';
 import { multiSort } from '../../utils/sort';
 import { SessionItem } from '../sessions/SessionItem';
@@ -8,6 +8,7 @@ import * as tauri from '../../utils/tauri';
 interface ProjectListProps {
   projects: Project[];
   sessions: SessionSummary[];
+  allSessions?: SessionSummary[];
   sortConfig: SortConfig;
   selectedProjectPath: string | null;
   selectedSessionPath: string | null;
@@ -19,6 +20,7 @@ interface ProjectListProps {
 export const ProjectList: React.FC<ProjectListProps> = ({
   projects,
   sessions,
+  allSessions,
   sortConfig,
   selectedProjectPath,
   selectedSessionPath,
@@ -29,7 +31,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     new Set()
   );
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; projectPath: string } | null>(null);
-  const [copiedPath, setCopiedPath] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 点击外部关闭菜单
@@ -42,6 +43,21 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [contextMenu]);
+
+  // 调整菜单位置不超出视口边界
+  useLayoutEffect(() => {
+    if (!contextMenu || !menuRef.current) return;
+    const rect = menuRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const gap = 8;
+    if (contextMenu.x + rect.width > vw) {
+      menuRef.current.style.left = `${Math.max(gap, vw - rect.width - gap)}px`;
+    }
+    if (contextMenu.y + rect.height > vh) {
+      menuRef.current.style.top = `${Math.max(gap, vh - rect.height - gap)}px`;
+    }
   }, [contextMenu]);
 
   const handleProjectClick = (projectPath: string, providerName: string) => {
@@ -61,25 +77,26 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
   const handleOpenProjectFolder = async () => {
     if (!contextMenu) return;
+    const projectPath = contextMenu.projectPath;
+    setContextMenu(null);
+    try {
+      // 优先使用会话中记录的实际工作目录(cwd)，回退到数据目录
+      const session = allSessions?.find((s) => s.projectPath === projectPath && s.cwd);
+      const targetDir = session?.cwd || projectPath;
+      await tauri.openProjectFolder(targetDir);
+    } catch (err) {
+      console.error('打开项目文件夹失败:', err);
+    }
+  };
+
+  const handleOpenProjectLocateFolder = async () => {
+    if (!contextMenu) return;
     const path = contextMenu.projectPath;
     setContextMenu(null);
     try {
       await tauri.openContainingFolder(path);
     } catch (err) {
-      console.error('打开文件夹失败:', err);
-    }
-  };
-
-  const handleCopyProjectPath = async () => {
-    if (!contextMenu) return;
-    const path = contextMenu.projectPath;
-    setContextMenu(null);
-    try {
-      await navigator.clipboard.writeText(path);
-      setCopiedPath(true);
-      setTimeout(() => setCopiedPath(false), 2000);
-    } catch (err) {
-      console.error('复制路径失败:', err);
+      console.error('打开所在文件夹失败:', err);
     }
   };
 
@@ -152,22 +169,18 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           <button
-            onClick={handleOpenProjectFolder}
+            onClick={handleOpenProjectLocateFolder}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <FolderOpen className="h-4 w-4 text-gray-400" />
-            打开项目文件夹
+            打开所在文件夹
           </button>
           <button
-            onClick={handleCopyProjectPath}
+            onClick={handleOpenProjectFolder}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
-            {copiedPath ? (
-              <Check className="h-4 w-4 text-green-500" />
-            ) : (
-              <Copy className="h-4 w-4 text-gray-400" />
-            )}
-            复制文件夹路径
+            <Folder className="h-4 w-4 text-gray-400" />
+            打开项目文件夹
           </button>
         </div>
       )}
