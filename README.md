@@ -73,6 +73,22 @@ cd src-tauri && cargo test  # Rust 测试
 pnpm tauri build
 ```
 
+> 💡 **重命名项目文件夹或移动项目路径后**，需要清理 Rust 构建缓存，否则会因旧路径残留导致构建失败。以下三种方式任选其一：
+> 
+> **方法一：PowerShell**
+> ```powershell
+> Remove-Item -Recurse -Force src-tauri\target
+> ```
+> 
+> **方法二：CMD**
+> ```cmd
+> rmdir /s /q src-tauri\target
+> ```
+> 
+> **方法三：手动删除**
+> 
+> 手动删除 `.\src-tauri\target` 文件夹。
+
 ## 📁 项目结构
 
 ```
