@@ -197,19 +197,35 @@ pub fn create_session_summary(
             // Find first user text message for display title + client type detection
             if display == "(Empty session)" {
                 if let crate::models::EventType::User = event.event_type {
+                    let mut first_raw = String::new();
                     for block in &event.content {
                         if let crate::models::ContentBlock::Text { text } = block {
-                            // 从首条用户消息中检测客户端环境（轻量字符串查找，不需要全文扫描）
+                            // 从第一条文本块检测客户端环境
                             if !client_detected {
                                 client_type = detect_client_from_text(text, provider_name).to_string();
                                 client_detected = true;
                             }
+                            // 记下原始文本作为兜底
+                            if first_raw.is_empty() {
+                                first_raw = text.clone();
+                            }
                             let cleaned = clean_display_text(text, provider_name);
+                            // 如果清理后没有实际内容（纯元数据块），继续找下一个 text block
+                            if cleaned.is_empty() || cleaned == *text {
+                                continue;
+                            }
                             display = cleaned.chars().take(80).collect();
                             if cleaned.len() > 80 {
                                 display.push_str("...");
                             }
                             break;
+                        }
+                    }
+                    // 兜底：所有 text block 都是元数据，用第一条的原文
+                    if display == "(Empty session)" && !first_raw.is_empty() {
+                        display = first_raw.chars().take(80).collect();
+                        if first_raw.len() > 80 {
+                            display.push_str("...");
                         }
                     }
                 }
