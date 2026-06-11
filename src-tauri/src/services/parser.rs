@@ -49,12 +49,9 @@ fn clean_display_text(text: &str, provider_name: &str) -> String {
             text.to_string()
         }
         "claude_code" => {
-            let cleaned = IDE_SELECTION_RE.replace_all(text, "").trim().to_string();
-            if !cleaned.is_empty() {
-                cleaned
-            } else {
-                text.to_string()
-            }
+            // 去除 <ide_selection>...</ide_selection> 块
+            // 注意：不兜底返回原文 — 纯元数据块返回空，由调用方跳过并取下一个 text block
+            IDE_SELECTION_RE.replace_all(text, "").trim().to_string()
         }
         _ => text.to_string(),
     }
@@ -210,8 +207,8 @@ pub fn create_session_summary(
                                 first_raw = text.clone();
                             }
                             let cleaned = clean_display_text(text, provider_name);
-                            // 如果清理后没有实际内容（纯元数据块），继续找下一个 text block
-                            if cleaned.is_empty() || cleaned == *text {
+                            // 纯元数据块（清理后为空）→ 跳过，取下一个 text block
+                            if cleaned.is_empty() {
                                 continue;
                             }
                             display = cleaned.chars().take(80).collect();
@@ -310,10 +307,10 @@ mod tests {
 
     #[test]
     fn test_clean_claude_code_display_only_ide_selection() {
-        // 兜底：ide_selection 后为空，返回原文
+        // 纯元数据块，清理后为空（由调用方跳过取下一个 text block）
         let text = "<ide_selection>only selection</ide_selection>";
         let cleaned = clean_display_text(text, "claude_code");
-        assert_eq!(cleaned, text); // 清理后为空，兜底保留原文
+        assert_eq!(cleaned, "");
     }
 
     // ===== detect_client_from_text 测试 =====
