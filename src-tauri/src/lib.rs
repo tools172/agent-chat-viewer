@@ -19,6 +19,7 @@ pub fn run() {
             commands::browser::list_sessions,
             commands::browser::get_conversation,
             commands::browser::list_all_sessions,
+            commands::browser::polish_sessions,
             commands::browser::search_sessions,
             commands::export::export_markdown,
             commands::export::export_json,

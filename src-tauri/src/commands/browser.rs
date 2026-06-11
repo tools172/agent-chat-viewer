@@ -277,6 +277,7 @@ pub async fn list_sessions(
                     &project_path,
                     &provider,
                     &provider_name,
+                    true, // quick mode — display cleaning deferred to progressive polish
                 )
             })
             .collect();
@@ -334,6 +335,7 @@ pub async fn list_all_sessions(
                                 &project_path_str,
                                 &provider,
                                 &detected_provider,
+                                true, // quick mode
                             )
                         {
                             all.push(summary);
@@ -365,6 +367,7 @@ pub async fn list_all_sessions(
                                     &project_path.to_string_lossy(),
                                     &provider,
                                     provider_name,
+                                    true,
                                 )
                             {
                                 all.push(summary);
@@ -380,6 +383,31 @@ pub async fn list_all_sessions(
     })
     .await
     .map_err(|e| format!("加载全部会话失败: {}", e))
+}
+
+/// 渐进式 refine：对已快速加载的会话列表执行 display 清洗 + client_type 检测。
+/// 输入为 `[(filePath, providerName)]`，返回对应的 `SessionPolish` 列表。
+#[tauri::command]
+pub async fn polish_sessions(
+    sessions: Vec<(String, String)>,
+    registry: tauri::State<'_, ProviderRegistry>,
+) -> Result<Vec<crate::services::parser::SessionPolish>, String> {
+    let reg = registry.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        sessions
+            .into_iter()
+            .filter_map(|(file_path, provider_name)| {
+                let provider = reg.get(&provider_name)?;
+                crate::services::parser::polish_session(
+                    Path::new(&file_path),
+                    provider,
+                    &provider_name,
+                )
+            })
+            .collect()
+    })
+    .await
+    .map_err(|e| format!("polish 失败: {}", e))
 }
 
 /// 获取会话详情（异步，大文件不卡 UI）
@@ -459,6 +487,7 @@ pub async fn search_sessions(
                                         &project_path_str,
                                         &provider,
                                         &detected_provider,
+                                        true,
                                     )
                                 {
                                     results.push(summary);
@@ -499,6 +528,7 @@ pub async fn search_sessions(
                                             &project_path.to_string_lossy(),
                                             &provider,
                                             provider_name,
+                                            true,
                                         )
                                     {
                                         results.push(summary);

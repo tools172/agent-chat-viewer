@@ -51,6 +51,20 @@ export async function listAllSessions(
   return invoke<SessionSummary[]>('list_all_sessions', { settings });
 }
 
+/** Polish result from progressive loading */
+export interface SessionPolish {
+  filePath: string;
+  display: string;
+  clientType: string;
+}
+
+/** Progressively polish sessions: clean display titles and detect client types */
+export async function polishSessions(
+  sessions: [string, string][]
+): Promise<SessionPolish[]> {
+  return invoke<SessionPolish[]>('polish_sessions', { sessions });
+}
+
 /** Search across all sessions */
 export async function searchSessions(
   query: string,

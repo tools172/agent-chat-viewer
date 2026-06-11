@@ -93,14 +93,37 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
   toggleHighlight: () =>
     set((s) => ({ highlightEnabled: !s.highlightEnabled })),
 
-  // 加载全部会话
+  // 加载全部会话（快速模式 → 渐进 polish）
   loadAllSessions: async (settings) => {
     set({ isLoadingAll: true, error: null });
     try {
       const allSessions = await tauri.listAllSessions(settings);
       set({ allSessions, isLoadingAll: false });
+      // 渐进式 polish：后台逐批清洗 display + 检测 clientType
+      get().polishAllSessions(allSessions);
     } catch (err) {
       set({ error: String(err), isLoadingAll: false });
+    }
+  },
+
+  /** 后台渐进 polish：每批 20 个，避免阻塞 UI */
+  polishAllSessions: async (sessions: SessionSummary[]) => {
+    const BATCH = 20;
+    const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
+    for (let i = 0; i < pairs.length; i += BATCH) {
+      const batch = pairs.slice(i, i + BATCH);
+      try {
+        const polished = await tauri.polishSessions(batch);
+        const map = new Map(polished.map((p) => [p.filePath, p]));
+        set((state) => ({
+          allSessions: state.allSessions.map((s) => {
+            const p = map.get(s.filePath);
+            return p ? { ...s, display: p.display, clientType: p.clientType } : s;
+          }),
+        }));
+      } catch {
+        // polish 失败不影响已加载的数据
+      }
     }
   },
 
@@ -126,8 +149,28 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     try {
       const sessions = await tauri.listSessions(projectPath, provider);
       set({ projectSessions: sessions, isLoadingProject: false });
+      // 渐进 polish
+      get().polishProjectSessions(sessions);
     } catch (err) {
       set({ error: String(err), isLoadingProject: false });
+    }
+  },
+
+  /** 后台 polish 项目会话（通常数量少，一批完成） */
+  polishProjectSessions: async (sessions: SessionSummary[]) => {
+    if (sessions.length === 0) return;
+    try {
+      const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
+      const polished = await tauri.polishSessions(pairs);
+      const map = new Map(polished.map((p) => [p.filePath, p]));
+      set((state) => ({
+        projectSessions: state.projectSessions.map((s) => {
+          const p = map.get(s.filePath);
+          return p ? { ...s, display: p.display, clientType: p.clientType } : s;
+        }),
+      }));
+    } catch {
+      // polish 失败不影响已加载数据
     }
   },
 

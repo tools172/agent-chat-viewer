@@ -129,13 +129,17 @@ pub fn parse_session_detail(
     })
 }
 
-/// Create a SessionSummary by reading first and last events from a file
+/// Create a SessionSummary by reading first and last events from a file.
+///
+/// When `quick` is true, skips display cleaning and client type detection —
+/// the caller can later call `polish_session` to fill in those fields.
 pub fn create_session_summary(
     file_path: &Path,
     project_name: &str,
     project_path: &str,
     provider: &Arc<dyn ChatProvider>,
     provider_name: &str,
+    quick: bool,
 ) -> Option<SessionSummary> {
     let content = std::fs::read_to_string(file_path).ok()?;
     let metadata = std::fs::metadata(file_path).ok()?;
@@ -194,17 +198,23 @@ pub fn create_session_summary(
                     let mut first_raw = String::new();
                     for block in &event.content {
                         if let crate::models::ContentBlock::Text { text } = block {
-                            // 从第一条文本块检测客户端环境
+                            if first_raw.is_empty() {
+                                first_raw = text.clone();
+                            }
+                            if quick {
+                                // 快速模式：直接用原文，不清理、不检测
+                                display = text.chars().take(80).collect();
+                                if text.len() > 80 {
+                                    display.push_str("...");
+                                }
+                                break;
+                            }
+                            // 完整模式：检测类型 + 清理显示文本
                             if !client_detected {
                                 client_type = detect_client_from_text(text, provider_name).to_string();
                                 client_detected = true;
                             }
-                            // 记下原始文本作为兜底
-                            if first_raw.is_empty() {
-                                first_raw = text.clone();
-                            }
                             let cleaned = clean_display_text(text, provider_name);
-                            // 纯元数据块（清理后为空）→ 跳过，取下一个 text block
                             if cleaned.is_empty() {
                                 continue;
                             }
@@ -239,6 +249,74 @@ pub fn create_session_summary(
         file_path: file_path.to_string_lossy().to_string(),
         provider_name: provider_name.to_string(),
         file_mtime,
+        client_type,
+    })
+}
+
+/// 渐进式加载用：对已快速加载的会话进行 display 清洗 + client_type 检测。
+/// 返回更新后的 display 和 client_type，前端按 filePath 匹配更新列表。
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionPolish {
+    pub file_path: String,
+    pub display: String,
+    pub client_type: String,
+}
+
+/// 对单个会话文件执行清洗和检测，返回 polish 结果。
+pub fn polish_session(
+    file_path: &Path,
+    provider: &Arc<dyn ChatProvider>,
+    provider_name: &str,
+) -> Option<SessionPolish> {
+    let content = std::fs::read_to_string(file_path).ok()?;
+    let mut display = String::from("(Empty session)");
+    let mut client_type = String::new();
+    let mut client_detected = false;
+    let mut first_raw = String::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if let Ok(event) = provider.parse_event(trimmed) {
+            if display == "(Empty session)" {
+                if let crate::models::EventType::User = event.event_type {
+                    for block in &event.content {
+                        if let crate::models::ContentBlock::Text { text } = block {
+                            if first_raw.is_empty() {
+                                first_raw = text.clone();
+                            }
+                            if !client_detected {
+                                client_type = detect_client_from_text(text, provider_name).to_string();
+                                client_detected = true;
+                            }
+                            let cleaned = clean_display_text(text, provider_name);
+                            if cleaned.is_empty() {
+                                continue;
+                            }
+                            display = cleaned.chars().take(80).collect();
+                            if cleaned.len() > 80 {
+                                display.push_str("...");
+                            }
+                            break;
+                        }
+                    }
+                    if display == "(Empty session)" && !first_raw.is_empty() {
+                        display = first_raw.chars().take(80).collect();
+                        if first_raw.len() > 80 {
+                            display.push_str("...");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Some(SessionPolish {
+        file_path: file_path.to_string_lossy().to_string(),
+        display,
         client_type,
     })
 }
