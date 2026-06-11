@@ -62,14 +62,14 @@ function groupByTime(sessions: SessionSummary[]): TimeGroup[] {
   const result: TimeGroup[] = [];
   for (const label of ['今天', '昨天', '本周', '上周', '本月']) {
     if (groups[label].length > 0) {
-      result.push({ label, sessions: multiSort(groups[label], [{ field: 'time', direction: 'desc' }]) });
+      result.push({ label, sessions: multiSort(groups[label], [{ field: 'created', direction: 'desc' }]) });
     }
   }
   for (const [label, sess] of Object.entries(monthGroups)) {
-    result.push({ label, sessions: multiSort(sess, [{ field: 'time', direction: 'desc' }]) });
+    result.push({ label, sessions: multiSort(sess, [{ field: 'created', direction: 'desc' }]) });
   }
   if (older.length > 0) {
-    result.push({ label: '更早', sessions: multiSort(older, [{ field: 'time', direction: 'desc' }]) });
+    result.push({ label: '更早', sessions: multiSort(older, [{ field: 'created', direction: 'desc' }]) });
   }
   return result;
 }

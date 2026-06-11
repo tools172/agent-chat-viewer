@@ -28,20 +28,20 @@ vi.mock('../../stores/settingsStore', () => ({
 
 describe('ProjectList', () => {
   const mockProjects = [
-    { name: 'project-a', path: '/data/project-a', sessionCount: 3, lastActivity: '2026-06-10T00:00:00Z', providerName: 'claude_code' },
-    { name: 'project-b', path: '/data/project-b', sessionCount: 1, lastActivity: '2026-06-09T00:00:00Z', providerName: 'claude_code' },
+    { name: 'project-a', path: '/data/project-a', sessionCount: 3, lastActivity: '2026-06-10T00:00:00Z', providerName: 'claude_code', fileMtime: '' },
+    { name: 'project-b', path: '/data/project-b', sessionCount: 1, lastActivity: '2026-06-09T00:00:00Z', providerName: 'claude_code', fileMtime: '' },
   ];
 
   const mockSessions = [
-    { id: 's1', projectName: 'project-a', projectPath: '/data/project-a', display: 'Session 1', timestamp: '2026-06-10T00:00:00Z', messageCount: 5, fileSize: 100, cwd: '/real/project-a', filePath: '/data/project-a/s1.jsonl', providerName: 'claude_code' },
-    { id: 's2', projectName: 'project-a', projectPath: '/data/project-a', display: 'Session 2', timestamp: '2026-06-09T00:00:00Z', messageCount: 3, fileSize: 50, cwd: '/real/project-a', filePath: '/data/project-a/s2.jsonl', providerName: 'claude_code' },
-    { id: 's3', projectName: 'project-b', projectPath: '/data/project-b', display: 'Session 3', timestamp: '2026-06-09T00:00:00Z', messageCount: 1, fileSize: 20, cwd: '', filePath: '/data/project-b/s3.jsonl', providerName: 'claude_code' },
+    { id: 's1', projectName: 'project-a', projectPath: '/data/project-a', display: 'Session 1', timestamp: '2026-06-10T00:00:00Z', messageCount: 5, fileSize: 100, cwd: '/real/project-a', filePath: '/data/project-a/s1.jsonl', providerName: 'claude_code', fileMtime: '' },
+    { id: 's2', projectName: 'project-a', projectPath: '/data/project-a', display: 'Session 2', timestamp: '2026-06-09T00:00:00Z', messageCount: 3, fileSize: 50, cwd: '/real/project-a', filePath: '/data/project-a/s2.jsonl', providerName: 'claude_code', fileMtime: '' },
+    { id: 's3', projectName: 'project-b', projectPath: '/data/project-b', display: 'Session 3', timestamp: '2026-06-09T00:00:00Z', messageCount: 1, fileSize: 20, cwd: '', filePath: '/data/project-b/s3.jsonl', providerName: 'claude_code', fileMtime: '' },
   ];
 
   const defaultProps = {
     projects: mockProjects,
     sessions: mockSessions,
-    sortConfig: [{ field: 'time' as const, direction: 'desc' as const }],
+    sortConfig: [{ field: 'created' as const, direction: 'desc' as const }],
     selectedProjectPath: null,
     selectedSessionPath: null,
     onSelectProject: vi.fn(),
@@ -82,7 +82,7 @@ describe('ProjectList', () => {
 
   it('右键菜单：打开工作目录 使用 allSessions 中的 cwd', async () => {
     const allSessions = [
-      { id: 's1', projectName: 'project-a', projectPath: '/data/project-a', display: '', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/real/project-a', filePath: '/data/project-a/s.jsonl', providerName: 'claude_code' },
+      { id: 's1', projectName: 'project-a', projectPath: '/data/project-a', display: '', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/real/project-a', filePath: '/data/project-a/s.jsonl', providerName: 'claude_code', fileMtime: '' },
     ];
 
     render(
@@ -104,7 +104,7 @@ describe('ProjectList', () => {
   it('右键菜单：打开工作目录 在 cwd 为空时回退到 project.path', async () => {
     // project-b 的 session 没有 cwd
     const allSessions = [
-      { id: 's3', projectName: 'project-b', projectPath: '/data/project-b', display: '', timestamp: '', messageCount: 1, fileSize: 0, cwd: '', filePath: '/data/project-b/s.jsonl', providerName: 'claude_code' },
+      { id: 's3', projectName: 'project-b', projectPath: '/data/project-b', display: '', timestamp: '', messageCount: 1, fileSize: 0, cwd: '', filePath: '/data/project-b/s.jsonl', providerName: 'claude_code', fileMtime: '' },
     ];
 
     render(
@@ -189,8 +189,8 @@ describe('ProjectList', () => {
   /** 用于排序测试的乱序文件夹数据 */
   const shuffledProjects = [
     { name: 'ccc-project', path: '/data/ccc', sessionCount: 5, lastActivity: '2026-06-08T00:00:00Z', providerName: 'openclaw' },
-    { name: 'aaa-project', path: '/data/aaa', sessionCount: 10, lastActivity: '2026-06-10T00:00:00Z', providerName: 'claude_code' },
-    { name: 'bbb-project', path: '/data/bbb', sessionCount: 1, lastActivity: '2026-06-09T00:00:00Z', providerName: 'claude_code' },
+    { name: 'aaa-project', path: '/data/aaa', sessionCount: 10, lastActivity: '2026-06-10T00:00:00Z', providerName: 'claude_code', fileMtime: '' },
+    { name: 'bbb-project', path: '/data/bbb', sessionCount: 1, lastActivity: '2026-06-09T00:00:00Z', providerName: 'claude_code', fileMtime: '' },
   ];
 
   /** 验证容器中文案的出现顺序 */
@@ -266,7 +266,7 @@ describe('ProjectList', () => {
         {...defaultProps}
         projects={shuffledProjects}
         sessions={[]}
-        sortConfig={[{ field: 'time', direction: 'asc' }]}
+        sortConfig={[{ field: 'created', direction: 'asc' }]}
       />
     );
     // lastActivity: ccc=06-08, bbb=06-09, aaa=06-10

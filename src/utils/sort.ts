@@ -11,11 +11,17 @@ interface SortStrategy {
 
 /** 排序策略注册表 — 扩展只需添加新条目 */
 const STRATEGIES: Record<SortField, SortStrategy> = {
-  time: {
-    label: '按时间',
+  created: {
+    label: '按创建时间',
     ascLabel: '最早优先',
     descLabel: '最新优先',
     compare: (a, b) => a.timestamp.localeCompare(b.timestamp),
+  },
+  modified: {
+    label: '按修改时间',
+    ascLabel: '最早优先',
+    descLabel: '最近优先',
+    compare: (a, b) => (a.fileMtime || a.timestamp).localeCompare(b.fileMtime || b.timestamp),
   },
   path: {
     label: '按路径',
@@ -102,8 +108,8 @@ export function multiSort(
 
 /** 默认排序配置（每种视图独立） */
 export const DEFAULT_SORTS: Record<string, SortConfig> = {
-  flat: [{ field: 'time', direction: 'desc' }],
+  flat: [{ field: 'created', direction: 'desc' }],
   'by-project': [{ field: 'path', direction: 'asc' }],
-  'by-time': [{ field: 'time', direction: 'desc' }],
-  search: [{ field: 'time', direction: 'desc' }],
+  'by-time': [{ field: 'created', direction: 'desc' }],
+  search: [{ field: 'created', direction: 'desc' }],
 };

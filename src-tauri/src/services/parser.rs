@@ -65,7 +65,16 @@ pub fn create_session_summary(
     provider_name: &str,
 ) -> Option<SessionSummary> {
     let content = std::fs::read_to_string(file_path).ok()?;
-    let file_size = std::fs::metadata(file_path).ok()?.len();
+    let metadata = std::fs::metadata(file_path).ok()?;
+    let file_size = metadata.len();
+    let file_mtime = metadata
+        .modified()
+        .ok()
+        .map(|m| {
+            let dt: chrono::DateTime<chrono::Utc> = m.into();
+            dt.to_rfc3339()
+        })
+        .unwrap_or_default();
     let id = file_path.file_stem()?.to_str()?.to_string();
 
     let mut display = String::from("(Empty session)");
@@ -134,6 +143,7 @@ pub fn create_session_summary(
         cwd,
         file_path: file_path.to_string_lossy().to_string(),
         provider_name: provider_name.to_string(),
+        file_mtime,
     })
 }
 

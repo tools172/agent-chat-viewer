@@ -4,7 +4,7 @@ export type ViewMode = 'flat' | 'by-project' | 'by-time' | 'search' | 'folder' |
 
 // ===== Sort System =====
 
-export type SortField = 'time' | 'path' | 'name' | 'messageCount' | 'agent' | 'size';
+export type SortField = 'created' | 'modified' | 'path' | 'name' | 'messageCount' | 'agent' | 'size';
 export type SortDirection = 'asc' | 'desc';
 
 /** 一级排序条件 */
@@ -37,6 +37,8 @@ export interface SessionSummary {
   cwd: string;
   filePath: string;
   providerName: string;
+  /** 文件修改时间（RFC 3339），用于按修改时间排序 */
+  fileMtime: string;
 }
 
 export interface SessionDetail {

@@ -3,6 +3,7 @@ import { Folder, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
 import type { Project, SessionSummary, SortConfig } from '../../types';
 import { multiSort } from '../../utils/sort';
 import { SessionItem } from '../sessions/SessionItem';
+import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import * as tauri from '../../utils/tauri';
 
 interface ProjectListProps {
@@ -24,6 +25,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   sortConfig,
   selectedProjectPath,
   selectedSessionPath,
+  isLoadingProject = false,
   onSelectProject,
   onSelectSession,
 }) => {
@@ -110,7 +112,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           case 'path':
             cmp = a.path.localeCompare(b.path);
             break;
-          case 'time':
+          case 'created':
+          case 'modified':
             cmp = a.lastActivity.localeCompare(b.lastActivity);
             break;
           case 'name':
@@ -187,9 +190,11 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
             {isExpanded && (
               <div className="ml-4 border-l-2 border-gray-100 pl-1">
-                {sortedSessions.length === 0 ? (
+                {isLoadingProject ? (
+                  <LoadingSkeleton rows={3} variant="list" />
+                ) : sortedSessions.length === 0 ? (
                   <p className="px-3 py-2 text-xs text-gray-400">
-                    加载中...
+                    暂无会话
                   </p>
                 ) : (
                   sortedSessions.map((session) => (

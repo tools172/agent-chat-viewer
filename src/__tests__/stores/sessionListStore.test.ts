@@ -33,7 +33,7 @@ describe('sessionListStore', () => {
     vi.clearAllMocks();
     useSessionListStore.setState({
       viewMode: 'flat',
-      sortConfig: [{ field: 'time', direction: 'desc' }],
+      sortConfig: [{ field: 'created', direction: 'desc' }],
       viewSortConfigs: {},
       allSessions: [],
       projects: [],
@@ -57,10 +57,10 @@ describe('sessionListStore', () => {
   describe('refresh', () => {
     it('应并行重载工作目录列表和全部会话', async () => {
       mockedListProjects.mockResolvedValue([
-        { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code' },
+        { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
       ]);
       mockedListAllSessions.mockResolvedValue([
-        { id: 's1', projectName: 'proj', projectPath: '/p', display: 'hi', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code' },
+        { id: 's1', projectName: 'proj', projectPath: '/p', display: 'hi', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code', fileMtime: '' },
       ]);
 
       await useSessionListStore.getState().refresh(mockSettings);
@@ -77,7 +77,7 @@ describe('sessionListStore', () => {
       mockedListProjects.mockResolvedValue([]);
       mockedListAllSessions.mockResolvedValue([]);
       mockedSearchSessions.mockResolvedValue([
-        { id: 's1', projectName: 'p', projectPath: '/p', display: 'hello world', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code' },
+        { id: 's1', projectName: 'p', projectPath: '/p', display: 'hello world', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code', fileMtime: '' },
       ]);
 
       await useSessionListStore.getState().refresh(mockSettings);
@@ -101,17 +101,17 @@ describe('sessionListStore', () => {
       useSessionListStore.setState({
         projectFilter: '/p',
         projects: [
-          { name: 'proj', path: '/p', sessionCount: 2, lastActivity: '', providerName: 'claude_code' },
+          { name: 'proj', path: '/p', sessionCount: 2, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
         ],
       });
 
       mockedListProjects.mockResolvedValue([
-        { name: 'proj', path: '/p', sessionCount: 2, lastActivity: '', providerName: 'claude_code' },
+        { name: 'proj', path: '/p', sessionCount: 2, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
       ]);
       mockedListAllSessions.mockResolvedValue([]);
       mockedListSessions.mockResolvedValue([
-        { id: 's1', projectName: 'proj', projectPath: '/p', display: 'a', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/a.jsonl', providerName: 'claude_code' },
-        { id: 's2', projectName: 'proj', projectPath: '/p', display: 'b', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/b.jsonl', providerName: 'claude_code' },
+        { id: 's1', projectName: 'proj', projectPath: '/p', display: 'a', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/a.jsonl', providerName: 'claude_code', fileMtime: '' },
+        { id: 's2', projectName: 'proj', projectPath: '/p', display: 'b', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/b.jsonl', providerName: 'claude_code', fileMtime: '' },
       ]);
 
       await useSessionListStore.getState().refresh(mockSettings);
@@ -143,12 +143,12 @@ describe('sessionListStore', () => {
         searchQuery: 'test',
         projectFilter: '/p',
         projects: [
-          { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code' },
+          { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
         ],
       });
 
       mockedListProjects.mockResolvedValue([
-        { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code' },
+        { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
       ]);
       mockedListAllSessions.mockResolvedValue([]);
       mockedSearchSessions.mockResolvedValue([]);
@@ -187,13 +187,13 @@ describe('sessionListStore', () => {
   it('设置视图模式会同时设置对应排序配置', () => {
     useSessionListStore.setState({
       viewSortConfigs: {
-        'by-time': [{ field: 'time', direction: 'asc' }],
+        'by-time': [{ field: 'created', direction: 'asc' }],
       },
     });
     useSessionListStore.getState().setViewMode('by-time');
     expect(useSessionListStore.getState().viewMode).toBe('by-time');
     expect(useSessionListStore.getState().sortConfig).toEqual([
-      { field: 'time', direction: 'asc' },
+      { field: 'created', direction: 'asc' },
     ]);
   });
 

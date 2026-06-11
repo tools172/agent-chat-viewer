@@ -120,6 +120,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     set({
       isLoadingProject: true,
       projectFilter: projectPath,
+      projectSessions: [],  // 清空旧数据，避免展开时闪现上一个项目的内容
       error: null,
     });
     try {

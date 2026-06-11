@@ -20,6 +20,8 @@ pub struct SessionSummary {
     pub file_path: String,
     /// Agent provider name (e.g. "claude_code", "openclaw")
     pub provider_name: String,
+    /// File modification time (RFC 3339), for sorting by last modified
+    pub file_mtime: String,
 }
 
 /// Full session detail with all events

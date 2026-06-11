@@ -20,6 +20,7 @@ function make(overrides: Partial<SessionSummary> = {}): SessionSummary {
     cwd: '/workspace/a',
     filePath: '/data/a/s.jsonl',
     providerName: 'claude_code',
+    fileMtime: '2026-06-01T00:00:00Z',
     ...overrides,
   };
 }
@@ -79,7 +80,8 @@ describe('multiSort', () => {
 
   const singleFieldExtractors: Record<SortField, (s: SessionSummary) => number | string> = {
     path:         (s) => s.projectPath,        // 新策略：projectPath 为主
-    time:         (s) => s.timestamp,
+    created:      (s) => s.timestamp,
+    modified:     (s) => s.fileMtime || s.timestamp,
     name:         (s) => s.display,
     messageCount: (s) => s.messageCount,
     agent:        (s) => s.providerName,
@@ -125,7 +127,7 @@ describe('multiSort', () => {
   it('多级：path ↑ + time ↓（同项目内最新优先）', () => {
     const cfg: SortConfig = [
       { field: 'path', direction: 'asc' },
-      { field: 'time', direction: 'desc' },
+      { field: 'created', direction: 'desc' },
     ];
     const r = multiSort(makeBaseSessions(), cfg);
     // /aaa 内部: b(Dec) > a(Jan)
@@ -147,7 +149,7 @@ describe('multiSort', () => {
   it('多级：messageCount ↓ + time ↓', () => {
     const cfg: SortConfig = [
       { field: 'messageCount', direction: 'desc' },
-      { field: 'time', direction: 'desc' },
+      { field: 'created', direction: 'desc' },
     ];
     const r = multiSort(makeBaseSessions(), cfg);
     // a(20) > y(15) > x(10) > b(5)
@@ -164,7 +166,7 @@ describe('multiSort', () => {
     const cfg: SortConfig = [
       { field: 'path', direction: 'asc' },
       { field: 'messageCount', direction: 'desc' },
-      { field: 'time', direction: 'desc' },
+      { field: 'created', direction: 'desc' },
     ];
     const r = multiSort(s, cfg);
     // /aaa 内: a2(20,Jul) vs a(20,Jan) → 同级消息数 → 按 time ↓: a2 在前
@@ -262,13 +264,13 @@ describe('multiSort', () => {
 
   it('单条会话直接返回', () => {
     const s = [make({ id: 'only' })];
-    const r = multiSort(s, [{ field: 'time', direction: 'desc' }]);
+    const r = multiSort(s, [{ field: 'created', direction: 'desc' }]);
     expect(r).toHaveLength(1);
     expect(r[0].id).toBe('only');
   });
 
   it('空数组返回空数组', () => {
-    const r = multiSort([], [{ field: 'time', direction: 'desc' }]);
+    const r = multiSort([], [{ field: 'created', direction: 'desc' }]);
     expect(r).toEqual([]);
   });
 
@@ -280,7 +282,7 @@ describe('multiSort', () => {
     const r = multiSort(s, [
       { field: 'path', direction: 'asc' },
       { field: 'messageCount', direction: 'desc' },
-      { field: 'time', direction: 'asc' },
+      { field: 'created', direction: 'asc' },
     ]);
     expect(r[0].id).toBe('X');
     expect(r[1].id).toBe('Y');
@@ -329,7 +331,8 @@ describe('multiSort', () => {
 
 describe('标签函数', () => {
   it('getFieldLabel 返回中文标签', () => {
-    expect(getFieldLabel('time')).toBe('按时间');
+    expect(getFieldLabel('created')).toBe('按创建时间');
+    expect(getFieldLabel('modified')).toBe('按修改时间');
     expect(getFieldLabel('path')).toBe('按路径');
     expect(getFieldLabel('name')).toBe('按名称');
     expect(getFieldLabel('messageCount')).toBe('按消息数');
@@ -338,8 +341,8 @@ describe('标签函数', () => {
   });
 
   it('getDirectionLabel 返回方向描述', () => {
-    expect(getDirectionLabel('time', 'desc')).toBe('最新优先');
-    expect(getDirectionLabel('time', 'asc')).toBe('最早优先');
+    expect(getDirectionLabel('created', 'desc')).toBe('最新优先');
+    expect(getDirectionLabel('created', 'asc')).toBe('最早优先');
     expect(getDirectionLabel('path', 'asc')).toBe('工作目录 A→Z');
     expect(getDirectionLabel('path', 'desc')).toBe('工作目录 Z→A');
     expect(getDirectionLabel('messageCount', 'desc')).toBe('最多优先');
@@ -347,7 +350,7 @@ describe('标签函数', () => {
   });
 
   it('getLevelLabel 返回摘要', () => {
-    expect(getLevelLabel({ field: 'time', direction: 'desc' })).toBe('按时间 ↓');
+    expect(getLevelLabel({ field: 'created', direction: 'desc' })).toBe('按创建时间 ↓');
     expect(getLevelLabel({ field: 'path', direction: 'asc' })).toBe('按路径 ↑');
   });
 });
