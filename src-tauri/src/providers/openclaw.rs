@@ -299,17 +299,22 @@ impl ChatProvider for OpenClawProvider {
         )
     }
 
-    /// OpenClaw stores sessions one level deeper: `<agent>/sessions/*.jsonl`
+    /// OpenClaw stores sessions one level deeper: `<agent>/sessions/*.jsonl`.
+    /// Also handles flat directories (e.g., when a sessions folder is added
+    /// directly as a watch directory and project_dir itself contains `.jsonl` files).
     fn enumerate_session_files(&self, project_dir: &Path) -> Vec<PathBuf> {
         let sessions_dir = project_dir.join("sessions");
+        let scan_dir = if sessions_dir.is_dir() {
+            sessions_dir
+        } else {
+            project_dir.to_path_buf()
+        };
         let mut files = Vec::new();
-        if sessions_dir.is_dir() {
-            if let Ok(entries) = std::fs::read_dir(&sessions_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_file() && self.is_session_file(&path) {
-                        files.push(path);
-                    }
+        if let Ok(entries) = std::fs::read_dir(&scan_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && self.is_session_file(&path) {
+                    files.push(path);
                 }
             }
         }
