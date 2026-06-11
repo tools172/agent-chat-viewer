@@ -1,33 +1,26 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use lazy_static::lazy_static;
-use regex::Regex;
-
 use crate::models::{ChatEvent, SessionDetail, SessionSummary};
 use crate::providers::base::ChatProvider;
 
-lazy_static! {
-    /// 匹配 OpenClaw 发送者元数据头：`Sender (untrusted metadata):` + JSON 代码块 + 时间戳行
-    static ref OPENCLAW_PREFIX_RE: Regex = Regex::new(
-        r"(?s)^Sender\s*\(untrusted metadata\):\s*\n```json\s*\n.*?\n```\s*\n\n\[[A-Z][a-z]{2}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s+[A-Z+0-9]+\]\s*"
-    ).unwrap();
-
-    /// 匹配 Claude Code VSCode 插件插入的 `<ide_selection>` 块（含内容）
-    static ref IDE_SELECTION_RE: Regex = Regex::new(
-        r"(?s)<ide_selection>.*?</ide_selection>\s*"
-    ).unwrap();
-}
-
-/// 清理会话显示文本：去除元数据前缀，提取实际对话内容
+/// 清理会话显示文本：去除元数据前缀，提取实际对话内容。
+/// 全部使用轻量字符串操作，无正则、无额外依赖。
 fn clean_display_text(text: &str, provider_name: &str) -> String {
     match provider_name {
         "openclaw" => {
             // 1) "Sender (untrusted metadata):" + JSON 代码块 + 时间戳行
-            if let Some(caps) = OPENCLAW_PREFIX_RE.find(text) {
-                let stripped = text[caps.end()..].trim().to_string();
-                if !stripped.is_empty() {
-                    return stripped;
+            //    格式: Sender (untrusted metadata):\n```json\n{...}\n```\n\n[Tue ... GMT+8] 实际消息
+            //    策略: 找到最后一个 "\n["（时间戳行开头），提取 "] " 之后的内容
+            if text.contains("Sender (untrusted metadata):") {
+                if let Some(ts_line) = text.rfind("\n[") {
+                    let after = &text[ts_line + 1..]; // skip \n, now at "[..."
+                    if let Some(ts_end) = after.find("] ") {
+                        let result = after[ts_end + 2..].trim().to_string();
+                        if !result.is_empty() {
+                            return result;
+                        }
+                    }
                 }
             }
             // 2) Subagent 格式: "[...] [Subagent Context] ...\n\n[Subagent Task]: 实际任务"
@@ -37,7 +30,7 @@ fn clean_display_text(text: &str, provider_name: &str) -> String {
                     return after;
                 }
             }
-            // 3) 兜底：如果只有时间戳行（没有 sender 元数据），也尝试去除
+            // 3) 兜底：只有时间戳行的情况 "[Tue ... GMT+8] 消息"
             if let Some(stripped) = text.strip_prefix(|c: char| c == '[') {
                 if let Some(idx) = stripped.find("] ") {
                     let after = stripped[idx + 2..].trim().to_string();
@@ -49,9 +42,13 @@ fn clean_display_text(text: &str, provider_name: &str) -> String {
             text.to_string()
         }
         "claude_code" => {
-            // 去除 <ide_selection>...</ide_selection> 块
-            // 注意：不兜底返回原文 — 纯元数据块返回空，由调用方跳过并取下一个 text block
-            IDE_SELECTION_RE.replace_all(text, "").trim().to_string()
+            // 去除 <ide_selection>...</ide_selection> 块（可能出现在开头）
+            // 循环处理多个 ide_selection 块
+            let mut result = text;
+            while let Some(end) = result.find("</ide_selection>") {
+                result = result[end + "</ide_selection>".len()..].trim_start();
+            }
+            result.to_string()
         }
         _ => text.to_string(),
     }
