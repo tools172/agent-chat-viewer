@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   List,
   Folder,
@@ -16,7 +16,11 @@ import { SearchPanel } from '../search/SearchPanel';
 import SortBar from '../filter/SortBar';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { LoadingBar } from '../common/LoadingBar';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { version } from '../../../package.json';
+
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 600;
 
 interface ViewDef {
   mode: ViewMode;
@@ -88,16 +92,67 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   onOpenSettings,
   onRefresh,
 }) => {
+  const store = useSettingsStore();
   const totalSessions =
     allSessions.length > 0
       ? allSessions.length
       : projects.reduce((s, p) => s + p.sessionCount, 0);
 
+  // ---- 拖拽调整宽度 ----
+  const [width, setWidth] = useState(sidebarWidth);
+  const draggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWRef = useRef(0);
+
+  // 同步外部 prop 变化（如设置面板滑块调整）
+  useEffect(() => {
+    if (!draggingRef.current) {
+      setWidth(sidebarWidth);
+    }
+  }, [sidebarWidth]);
+
+  const onDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    draggingRef.current = true;
+    startXRef.current = e.clientX;
+    startWRef.current = width;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [width]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!draggingRef.current) return;
+      const delta = e.clientX - startXRef.current; // 右拖 = 变宽
+      const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWRef.current + delta));
+      setWidth(next);
+    };
+    const onUp = () => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      store.updateSidebarWidth(width);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [width, store]);
+
   return (
     <div
-      className="flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full"
-      style={{ width: `${sidebarWidth}px` }}
+      className="flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full relative"
+      style={{ width: `${width}px` }}
     >
+      {/* 拖拽手柄（右侧边缘） */}
+      <div
+        onMouseDown={onDragStart}
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400/50 transition-colors z-10"
+        title="拖拽调整宽度"
+      />
       {/* 重载进度条 */}
       <LoadingBar
         visible={
