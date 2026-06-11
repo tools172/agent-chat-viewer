@@ -42,6 +42,8 @@ describe('SessionItem', () => {
     cwd: '/test',
     filePath: '/test/session.jsonl',
     providerName: 'claude_code',
+    fileMtime: '2026-06-09T10:00:00Z',
+    clientType: 'cli',
   };
 
   it('渲染会话标题', () => {

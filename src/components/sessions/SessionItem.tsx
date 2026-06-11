@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder } from 'lucide-react';
+import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder, Terminal, Monitor, Globe } from 'lucide-react';
 import { relativeTime } from '../../utils/time';
 import { getProviderLabel, getProviderColor } from '../../utils/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -15,6 +15,20 @@ interface SessionItemProps {
   onClick: (path: string, providerName: string) => void;
 }
 
+/** 根据客户端类型返回对应的图标和提示 */
+function getClientIcon(clientType: string): { icon: React.ReactNode; title: string } {
+  switch (clientType) {
+    case 'vscode':
+      return { icon: <Monitor className="h-4 w-4" />, title: 'VSCode 插件' };
+    case 'cli':
+      return { icon: <Terminal className="h-4 w-4" />, title: '命令行' };
+    case 'web':
+      return { icon: <Globe className="h-4 w-4" />, title: 'Web UI' };
+    default:
+      return { icon: <MessageSquare className="h-4 w-4" />, title: '' };
+  }
+}
+
 export const SessionItem: React.FC<SessionItemProps> = ({
   session,
   isSelected,
@@ -28,6 +42,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   const [copiedPath, setCopiedPath] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const clientIcon = getClientIcon(session.clientType || '');
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -115,11 +130,14 @@ export const SessionItem: React.FC<SessionItemProps> = ({
         }`}
       >
         <div className="flex items-start gap-2.5">
-          <MessageSquare
-            className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+          <span
+            title={clientIcon.title || undefined}
+            className={`mt-0.5 flex-shrink-0 ${
               isSelected ? 'text-primary-500' : 'text-gray-400'
             }`}
-          />
+          >
+            {clientIcon.icon}
+          </span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate" title={session.display}>
               {highlight

@@ -39,6 +39,8 @@ export interface SessionSummary {
   providerName: string;
   /** 文件修改时间（RFC 3339），用于按修改时间排序 */
   fileMtime: string;
+  /** 客户端环境: "vscode" | "cli" | "web" | "" */
+  clientType: string;
 }
 
 export interface SessionDetail {

@@ -1,8 +1,77 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use lazy_static::lazy_static;
+use regex::Regex;
+
 use crate::models::{ChatEvent, SessionDetail, SessionSummary};
 use crate::providers::base::ChatProvider;
+
+lazy_static! {
+    /// 匹配 OpenClaw 发送者元数据头：`Sender (untrusted metadata):` + JSON 代码块 + 时间戳行
+    static ref OPENCLAW_PREFIX_RE: Regex = Regex::new(
+        r"(?s)^Sender\s*\(untrusted metadata\):\s*\n```json\s*\n.*?\n```\s*\n\n\[[A-Z][a-z]{2}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s+[A-Z+0-9]+\]\s*"
+    ).unwrap();
+
+    /// 匹配 Claude Code VSCode 插件插入的 `<ide_selection>` 块（含内容）
+    static ref IDE_SELECTION_RE: Regex = Regex::new(
+        r"(?s)<ide_selection>.*?</ide_selection>\s*"
+    ).unwrap();
+}
+
+/// 清理会话显示文本：去除元数据前缀，提取实际对话内容
+fn clean_display_text(text: &str, provider_name: &str) -> String {
+    match provider_name {
+        "openclaw" => {
+            if let Some(caps) = OPENCLAW_PREFIX_RE.find(text) {
+                let stripped = text[caps.end()..].trim().to_string();
+                if !stripped.is_empty() {
+                    return stripped;
+                }
+            }
+            // 兜底：如果只有时间戳行（没有 sender 元数据），也尝试去除
+            if let Some(stripped) = text.strip_prefix(|c: char| c == '[') {
+                if let Some(idx) = stripped.find("] ") {
+                    let after = stripped[idx + 2..].trim().to_string();
+                    if !after.is_empty() {
+                        return after;
+                    }
+                }
+            }
+            text.to_string()
+        }
+        "claude_code" => {
+            let cleaned = IDE_SELECTION_RE.replace_all(text, "").trim().to_string();
+            if !cleaned.is_empty() {
+                cleaned
+            } else {
+                text.to_string()
+            }
+        }
+        _ => text.to_string(),
+    }
+}
+
+/// 从首条用户消息的原始文本中检测客户端类型（轻量，仅字符串查找）
+fn detect_client_from_text(text: &str, provider_name: &str) -> &'static str {
+    match provider_name {
+        "openclaw" => {
+            if text.contains("Sender (untrusted metadata):") {
+                "web"
+            } else {
+                "cli"
+            }
+        }
+        "claude_code" => {
+            if text.contains("<ide_selection>") {
+                "vscode"
+            } else {
+                "cli"
+            }
+        }
+        _ => "",
+    }
+}
 
 /// Parse a JSONL session file and return all parsed events
 pub fn parse_session_file(
@@ -81,6 +150,8 @@ pub fn create_session_summary(
     let mut timestamp = String::new();
     let mut message_count: u32 = 0;
     let mut cwd = String::new();
+    let mut client_type = String::new();
+    let mut client_detected = false;
 
     for line in content.lines() {
         let trimmed = line.trim();
@@ -96,8 +167,6 @@ pub fn create_session_summary(
 
             // Try to get cwd from any event
             if cwd.is_empty() {
-                // We can't easily access raw JSON fields from ChatEvent
-                // So we try parsing the raw JSON
                 if let Ok(value) =
                     serde_json::from_str::<serde_json::Value>(trimmed)
                 {
@@ -115,13 +184,19 @@ pub fn create_session_summary(
                 _ => {}
             }
 
-            // Find first user text message for display title
+            // Find first user text message for display title + client type detection
             if display == "(Empty session)" {
                 if let crate::models::EventType::User = event.event_type {
                     for block in &event.content {
                         if let crate::models::ContentBlock::Text { text } = block {
-                            display = text.chars().take(80).collect();
-                            if text.len() > 80 {
+                            // 从首条用户消息中检测客户端环境（轻量字符串查找，不需要全文扫描）
+                            if !client_detected {
+                                client_type = detect_client_from_text(text, provider_name).to_string();
+                                client_detected = true;
+                            }
+                            let cleaned = clean_display_text(text, provider_name);
+                            display = cleaned.chars().take(80).collect();
+                            if cleaned.len() > 80 {
                                 display.push_str("...");
                             }
                             break;
@@ -144,6 +219,7 @@ pub fn create_session_summary(
         file_path: file_path.to_string_lossy().to_string(),
         provider_name: provider_name.to_string(),
         file_mtime,
+        client_type,
     })
 }
 
@@ -152,6 +228,91 @@ mod tests {
     use super::*;
     use crate::providers::claude_code::ClaudeCodeProvider;
     use std::io::Write;
+
+    // ===== clean_display_text 测试 =====
+
+    #[test]
+    fn test_clean_openclaw_display_with_sender_metadata() {
+        let text = "Sender (untrusted metadata):\n```json\n{\"label\": \"test\"}\n```\n\n[Tue 2026-06-09 11:21 GMT+8] 如何配置子agent？";
+        let cleaned = clean_display_text(text, "openclaw");
+        assert_eq!(cleaned, "如何配置子agent？");
+    }
+
+    #[test]
+    fn test_clean_openclaw_display_with_web_ui_sender() {
+        let text = "Sender (untrusted metadata):\n```json\n{\"label\": \"openclaw-control-ui\", \"id\": \"openclaw-control-ui\"}\n```\n\n[Thu 2026-06-11 18:06 GMT+8] 请从知网查找5篇文献";
+        let cleaned = clean_display_text(text, "openclaw");
+        assert_eq!(cleaned, "请从知网查找5篇文献");
+    }
+
+    #[test]
+    fn test_clean_openclaw_display_timestamp_only() {
+        // 只有时间戳行，没有 sender 元数据
+        let text = "[Tue 2026-06-09 11:21 GMT+8] 如何配置子agent？";
+        let cleaned = clean_display_text(text, "openclaw");
+        assert_eq!(cleaned, "如何配置子agent？");
+    }
+
+    #[test]
+    fn test_clean_openclaw_display_no_prefix() {
+        // 普通消息，无需清理
+        let text = "直接的问题文本";
+        let cleaned = clean_display_text(text, "openclaw");
+        assert_eq!(cleaned, "直接的问题文本");
+    }
+
+    #[test]
+    fn test_clean_claude_code_display_with_ide_selection() {
+        let text = "<ide_selection>The user selected lines 13 to 13 from file.ts:\nTomlConfig\n\nThis may or may not be related to the current task.</ide_selection>\n现在我在config.toml文件中增加local_frontend_res = 1";
+        let cleaned = clean_display_text(text, "claude_code");
+        assert_eq!(cleaned, "现在我在config.toml文件中增加local_frontend_res = 1");
+    }
+
+    #[test]
+    fn test_clean_claude_code_display_no_ide_selection() {
+        let text = "这是一条普通的消息";
+        let cleaned = clean_display_text(text, "claude_code");
+        assert_eq!(cleaned, "这是一条普通的消息");
+    }
+
+    #[test]
+    fn test_clean_claude_code_display_only_ide_selection() {
+        // 兜底：ide_selection 后为空，返回原文
+        let text = "<ide_selection>only selection</ide_selection>";
+        let cleaned = clean_display_text(text, "claude_code");
+        assert_eq!(cleaned, text); // 清理后为空，兜底保留原文
+    }
+
+    // ===== detect_client_from_text 测试 =====
+
+    #[test]
+    fn test_detect_openclaw_web_client() {
+        let content = "Sender (untrusted metadata):\n```json\n{}\n```\n\n[Tue 2026-06-09 11:21 GMT+8] test";
+        assert_eq!(detect_client_from_text(content, "openclaw"), "web");
+    }
+
+    #[test]
+    fn test_detect_openclaw_cli_client() {
+        let content = "普通对话内容，没有 sender 元数据";
+        assert_eq!(detect_client_from_text(content, "openclaw"), "cli");
+    }
+
+    #[test]
+    fn test_detect_claude_code_vscode_client() {
+        let content = "<ide_selection>selected text</ide_selection>\n用户消息";
+        assert_eq!(detect_client_from_text(content, "claude_code"), "vscode");
+    }
+
+    #[test]
+    fn test_detect_claude_code_cli_client() {
+        let content = "用户在命令行中的消息";
+        assert_eq!(detect_client_from_text(content, "claude_code"), "cli");
+    }
+
+    #[test]
+    fn test_detect_unknown_provider() {
+        assert_eq!(detect_client_from_text("anything", "unknown"), "");
+    }
 
     fn create_temp_jsonl(content: &str) -> (tempfile::TempDir, std::path::PathBuf) {
         let dir = tempfile::tempdir().unwrap();
