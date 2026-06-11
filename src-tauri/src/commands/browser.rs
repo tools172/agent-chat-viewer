@@ -30,9 +30,12 @@ pub(crate) fn collect_base_paths(
         }
     }
 
-    // 自定义监控目录：始终扫描，provider 由内容检测决定
-    for dir in &settings.watch_directories {
-        let raw = crate::utils::path::normalize_path(dir);
+    // 自定义监控目录：始终扫描，provider 由内容检测决定（禁用的目录跳过）
+    for wd in &settings.watch_directories {
+        if !wd.enabled {
+            continue;
+        }
+        let raw = crate::utils::path::normalize_path(&wd.path);
         if raw.exists() {
             paths.push((String::new(), raw));
         }
@@ -123,6 +126,7 @@ pub(crate) fn detect_provider_from_file(
 fn scan_projects(
     base_paths: &[(String, PathBuf)],
     registry: &ProviderRegistry,
+    settings: &AppSettings,
 ) -> Vec<Project> {
     let mut projects: HashMap<String, Project> = HashMap::new();
 
@@ -139,6 +143,10 @@ fn scan_projects(
                     .first()
                     .and_then(|f| detect_provider_from_file(f, registry))
                     .unwrap_or_else(|| "claude_code".to_string());
+                // 内容检测出的 provider 必须在设置中已启用
+                if !settings.is_provider_enabled(&detected_provider) {
+                    continue;
+                }
                 let project_key = format!("{}:{}", detected_provider, project_name);
                 let session_count = files.len() as u32;
                 let mut last_activity = String::new();
@@ -233,7 +241,7 @@ pub async fn list_projects(
 ) -> Result<Vec<Project>, String> {
     let base_paths = collect_base_paths(&settings, &registry);
     let reg = registry.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || scan_projects(&base_paths, &reg))
+    tauri::async_runtime::spawn_blocking(move || scan_projects(&base_paths, &reg, &settings))
         .await
         .map_err(|e| format!("扫描项目失败: {}", e))
 }
@@ -287,6 +295,7 @@ pub async fn list_all_sessions(
 ) -> Result<Vec<SessionSummary>, String> {
     let base_paths = collect_base_paths(&settings, &registry);
     let reg = registry.inner().clone();
+    let provider_enabled = settings.provider_enabled.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
         let mut all = Vec::new();
@@ -305,6 +314,14 @@ pub async fn list_all_sessions(
                         .first()
                         .and_then(|f| detect_provider_from_file(f, &reg))
                         .unwrap_or_else(|| "claude_code".to_string());
+                    // 内容检测出的 provider 必须在设置中已启用
+                    if !provider_enabled
+                        .get(&detected_provider)
+                        .copied()
+                        .unwrap_or(true)
+                    {
+                        continue;
+                    }
                     let provider = match reg.get(&detected_provider) {
                         Some(p) => p.clone(),
                         None => continue,
@@ -401,6 +418,7 @@ pub async fn search_sessions(
     let base_paths = collect_base_paths(&settings, &registry);
     let query_lower = query.to_lowercase();
     let reg = registry.inner().clone();
+    let provider_enabled = settings.provider_enabled.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
         let mut results = Vec::new();
@@ -419,6 +437,14 @@ pub async fn search_sessions(
                         .first()
                         .and_then(|f| detect_provider_from_file(f, &reg))
                         .unwrap_or_else(|| "claude_code".to_string());
+                    // 内容检测出的 provider 必须在设置中已启用
+                    if !provider_enabled
+                        .get(&detected_provider)
+                        .copied()
+                        .unwrap_or(true)
+                    {
+                        continue;
+                    }
                     let provider = match reg.get(&detected_provider) {
                         Some(p) => p.clone(),
                         None => continue,
@@ -637,7 +663,7 @@ mod tests {
 
     #[test]
     fn test_collect_base_paths_includes_custom_dirs_regardless_of_provider_enabled() {
-        use crate::models::AppSettings;
+        use crate::models::{AppSettings, WatchDirectory};
         use std::collections::HashMap;
 
         let registry = crate::providers::ProviderRegistry::new();
@@ -650,7 +676,10 @@ mod tests {
         let watch_dir = tmp.path().to_string_lossy().to_string();
 
         let settings = AppSettings {
-            watch_directories: vec![watch_dir],
+            watch_directories: vec![WatchDirectory {
+                path: watch_dir,
+                enabled: true,
+            }],
             provider_enabled,
             ..AppSettings::default()
         };
@@ -662,6 +691,37 @@ mod tests {
         assert!(
             has_custom,
             "自定义监控目录不应受 provider_enabled 限制"
+        );
+    }
+
+    #[test]
+    fn test_collect_base_paths_skips_disabled_directories() {
+        use crate::models::{AppSettings, WatchDirectory};
+        use std::collections::HashMap;
+
+        let registry = crate::providers::ProviderRegistry::new();
+
+        let mut provider_enabled = HashMap::new();
+        provider_enabled.insert("claude_code".to_string(), true);
+
+        let tmp = tempfile::tempdir().unwrap();
+        let watch_dir = tmp.path().to_string_lossy().to_string();
+
+        let settings = AppSettings {
+            watch_directories: vec![WatchDirectory {
+                path: watch_dir,
+                enabled: false,
+            }],
+            provider_enabled,
+            ..AppSettings::default()
+        };
+
+        let paths = collect_base_paths(&settings, &registry);
+
+        // 禁用的目录不应出现在扫描路径中
+        assert!(
+            paths.iter().all(|(name, _)| !name.is_empty()),
+            "禁用的自定义目录应被跳过"
         );
     }
 }

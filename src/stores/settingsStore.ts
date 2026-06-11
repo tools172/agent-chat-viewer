@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AppSettings, FilterConfig } from '../types';
+import type { AppSettings, FilterConfig, WatchDirectory } from '../types';
 import * as tauri from '../utils/tauri';
 
 interface SettingsState {
@@ -16,6 +16,7 @@ interface SettingsState {
   updateFilter: (filter: Partial<FilterConfig>) => void;
   addWatchDirectory: (path: string) => void;
   removeWatchDirectory: (path: string) => void;
+  toggleWatchDirectory: (path: string) => void;
   toggleProvider: (name: string, enabled: boolean) => void;
   updateSearchColors: (colors: Partial<import('../types').SearchColors>) => void;
   updateSidebarWidth: (width: number) => void;
@@ -99,10 +100,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   addWatchDirectory: (path) => {
     const { settings } = get();
-    if (!settings.watchDirectories.includes(path)) {
+    if (!settings.watchDirectories.some((d) => d.path === path)) {
+      const entry: WatchDirectory = { path, enabled: true };
       const newSettings = {
         ...settings,
-        watchDirectories: [...settings.watchDirectories, path],
+        watchDirectories: [...settings.watchDirectories, entry],
       };
       set({ settings: newSettings });
     }
@@ -112,7 +114,18 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const { settings } = get();
     const newSettings = {
       ...settings,
-      watchDirectories: settings.watchDirectories.filter((d) => d !== path),
+      watchDirectories: settings.watchDirectories.filter((d) => d.path !== path),
+    };
+    set({ settings: newSettings });
+  },
+
+  toggleWatchDirectory: (path) => {
+    const { settings } = get();
+    const newSettings = {
+      ...settings,
+      watchDirectories: settings.watchDirectories.map((d) =>
+        d.path === path ? { ...d, enabled: !d.enabled } : d,
+      ),
     };
     set({ settings: newSettings });
   },

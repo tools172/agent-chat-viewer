@@ -15,7 +15,7 @@ vi.mock('../../utils/tauri', () => ({
 }));
 
 const mockSettings = {
-  watchDirectories: ['/test/dir'],
+  watchDirectories: [{ path: '/test/dir', enabled: true }],
   defaultFilter: {
     showThinking: true,
     showToolCalls: true,

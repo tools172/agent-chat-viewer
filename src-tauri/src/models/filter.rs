@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::de;
+use serde::{Deserialize, Deserializer, Serialize};
 
 /// Configuration for filtering events in a session view
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,12 +56,25 @@ impl Default for SearchColors {
     }
 }
 
+/// A monitored directory entry with its enabled state
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WatchDirectory {
+    pub path: String,
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+}
+
+fn default_enabled() -> bool {
+    true
+}
+
 /// Application settings persisted to disk
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
-    #[serde(default)]
-    pub watch_directories: Vec<String>,
+    #[serde(default, deserialize_with = "deserialize_watch_dirs")]
+    pub watch_directories: Vec<WatchDirectory>,
     #[serde(default)]
     pub default_filter: FilterConfig,
     #[serde(default)]
@@ -97,5 +111,50 @@ impl Default for AppSettings {
             sidebar_width: 320,
             navigator_width: 256,
         }
+    }
+}
+
+/// 自定义反序列化：兼容旧格式 `["path1", "path2"]` 和新格式
+/// `[{"path": "...", "enabled": true}]`
+fn deserialize_watch_dirs<'de, D>(d: D) -> Result<Vec<WatchDirectory>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let raw: Vec<serde_json::Value> = Vec::deserialize(d)?;
+    let mut dirs = Vec::new();
+    for item in raw {
+        match item {
+            // 旧格式：纯字符串 → 默认启用
+            serde_json::Value::String(path) => {
+                dirs.push(WatchDirectory {
+                    path,
+                    enabled: true,
+                });
+            }
+            // 新格式：对象
+            serde_json::Value::Object(_) => {
+                let wd: WatchDirectory = serde_json::from_value(item)
+                    .map_err(|e| de::Error::custom(format!("invalid watch dir: {}", e)))?;
+                dirs.push(wd);
+            }
+            other => {
+                return Err(de::Error::custom(format!(
+                    "expected string or object for watch dir, got {}",
+                    other
+                )));
+            }
+        }
+    }
+    Ok(dirs)
+}
+
+impl AppSettings {
+    /// 检查指定 provider 是否已启用。
+    /// 未在配置中的 provider 默认视为启用（向后兼容）。
+    pub fn is_provider_enabled(&self, name: &str) -> bool {
+        self.provider_enabled
+            .get(name)
+            .copied()
+            .unwrap_or(true)
     }
 }

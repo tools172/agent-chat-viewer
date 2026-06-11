@@ -4,7 +4,7 @@ import { SettingsPanel } from '../../components/settings/SettingsPanel';
 
 const mockStore = {
   settings: {
-    watchDirectories: ['/test/dir'],
+    watchDirectories: [{ path: '/test/dir', enabled: true }],
     defaultFilter: {
       showThinking: false,
       showToolCalls: true,

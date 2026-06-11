@@ -98,8 +98,13 @@ export const DEFAULT_SEARCH_COLORS: SearchColors = {
   find: '#fed7aa',
 };
 
+export interface WatchDirectory {
+  path: string;
+  enabled: boolean;
+}
+
 export interface AppSettings {
-  watchDirectories: string[];
+  watchDirectories: WatchDirectory[];
   defaultFilter: FilterConfig;
   providerEnabled: Record<string, boolean>;
   searchColors: SearchColors;

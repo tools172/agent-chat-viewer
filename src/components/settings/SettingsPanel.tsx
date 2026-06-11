@@ -47,7 +47,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
 
   const handleAddDirectory = () => {
     const trimmed = newDir.trim();
-    if (trimmed && !settings.watchDirectories.includes(trimmed)) {
+    if (trimmed && !settings.watchDirectories.some((d) => d.path === trimmed)) {
       store.addWatchDirectory(trimmed);
       setNewDir('');
     }
@@ -119,26 +119,40 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               )}
               {settings.watchDirectories.map((dir) => (
                 <div
-                  key={dir}
+                  key={dir.path}
                   className="flex items-center gap-1 px-2 py-1.5 bg-gray-50 border rounded-lg group"
-                  title={dir}
+                  title={dir.path}
                 >
-                  <span className="flex-1 text-xs text-gray-600 truncate">
-                    {dir}
+                  {/* 启用/禁用开关 */}
+                  <button
+                    onClick={() => store.toggleWatchDirectory(dir.path)}
+                    className={`flex-shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${
+                      dir.enabled
+                        ? 'bg-green-500 border-green-500'
+                        : 'bg-gray-300 border-gray-300'
+                    }`}
+                    title={dir.enabled ? '已启用，点击禁用' : '已禁用，点击启用'}
+                  />
+                  <span
+                    className={`flex-1 text-xs truncate ${
+                      dir.enabled ? 'text-gray-600' : 'text-gray-400 line-through'
+                    }`}
+                  >
+                    {dir.path}
                   </span>
                   <button
-                    onClick={() => handleCopyPath(dir)}
+                    onClick={() => handleCopyPath(dir.path)}
                     className="p-0.5 hover:bg-blue-100 rounded text-gray-400 hover:text-blue-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     title="复制路径"
                   >
-                    {copiedPath === dir ? (
+                    {copiedPath === dir.path ? (
                       <Check className="h-3 w-3 text-green-500" />
                     ) : (
                       <Copy className="h-3 w-3" />
                     )}
                   </button>
                   <button
-                    onClick={() => handleRemoveDirectory(dir)}
+                    onClick={() => handleRemoveDirectory(dir.path)}
                     className="p-0.5 hover:bg-red-100 rounded text-gray-400 hover:text-red-600 flex-shrink-0"
                     title="移除"
                   >

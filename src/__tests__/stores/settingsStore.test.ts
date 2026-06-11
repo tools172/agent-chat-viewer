@@ -41,7 +41,7 @@ describe('settingsStore', () => {
   it('should add watch directory', () => {
     useSettingsStore.getState().addWatchDirectory('/test/path');
     const settings = useSettingsStore.getState().settings;
-    expect(settings.watchDirectories).toContain('/test/path');
+    expect(settings.watchDirectories.some((d) => d.path === '/test/path')).toBe(true);
   });
 
   it('should not add duplicate watch directory', () => {
@@ -55,7 +55,19 @@ describe('settingsStore', () => {
     useSettingsStore.getState().addWatchDirectory('/test/path');
     useSettingsStore.getState().removeWatchDirectory('/test/path');
     const settings = useSettingsStore.getState().settings;
-    expect(settings.watchDirectories).not.toContain('/test/path');
+    expect(settings.watchDirectories.some((d) => d.path === '/test/path')).toBe(false);
+  });
+
+  it('should toggle watch directory enabled state', () => {
+    useSettingsStore.getState().addWatchDirectory('/test/path');
+    useSettingsStore.getState().toggleWatchDirectory('/test/path');
+    const settings = useSettingsStore.getState().settings;
+    const dir = settings.watchDirectories.find((d) => d.path === '/test/path');
+    expect(dir?.enabled).toBe(false);
+    // toggle back
+    useSettingsStore.getState().toggleWatchDirectory('/test/path');
+    const dir2 = useSettingsStore.getState().settings.watchDirectories.find((d) => d.path === '/test/path');
+    expect(dir2?.enabled).toBe(true);
   });
 
   it('should toggle provider', () => {
