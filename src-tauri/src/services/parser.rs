@@ -66,6 +66,8 @@ fn detect_client_from_text(text: &str, provider_name: &str) -> &'static str {
         "openclaw" => {
             if text.contains("Sender (untrusted metadata):") {
                 "web"
+            } else if text.contains("[Subagent Task]:") || text.contains("[Subagent Context]") {
+                "subagent"
             } else {
                 "cli"
             }
@@ -310,6 +312,12 @@ mod tests {
     fn test_detect_openclaw_cli_client() {
         let content = "普通对话内容，没有 sender 元数据";
         assert_eq!(detect_client_from_text(content, "openclaw"), "cli");
+    }
+
+    #[test]
+    fn test_detect_openclaw_subagent_client() {
+        let content = "[Mon 2026-06-08 20:45 GMT+8] [Subagent Context] You are running as a subagent (depth 1/1).\n\n[Subagent Task]: 请检索文献";
+        assert_eq!(detect_client_from_text(content, "openclaw"), "subagent");
     }
 
     #[test]

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder, Terminal, Monitor, Globe } from 'lucide-react';
+import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder } from 'lucide-react';
 import { relativeTime } from '../../utils/time';
 import { getProviderLabel, getProviderColor } from '../../utils/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -15,17 +15,17 @@ interface SessionItemProps {
   onClick: (path: string, providerName: string) => void;
 }
 
-/** 根据客户端类型返回对应的图标和提示 */
-function getClientIcon(clientType: string): { icon: React.ReactNode; title: string } {
+/** 返回客户端环境标签（CLI 不显示，属于默认） */
+function getClientBadge(clientType: string): { label: string; color: string } | null {
   switch (clientType) {
     case 'vscode':
-      return { icon: <Monitor className="h-4 w-4" />, title: 'VSCode 插件' };
-    case 'cli':
-      return { icon: <Terminal className="h-4 w-4" />, title: '命令行' };
+      return { label: 'VSCode', color: 'bg-blue-100 text-blue-600 border-blue-300' };
     case 'web':
-      return { icon: <Globe className="h-4 w-4" />, title: 'Web UI' };
+      return { label: 'Web', color: 'bg-emerald-100 text-emerald-600 border-emerald-300' };
+    case 'subagent':
+      return { label: 'Sub', color: 'bg-amber-100 text-amber-600 border-amber-300' };
     default:
-      return { icon: <MessageSquare className="h-4 w-4" />, title: '' };
+      return null; // CLI — 不显示，最普通的情况
   }
 }
 
@@ -42,7 +42,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   const [copiedPath, setCopiedPath] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const clientIcon = getClientIcon(session.clientType || '');
+  const clientBadge = getClientBadge(session.clientType || '');
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -130,14 +130,11 @@ export const SessionItem: React.FC<SessionItemProps> = ({
         }`}
       >
         <div className="flex items-start gap-2.5">
-          <span
-            title={clientIcon.title || undefined}
-            className={`mt-0.5 flex-shrink-0 ${
+          <MessageSquare
+            className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
               isSelected ? 'text-primary-500' : 'text-gray-400'
             }`}
-          >
-            {clientIcon.icon}
-          </span>
+          />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate" title={session.display}>
               {highlight
@@ -158,6 +155,13 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                   className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
                 >
                   {getProviderLabel(session.providerName)}
+                </span>
+              )}
+              {clientBadge && (
+                <span
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${clientBadge.color}`}
+                >
+                  {clientBadge.label}
                 </span>
               )}
             </div>
