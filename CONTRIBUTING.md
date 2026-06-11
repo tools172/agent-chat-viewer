@@ -14,7 +14,7 @@
 ```bash
 # 克隆仓库
 git clone <repo-url>
-cd agent-chat-viewer
+cd agent_chat_viewer
 
 # 安装前端依赖
 pnpm install

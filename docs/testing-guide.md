@@ -32,12 +32,13 @@ cargo test --test integration_test  # 仅集成测试
 
 ```
 src/__tests__/
-├── components/                  # 组件测试（7 个文件）
+├── components/                  # 组件测试（8 个文件）
 │   ├── FilterBar.test.tsx       # 过滤栏按钮渲染与交互
 │   ├── SettingsPanel.test.tsx   # 设置面板功能
 │   ├── TurnNavigator.test.tsx   # 轮次导航、滚动定位
 │   ├── EventCard.test.tsx       # 事件卡片、高亮渲染
 │   ├── SessionItem.test.tsx     # 会话列表项
+│   ├── ProjectList.test.tsx     # 工作目录列表与排序
 │   ├── MarkdownRenderer.test.tsx # Markdown 渲染
 │   └── EmptyState.test.tsx      # 空状态组件
 │
@@ -51,9 +52,10 @@ src/__tests__/
 │   ├── highlight.integration.test.ts  # 高亮集成测试
 │   └── sort.test.ts             # 多级排序
 │
-└── stores/                      # 状态管理测试（2 个文件）
+└── stores/                      # 状态管理测试（3 个文件）
     ├── settingsStore.test.ts    # 设置存储
-    └── sessionStore.test.ts     # 会话存储
+    ├── sessionStore.test.ts     # 会话存储
+    └── sessionListStore.test.ts # 会话列表存储
 ```
 
 ### 测试类型说明

@@ -5,7 +5,7 @@
 ## ✨ 功能
 
 ### 会话浏览
-- 📁 **文件夹浏览** — 按项目/文件夹浏览所有聊天记录
+- 📁 **文件夹浏览** — 按工作目录/文件夹浏览所有聊天记录
 - 📅 **时间线视图** — 按时间分组查看会话
 - 🔍 **全文搜索** — 跨所有会话搜索关键词，支持高亮
 - 📊 **多重排序** — 支持按时间、路径、名称、消息数、Agent、文件大小排序
@@ -37,12 +37,12 @@
 
 | 术语 | 是什么 | 例子 |
 |---|---|---|
-| **项目 (Project)** | 一个存放聊天记录的**文件夹**，通常在设置里配置监控目录后由应用自动发现。一个项目 = 一次 Agent 任务的根目录。 | `~/claude-projects/my-website/` |
-| **会话 (Session)** | 项目文件夹里的一个 `.jsonl` 文件，记录了一次完整的对话。 | `agent-2026-06-11.jsonl` |
+| **工作目录** | 用户执行 Agent 命令时的**当前目录**，即 Agent 实际工作所在的目录。应用左侧栏的文件夹项按此目录分组展示。 | `D:\my-project` |
+| **会话 (Session)** | 一次完整的 Agent 对话。聊天记录以 `.jsonl` 文件保存在用户目录的监控目录下（如 `.claude\projects\`），由应用自动发现和解析。 | `C:\Users\xxx\.claude\projects\D--my-project\abc123.jsonl` |
 | **提供者 (Provider)** | 解析不同 Agent 聊天格式的**适配器**。不同 Agent（Claude Code、OpenClaw 等）写入的文件格式不同，Provider 负责统一解析。 | `claude_code`、`openclaw` |
-| **刷新 🔄** | 重新从磁盘扫描所有数据源：**项目列表**（项目名称、会话数量等元信息）和**全部会话列表**（所有 `.jsonl` 文件的摘要）。如果当前在搜索视图且有活跃关键词，还会重新执行搜索；如果选中了某个项目，也会重新加载该项目的会话列表。 | 点击侧边栏顶部的刷新按钮 |
+| **刷新 🔄** | 重新从磁盘扫描所有数据源：**工作目录列表**（目录名称、会话数量等元信息）和**全部会话列表**（所有 `.jsonl` 文件的摘要）。如果当前在搜索视图且有活跃关键词，还会重新执行搜索；选中工作目录后也会重新加载该目录的会话列表。 | 点击侧边栏顶部的刷新按钮 |
 
-> 💡 **简单说**：「项目」就是文件夹，「会话」就是文件，「刷新」就是重新扫描磁盘确保列表是最新的。
+> 💡 **简单说**：「工作目录」就是 Agent 干活的地方，「会话」就是对话记录文件，「刷新」就是重新扫描磁盘确保列表最新。
 
 ## 🛠 技术栈
 
@@ -60,7 +60,7 @@
 
 - [Rust](https://www.rust-lang.org/) (stable)
 - [Node.js](https://nodejs.org/) >= 18
-- [pnpm](https://pnpm.io/) >= 8
+- [pnpm](https://pnpm.io/) >= 9
 - Windows: Microsoft Visual Studio C++ Build Tools
 - macOS: Xcode Command Line Tools
 - Linux: `libwebkit2gtk-4.1-dev` 等依赖
@@ -108,7 +108,7 @@ pnpm tauri build
 ├── src/                    # React 前端代码
 │   ├── components/         # UI 组件
 │   │   ├── layout/         # 布局组件 (SessionNavigator, MainLayout)
-│   │   ├── projects/       # 项目列表
+│   │   ├── projects/       # 工作目录列表
 │   │   ├── sessions/       # 会话列表、时间线
 │   │   ├── conversation/   # 对话视图、消息渲染
 │   │   ├── filter/         # 过滤器

@@ -61,7 +61,7 @@ sudo apt install -y \
 
 ```bash
 git clone <repo-url>
-cd agent-chat-viewer
+cd agent_chat_viewer
 pnpm install
 ```
 
@@ -88,7 +88,7 @@ cd src-tauri && cargo test && cd ..
 ## 2. 项目结构
 
 ```
-agent-chat-viewer/
+agent_chat_viewer/
 ├── src/                          # React 前端 (TypeScript)
 │   ├── components/
 │   │   ├── common/               # 通用组件 (EmptyState, ErrorBoundary, ...)
@@ -96,7 +96,7 @@ agent-chat-viewer/
 │   │   ├── export/               # 导出对话框
 │   │   ├── filter/               # 过滤器组件
 │   │   ├── layout/               # 布局 (SessionNavigator, MainLayout)
-│   │   ├── projects/             # 项目列表视图
+│   │   ├── projects/             # 工作目录列表视图
 │   │   ├── search/               # 搜索面板
 │   │   ├── sessions/             # 会话列表 / 时间线视图
 │   │   └── settings/             # 设置面板
