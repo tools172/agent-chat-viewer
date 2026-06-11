@@ -73,4 +73,17 @@ pub trait ChatProvider: Send + Sync {
         path.extension()
             .map_or(false, |ext| ext.eq_ignore_ascii_case(self.session_extension()))
     }
+
+    /// Detect if the given content (first lines of a JSONL file) matches
+    /// this provider's format. Used for content-based provider detection.
+    ///
+    /// Default: try parsing the first non-empty line and check if it succeeds.
+    /// Providers should override this with format-specific fingerprint checks.
+    fn detect_by_content(&self, first_lines: &str) -> bool {
+        if let Some(first_line) = first_lines.lines().find(|l| !l.trim().is_empty()) {
+            self.parse_event(first_line).is_ok()
+        } else {
+            false
+        }
+    }
 }

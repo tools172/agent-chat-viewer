@@ -173,6 +173,18 @@ impl ChatProvider for ClaudeCodeProvider {
     fn metadata_path(&self) -> Option<PathBuf> {
         Some(Self::home_dir().join(".claude").join("history.jsonl"))
     }
+
+    fn detect_by_content(&self, first_lines: &str) -> bool {
+        // Claude Code sessions start with user/assistant/system type
+        if let Some(first_line) = first_lines.lines().find(|l| !l.trim().is_empty()) {
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(first_line) {
+                if let Some(event_type) = value["type"].as_str() {
+                    return matches!(event_type, "user" | "assistant" | "system");
+                }
+            }
+        }
+        false
+    }
 }
 
 /// Helper to get the user's home directory (cross-platform)
@@ -271,5 +283,26 @@ mod tests {
             }
             _ => panic!("Expected ToolResult block"),
         }
+    }
+
+    #[test]
+    fn test_detect_by_content_user_type() {
+        let provider = ClaudeCodeProvider::new();
+        let content = r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u-001","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Hi"}]},"uuid":"u-002","timestamp":"2026-06-09T10:00:01Z","sessionId":"s1"}"#;
+        assert!(provider.detect_by_content(content));
+    }
+
+    #[test]
+    fn test_detect_by_content_rejects_openclaw_format() {
+        let provider = ClaudeCodeProvider::new();
+        let content = r#"{"type":"session","version":3,"id":"abc-123","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}"#;
+        assert!(!provider.detect_by_content(content));
+    }
+
+    #[test]
+    fn test_detect_by_content_empty() {
+        let provider = ClaudeCodeProvider::new();
+        assert!(!provider.detect_by_content(""));
     }
 }

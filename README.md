@@ -27,7 +27,7 @@
 ### 设置
 - 🎨 **搜索高亮配色** — 自定义搜索和查找高亮颜色
 - 📏 **面板宽度** — 侧边栏 (200-600px) 和轮次导航 (160-400px) 可调
-- 📂 **自定义监控目录** — 支持添加、删除、浏览
+- 📂 **自定义监控目录** — 递归扫描（深度 4 层），自动识别会话格式，支持任意目录结构
 - 🔌 **多 Agent 支持** — Claude Code / OpenClaw 可切换启用
 - 📁 **打开设置文件** — 一键在资源管理器中打开 settings.json
 
@@ -151,13 +151,16 @@ impl ChatProvider for MyNewProvider {
     fn default_base_dir(&self) -> PathBuf { /* ... */ }
     fn parse_event(&self, line: &str) -> Result<ChatEvent, ParseError> { /* ... */ }
     fn detect_format(&self, path: &Path) -> bool { /* ... */ }
+    fn detect_by_content(&self, first_lines: &str) -> bool { /* 内容指纹检测 */ }
     fn metadata_path(&self) -> Option<PathBuf> { /* ... */ }
 }
 ```
 
+`detect_by_content` 通过读取 `.jsonl` 文件第一行内容来识别格式，使自定义监控目录不再依赖路径结构猜测 provider，支持任意目录布局。
+
 ## 🧪 测试
 
-项目包含 **205 个测试**（146 前端 + 59 Rust），覆盖组件渲染、工具函数、数据过滤、解析器、向后兼容等场景。
+项目包含 **222 个测试**（146 前端 + 76 Rust），覆盖组件渲染、工具函数、数据过滤、解析器、向后兼容、递归扫描、内容检测等场景。
 
 ```bash
 pnpm test                          # 前端测试 (Vitest)
@@ -177,6 +180,7 @@ src/__tests__/
 
 - [CI/CD 实现文档](docs/ci-cd.md) — 持续集成/交付方案设计
 - [开发指南](docs/development-guide.md) — 环境搭建、日常操作与发布流程
+- [Provider 检测策略](docs/provider-detection.md) — 会话文件 Agent 识别机制详解
 - [功能路线图](docs/feature-roadmap.md) — 后续功能迭代方向
 - [贡献指南](CONTRIBUTING.md) — 如何参与项目贡献
 - [行为准则](CODE_OF_CONDUCT.md) — 社区行为规范

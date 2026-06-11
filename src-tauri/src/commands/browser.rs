@@ -1,16 +1,23 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::models::{AppSettings, FilterConfig, Project, SessionDetail, SessionSummary};
 use crate::providers::ProviderRegistry;
 use crate::services::{filter_events, parse_session_detail};
 
-/// 收集所有需要扫描的基础路径
-fn collect_base_paths(
+/// 递归扫描的最大深度（覆盖 `<root>/agents/<agent>/sessions/*.jsonl` 三层 + 一层余量）
+const MAX_SCAN_DEPTH: u32 = 4;
+
+/// 收集所有需要扫描的基础路径。
+///
+/// - 已启用 provider 的默认路径：使用已知 provider 扫描
+/// - 自定义监控目录：provider 留空，在扫描时通过内容自动检测
+pub(crate) fn collect_base_paths(
     settings: &AppSettings,
     registry: &ProviderRegistry,
 ) -> Vec<(String, PathBuf)> {
     let mut paths: Vec<(String, PathBuf)> = Vec::new();
+
     // 已启用 provider 的默认路径
     for (provider_name, enabled) in &settings.provider_enabled {
         if *enabled {
@@ -22,88 +29,94 @@ fn collect_base_paths(
             }
         }
     }
-    // 自定义监控目录：自动检测 provider 并规范化路径深度
+
+    // 自定义监控目录：始终扫描，provider 由内容检测决定
     for dir in &settings.watch_directories {
         let raw = crate::utils::path::normalize_path(dir);
-        if !raw.exists() {
-            continue;
-        }
-        if let Some((provider_name, base_path)) = resolve_watch_path(&raw, registry) {
-            // 只添加启用了的 provider
-            if settings
-                .provider_enabled
-                .get(&provider_name)
-                .copied()
-                .unwrap_or(true)
-            {
-                paths.push((provider_name, base_path));
-            }
+        if raw.exists() {
+            paths.push((String::new(), raw));
         }
     }
+
     paths
 }
 
-/// 解析自定义监控目录：自动检测 provider 并确定正确的扫描根路径
+/// 递归遍历目录，发现所有 `.jsonl` 会话文件，按项目目录分组。
 ///
-/// 返回 `(provider_name, base_path)`，其中 `base_path` 是扫描项目的根目录。
-///
-/// 支持的目录结构：
-/// - OpenClaw: `<root>/agents/<agent>/sessions/*.jsonl`
-/// - Claude Code: `<root>/projects/<project>/*.jsonl`
-fn resolve_watch_path(
-    raw: &std::path::Path,
-    registry: &ProviderRegistry,
-) -> Option<(String, std::path::PathBuf)> {
-    let normalized = raw.to_path_buf();
+/// - 如果目录下有 `sessions/` 子目录，以该目录作为项目，扫描 `sessions/` 下的文件
+/// - 如果目录下直接有 `.jsonl` 文件，以该目录作为项目
+/// - 深度限制 `MAX_SCAN_DEPTH`
+pub(crate) fn discover_session_files(dir: &Path, depth: u32) -> HashMap<PathBuf, Vec<PathBuf>> {
+    let mut projects: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
 
-    // 1) 如果直指 sessions 目录，向上走一层到项目/agent 目录
-    let project_dir = if normalized
-        .file_name()
-        .map_or(false, |n| n == "sessions")
-    {
-        normalized.parent()?.to_path_buf()
-    } else {
-        normalized.clone()
+    if depth > MAX_SCAN_DEPTH || !dir.is_dir() {
+        return projects;
+    }
+
+    let entries: Vec<std::fs::DirEntry> = match std::fs::read_dir(dir) {
+        Ok(entries) => entries.flatten().collect(),
+        Err(_) => return projects,
     };
 
-    // 2) 路径前缀检测（内置 provider 的默认位置）
-    if let Some(provider) = registry.detect_provider(&project_dir) {
-        return Some((provider.name().to_string(), project_dir));
-    }
-
-    // 3) 结构检测：看 project_dir 的父目录名称
-    if let Some(parent) = project_dir.parent() {
-        let parent_name = parent
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default();
-
-        // `<root>/agents/<project>` → OpenClaw 结构，根基是 agents/
-        if parent_name == "agents" {
-            return Some(("openclaw".to_string(), parent.to_path_buf()));
-        }
-        // `<root>/projects/<project>` → Claude Code 结构
-        if parent_name == "projects" {
-            return Some(("claude_code".to_string(), parent.to_path_buf()));
-        }
-
-        // 如果 project_dir 下有 sessions/ 子目录 → OpenClaw 特征
-        if project_dir.join("sessions").is_dir() {
-            return Some(("openclaw".to_string(), parent.to_path_buf()));
+    // 检查 sessions/ 子目录（OpenClaw 模式）
+    let sessions_dir = dir.join("sessions");
+    if sessions_dir.is_dir() {
+        if let Ok(session_entries) = std::fs::read_dir(&sessions_dir) {
+            let files: Vec<PathBuf> = session_entries
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| crate::utils::path::is_jsonl_file(p))
+                .collect();
+            if !files.is_empty() {
+                projects.insert(dir.to_path_buf(), files);
+            }
         }
     }
 
-    // 4) 如果 project_dir 下有 sessions/（且没走到上面 parent 逻辑）
-    if project_dir.join("sessions").is_dir() {
-        let base = project_dir
-            .parent()
-            .map(|p| p.to_path_buf())
-            .unwrap_or_else(|| project_dir.clone());
-        return Some(("openclaw".to_string(), base));
+    // 检查当前目录下的直接 .jsonl 文件
+    let direct_files: Vec<PathBuf> = entries
+        .iter()
+        .map(|e| e.path())
+        .filter(|p| p.is_file() && crate::utils::path::is_jsonl_file(p))
+        .collect();
+    if !direct_files.is_empty() {
+        projects
+            .entry(dir.to_path_buf())
+            .or_default()
+            .extend(direct_files);
     }
 
-    // 5) 最终 fallback：project_dir 自身作为扫描根，claude_code 解析
-    Some(("claude_code".to_string(), project_dir))
+    // 递归进入子目录（跳过 sessions 避免重复）
+    for entry in entries {
+        let path = entry.path();
+        if path.is_dir()
+            && path
+                .file_name()
+                .map_or(false, |n| n != "sessions")
+        {
+            let sub = discover_session_files(&path, depth + 1);
+            for (proj_dir, files) in sub {
+                projects.entry(proj_dir).or_default().extend(files);
+            }
+        }
+    }
+
+    projects
+}
+
+/// 读取文件内容的前几行，通过已注册的 provider 检测其格式。
+/// 返回匹配的 provider 名称。
+pub(crate) fn detect_provider_from_file(
+    file_path: &Path,
+    registry: &ProviderRegistry,
+) -> Option<String> {
+    // 只读文件的前 4KB 足够覆盖第一行 JSON
+    if let Ok(content) = std::fs::read_to_string(file_path) {
+        if let Some(provider) = registry.detect_by_content(&content) {
+            return Some(provider.name().to_string());
+        }
+    }
+    None
 }
 
 /// 扫描项目列表（纯同步函数，供 spawn_blocking 调用）
@@ -112,54 +125,99 @@ fn scan_projects(
     registry: &ProviderRegistry,
 ) -> Vec<Project> {
     let mut projects: HashMap<String, Project> = HashMap::new();
+
     for (provider_name, base_path) in base_paths {
-        let provider = match registry.get(provider_name) {
-            Some(p) => p,
-            None => continue,
-        };
-        if let Ok(entries) = std::fs::read_dir(base_path) {
-            for entry in entries.flatten() {
-                let entry_path = entry.path();
-                if entry_path.is_dir() {
-                    let project_name = entry_path
-                        .file_name()
-                        .map(|n| n.to_string_lossy().to_string())
-                        .unwrap_or_default();
-                    let project_key =
-                        format!("{}:{}", provider_name, project_name);
-                    let session_files = provider.enumerate_session_files(&entry_path);
-                    let session_count = session_files.len() as u32;
-                    let mut last_activity = String::new();
-                    for session_path in &session_files {
-                        if let Ok(metadata) = session_path.metadata() {
-                            if let Ok(modified) = metadata.modified() {
-                                let dt: chrono::DateTime<chrono::Utc> =
-                                    modified.into();
-                                let ts = dt.to_rfc3339();
-                                if ts > last_activity {
-                                    last_activity = ts;
-                                }
+        if provider_name.is_empty() {
+            // 自定义监控目录：递归发现 + 内容检测
+            let discovered = discover_session_files(base_path, 0);
+            for (project_dir, files) in &discovered {
+                let project_name = project_dir
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                let detected_provider = files
+                    .first()
+                    .and_then(|f| detect_provider_from_file(f, registry))
+                    .unwrap_or_else(|| "claude_code".to_string());
+                let project_key = format!("{}:{}", detected_provider, project_name);
+                let session_count = files.len() as u32;
+                let mut last_activity = String::new();
+                for session_path in files {
+                    if let Ok(metadata) = session_path.metadata() {
+                        if let Ok(modified) = metadata.modified() {
+                            let dt: chrono::DateTime<chrono::Utc> = modified.into();
+                            let ts = dt.to_rfc3339();
+                            if ts > last_activity {
+                                last_activity = ts;
                             }
                         }
                     }
-                    if session_count > 0 {
-                        projects.insert(
-                            project_key,
-                            Project {
-                                name: project_name,
-                                path: entry_path
-                                    .to_string_lossy()
-                                    .to_string(),
-                                session_count,
-                                last_activity,
-                                provider_name: provider_name.clone(),
-                            },
-                        );
+                }
+                if session_count > 0 {
+                    projects.insert(
+                        project_key,
+                        Project {
+                            name: project_name,
+                            path: project_dir.to_string_lossy().to_string(),
+                            session_count,
+                            last_activity,
+                            provider_name: detected_provider,
+                        },
+                    );
+                }
+            }
+        } else {
+            // 已知 provider：单层子目录扫描（保持原有行为）
+            let provider = match registry.get(provider_name) {
+                Some(p) => p,
+                None => continue,
+            };
+            if let Ok(entries) = std::fs::read_dir(base_path) {
+                for entry in entries.flatten() {
+                    let entry_path = entry.path();
+                    if entry_path.is_dir() {
+                        let project_name = entry_path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_default();
+                        let project_key =
+                            format!("{}:{}", provider_name, project_name);
+                        let session_files =
+                            provider.enumerate_session_files(&entry_path);
+                        let session_count = session_files.len() as u32;
+                        let mut last_activity = String::new();
+                        for session_path in &session_files {
+                            if let Ok(metadata) = session_path.metadata() {
+                                if let Ok(modified) = metadata.modified() {
+                                    let dt: chrono::DateTime<chrono::Utc> =
+                                        modified.into();
+                                    let ts = dt.to_rfc3339();
+                                    if ts > last_activity {
+                                        last_activity = ts;
+                                    }
+                                }
+                            }
+                        }
+                        if session_count > 0 {
+                            projects.insert(
+                                project_key,
+                                Project {
+                                    name: project_name,
+                                    path: entry_path
+                                        .to_string_lossy()
+                                        .to_string(),
+                                    session_count,
+                                    last_activity,
+                                    provider_name: provider_name.clone(),
+                                },
+                            );
+                        }
                     }
                 }
             }
         }
     }
+
     let mut list: Vec<Project> = projects.into_values().collect();
     list.sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
     list
@@ -229,37 +287,77 @@ pub async fn list_all_sessions(
 ) -> Result<Vec<SessionSummary>, String> {
     let base_paths = collect_base_paths(&settings, &registry);
     let reg = registry.inner().clone();
+
     tauri::async_runtime::spawn_blocking(move || {
         let mut all = Vec::new();
+
         for (provider_name, base_path) in &base_paths {
-            let provider = match reg.get(provider_name) {
-                Some(p) => p.clone(),
-                None => continue,
-            };
-            if let Ok(project_entries) = std::fs::read_dir(base_path) {
-                for project_entry in project_entries.flatten() {
-                    let project_path = project_entry.path();
-                    if !project_path.is_dir() {
-                        continue;
-                    }
-                    let project_name = project_path
+            if provider_name.is_empty() {
+                // 自定义监控目录：递归发现 + 内容检测
+                let discovered = discover_session_files(base_path, 0);
+                for (project_dir, files) in &discovered {
+                    let project_name = project_dir
                         .file_name()
                         .map(|n| n.to_string_lossy().to_string())
                         .unwrap_or_default();
-                    for file_path in provider.enumerate_session_files(&project_path) {
-                        if let Some(summary) = crate::services::parser::create_session_summary(
-                            &file_path,
-                            &project_name,
-                            &project_path.to_string_lossy(),
-                            &provider,
-                            provider_name,
-                        ) {
+                    let project_path_str = project_dir.to_string_lossy().to_string();
+                    let detected_provider = files
+                        .first()
+                        .and_then(|f| detect_provider_from_file(f, &reg))
+                        .unwrap_or_else(|| "claude_code".to_string());
+                    let provider = match reg.get(&detected_provider) {
+                        Some(p) => p.clone(),
+                        None => continue,
+                    };
+                    for file_path in files {
+                        if let Some(summary) =
+                            crate::services::parser::create_session_summary(
+                                file_path,
+                                &project_name,
+                                &project_path_str,
+                                &provider,
+                                &detected_provider,
+                            )
+                        {
                             all.push(summary);
+                        }
+                    }
+                }
+            } else {
+                let provider = match reg.get(provider_name) {
+                    Some(p) => p.clone(),
+                    None => continue,
+                };
+                if let Ok(project_entries) = std::fs::read_dir(base_path) {
+                    for project_entry in project_entries.flatten() {
+                        let project_path = project_entry.path();
+                        if !project_path.is_dir() {
+                            continue;
+                        }
+                        let project_name = project_path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_default();
+                        for file_path in
+                            provider.enumerate_session_files(&project_path)
+                        {
+                            if let Some(summary) =
+                                crate::services::parser::create_session_summary(
+                                    &file_path,
+                                    &project_name,
+                                    &project_path.to_string_lossy(),
+                                    &provider,
+                                    provider_name,
+                                )
+                            {
+                                all.push(summary);
+                            }
                         }
                     }
                 }
             }
         }
+
         all.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
         all
     })
@@ -285,8 +383,7 @@ pub async fn get_conversation(
         if !file_path.is_file() {
             return Err(format!("文件不存在: {}", session_path));
         }
-        let mut detail =
-            parse_session_detail(&file_path, &provider)?;
+        let mut detail = parse_session_detail(&file_path, &provider)?;
         detail.events = filter_events(&detail.events, &filter);
         Ok(detail)
     })
@@ -307,37 +404,79 @@ pub async fn search_sessions(
 
     tauri::async_runtime::spawn_blocking(move || {
         let mut results = Vec::new();
+
         for (provider_name, base_path) in &base_paths {
-            let provider = match reg.get(provider_name) {
-                Some(p) => p.clone(),
-                None => continue,
-            };
-            if let Ok(project_entries) = std::fs::read_dir(base_path) {
-                for project_entry in project_entries.flatten() {
-                    let project_path = project_entry.path();
-                    if !project_path.is_dir() {
-                        continue;
-                    }
-                    let project_name = project_path
+            if provider_name.is_empty() {
+                // 自定义监控目录：递归发现 + 内容检测
+                let discovered = discover_session_files(base_path, 0);
+                for (project_dir, files) in &discovered {
+                    let project_name = project_dir
                         .file_name()
                         .map(|n| n.to_string_lossy().to_string())
                         .unwrap_or_default();
-                    for file_path in provider.enumerate_session_files(&project_path) {
-                        if let Ok(content) =
-                            std::fs::read_to_string(&file_path)
-                        {
-                            if content
-                                .to_lowercase()
-                                .contains(&query_lower)
-                            {
-                                if let Some(summary) = crate::services::parser::create_session_summary(
-                                    &file_path,
-                                    &project_name,
-                                    &project_path.to_string_lossy(),
-                                    &provider,
-                                    provider_name,
-                                ) {
+                    let project_path_str = project_dir.to_string_lossy().to_string();
+                    let detected_provider = files
+                        .first()
+                        .and_then(|f| detect_provider_from_file(f, &reg))
+                        .unwrap_or_else(|| "claude_code".to_string());
+                    let provider = match reg.get(&detected_provider) {
+                        Some(p) => p.clone(),
+                        None => continue,
+                    };
+                    for file_path in files {
+                        if let Ok(content) = std::fs::read_to_string(&file_path) {
+                            if content.to_lowercase().contains(&query_lower) {
+                                if let Some(summary) =
+                                    crate::services::parser::create_session_summary(
+                                        &file_path,
+                                        &project_name,
+                                        &project_path_str,
+                                        &provider,
+                                        &detected_provider,
+                                    )
+                                {
                                     results.push(summary);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                let provider = match reg.get(provider_name) {
+                    Some(p) => p.clone(),
+                    None => continue,
+                };
+                if let Ok(project_entries) = std::fs::read_dir(base_path) {
+                    for project_entry in project_entries.flatten() {
+                        let project_path = project_entry.path();
+                        if !project_path.is_dir() {
+                            continue;
+                        }
+                        let project_name = project_path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_default();
+                        for file_path in
+                            provider.enumerate_session_files(&project_path)
+                        {
+                            if let Ok(content) =
+                                std::fs::read_to_string(&file_path)
+                            {
+                                if content
+                                    .to_lowercase()
+                                    .contains(&query_lower)
+                                {
+                                    if let Some(summary) =
+                                        crate::services::parser::create_session_summary(
+                                            &file_path,
+                                            &project_name,
+                                            &project_path.to_string_lossy(),
+                                            &provider,
+                                            provider_name,
+                                        )
+                                    {
+                                        results.push(summary);
+                                    }
                                 }
                             }
                         }
@@ -345,10 +484,184 @@ pub async fn search_sessions(
                 }
             }
         }
+
         results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
         results.truncate(50);
         results
     })
     .await
     .map_err(|e| format!("搜索失败: {}", e))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    fn write_file(dir: &std::path::Path, name: &str, content: &str) {
+        let path = dir.join(name);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+        let mut f = std::fs::File::create(&path).unwrap();
+        f.write_all(content.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_discover_flat_directory() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+
+        write_file(
+            root,
+            "001.jsonl",
+            r#"{"type":"session","version":3,"id":"abc-123","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u1","message":{"role":"user","content":[{"type":"text","text":"Hello"}]}}"#,
+        );
+        write_file(
+            root,
+            "002.jsonl",
+            r#"{"type":"session","version":3,"id":"def-456","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u2","message":{"role":"user","content":[{"type":"text","text":"World"}]}}"#,
+        );
+        write_file(root, "notes.txt", "not a session file");
+
+        let result = discover_session_files(root, 0);
+        assert_eq!(result.len(), 1);
+        let files = result.get(root).unwrap();
+        assert_eq!(files.len(), 2);
+    }
+
+    #[test]
+    fn test_discover_nested_sessions_directory() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+
+        let agent_a = root.join("agent-a");
+        write_file(
+            &agent_a.join("sessions"),
+            "001.jsonl",
+            r#"{"type":"session","version":3,"id":"abc-123","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u1","message":{"role":"user","content":[{"type":"text","text":"Hello"}]}}"#,
+        );
+
+        let agent_b = root.join("agent-b");
+        write_file(
+            &agent_b.join("sessions"),
+            "002.jsonl",
+            r#"{"type":"session","version":3,"id":"def-456","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u2","message":{"role":"user","content":[{"type":"text","text":"World"}]}}"#,
+        );
+
+        let result = discover_session_files(root, 0);
+        assert_eq!(result.len(), 2);
+        assert!(result.contains_key(&agent_a));
+        assert!(result.contains_key(&agent_b));
+    }
+
+    #[test]
+    fn test_discover_mixed_structure() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+
+        let agent_a = root.join("agent-a");
+        write_file(
+            &agent_a.join("sessions"),
+            "001.jsonl",
+            r#"{"type":"session","version":3,"id":"abc-123","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u1","message":{"role":"user","content":[{"type":"text","text":"Hello"}]}}"#,
+        );
+
+        let standalone = root.join("standalone");
+        write_file(
+            &standalone,
+            "002.jsonl",
+            r#"{"type":"session","version":3,"id":"def-456","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u2","message":{"role":"user","content":[{"type":"text","text":"World"}]}}"#,
+        );
+
+        let result = discover_session_files(root, 0);
+        assert_eq!(result.len(), 2);
+        assert!(result.contains_key(&agent_a));
+        assert!(result.contains_key(&standalone));
+    }
+
+    #[test]
+    fn test_discover_empty_directory() {
+        let tmp = tempfile::tempdir().unwrap();
+        let result = discover_session_files(tmp.path(), 0);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_discover_respects_max_depth() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+
+        let deep = root.join("a").join("b").join("c").join("d").join("e");
+        write_file(
+            &deep.join("sessions"),
+            "deep.jsonl",
+            r#"{"type":"session","version":3,"id":"deep-1","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}"#,
+        );
+
+        let result = discover_session_files(root, 0);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_detect_provider_from_file_openclaw() {
+        let tmp = tempfile::tempdir().unwrap();
+        let file_path = tmp.path().join("test.jsonl");
+        let content = r#"{"type":"session","version":3,"id":"abc-123","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u1","message":{"role":"user","content":[{"type":"text","text":"Hello"}]}}"#;
+        std::fs::write(&file_path, content).unwrap();
+
+        let registry = crate::providers::ProviderRegistry::new();
+        let name = detect_provider_from_file(&file_path, &registry);
+        assert_eq!(name, Some("openclaw".to_string()));
+    }
+
+    #[test]
+    fn test_detect_provider_from_file_claude_code() {
+        let tmp = tempfile::tempdir().unwrap();
+        let file_path = tmp.path().join("test.jsonl");
+        let content = r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u-001","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Hi"}]},"uuid":"u-002","timestamp":"2026-06-09T10:00:01Z","sessionId":"s1"}"#;
+        std::fs::write(&file_path, content).unwrap();
+
+        let registry = crate::providers::ProviderRegistry::new();
+        let name = detect_provider_from_file(&file_path, &registry);
+        assert_eq!(name, Some("claude_code".to_string()));
+    }
+
+    #[test]
+    fn test_collect_base_paths_includes_custom_dirs_regardless_of_provider_enabled() {
+        use crate::models::AppSettings;
+        use std::collections::HashMap;
+
+        let registry = crate::providers::ProviderRegistry::new();
+
+        let mut provider_enabled = HashMap::new();
+        provider_enabled.insert("claude_code".to_string(), false);
+        provider_enabled.insert("openclaw".to_string(), false);
+
+        let tmp = tempfile::tempdir().unwrap();
+        let watch_dir = tmp.path().to_string_lossy().to_string();
+
+        let settings = AppSettings {
+            watch_directories: vec![watch_dir],
+            provider_enabled,
+            ..AppSettings::default()
+        };
+
+        let paths = collect_base_paths(&settings, &registry);
+
+        // 自定义目录应被包含（provider 名称为空，表示自动检测）
+        let has_custom = paths.iter().any(|(name, _)| name.is_empty());
+        assert!(
+            has_custom,
+            "自定义监控目录不应受 provider_enabled 限制"
+        );
+    }
 }

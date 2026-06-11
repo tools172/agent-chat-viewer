@@ -8,8 +8,8 @@
 |---|---|---|---|
 | 前端单元测试 | Vitest + @testing-library/react | 17 | 146 |
 | 前端集成测试 | Vitest | 3 | 27 |
-| Rust 单元测试 | cargo test | 8 | 34 |
-| Rust 集成测试 | cargo test | 1 | 25 |
+| Rust 单元测试 | cargo test | 11 | 48 |
+| Rust 集成测试 | cargo test | 1 | 28 |
 
 ## 快速命令
 
@@ -120,13 +120,15 @@ src-tauri/
 │   │   ├── parser.rs            # 会话解析测试
 │   │   └── exporter.rs          # 导出测试
 │   ├── providers/
-│   │   ├── claude_code.rs       # Claude Code 解析测试
-│   │   └── openclaw.rs          # OpenClaw 解析测试
+│   │   ├── claude_code.rs       # Claude Code 解析 + 内容检测测试
+│   │   └── openclaw.rs          # OpenClaw 解析 + 内容检测测试
+│   ├── commands/
+│   │   └── browser.rs           # 递归扫描 + 内容检测测试（8 个）
 │   └── utils/
 │       └── path.rs              # 路径工具测试
 │
 └── tests/
-    └── integration_test.rs      # 综合集成测试（25 个）
+    └── integration_test.rs      # 综合集成测试（28 个）
         └── fixtures/            # 测试数据（JSONL 文件）
             ├── claude_code/
             │   ├── minimal.jsonl

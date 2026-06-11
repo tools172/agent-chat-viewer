@@ -299,6 +299,18 @@ impl ChatProvider for OpenClawProvider {
         )
     }
 
+    fn detect_by_content(&self, first_lines: &str) -> bool {
+        // OpenClaw sessions start with a "session" metadata line containing version
+        if let Some(first_line) = first_lines.lines().find(|l| !l.trim().is_empty()) {
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(first_line) {
+                if let Some(event_type) = value["type"].as_str() {
+                    return event_type == "session" && value["version"].as_u64().is_some();
+                }
+            }
+        }
+        false
+    }
+
     /// OpenClaw stores sessions one level deeper: `<agent>/sessions/*.jsonl`.
     /// Also handles flat directories (e.g., when a sessions folder is added
     /// directly as a watch directory and project_dir itself contains `.jsonl` files).
@@ -495,6 +507,27 @@ mod tests {
         let home = home_dir();
         assert!(provider.detect_format(&home.join(".openclaw").join("agents").join("main")));
         assert!(!provider.detect_format(Path::new("/tmp/something")));
+    }
+
+    #[test]
+    fn test_detect_by_content_session_line() {
+        let provider = OpenClawProvider::new();
+        let content = r#"{"type":"session","version":3,"id":"abc-123","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u1","parentId":"abc-123","message":{"role":"user","content":[{"type":"text","text":"Hello"}]}}"#;
+        assert!(provider.detect_by_content(content));
+    }
+
+    #[test]
+    fn test_detect_by_content_rejects_claude_code_format() {
+        let provider = OpenClawProvider::new();
+        let content = r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u-001","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#;
+        assert!(!provider.detect_by_content(content));
+    }
+
+    #[test]
+    fn test_detect_by_content_empty() {
+        let provider = OpenClawProvider::new();
+        assert!(!provider.detect_by_content(""));
     }
 
     #[test]

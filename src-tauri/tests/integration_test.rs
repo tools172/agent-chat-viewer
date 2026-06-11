@@ -612,3 +612,34 @@ fn test_serialize_roundtrip_with_collapse_consecutive() {
     assert!(parsed.show_file_snapshots);
     assert!(parsed.collapse_consecutive);
 }
+
+// ============================================================
+// 内容检测 (detect_by_content via registry) 测试
+// ============================================================
+
+#[test]
+fn test_detect_by_content_openclaw_via_registry() {
+    let registry = agent_chat_viewer_lib::providers::ProviderRegistry::new();
+    let content = r#"{"type":"session","version":3,"id":"abc-123","timestamp":"2026-04-17T04:44:21.996Z","cwd":"/home/user/workspace"}
+{"type":"message","id":"u1","message":{"role":"user","content":[{"type":"text","text":"Hello"}]}}"#;
+    let provider = registry.detect_by_content(content);
+    assert!(provider.is_some());
+    assert_eq!(provider.unwrap().name(), "openclaw");
+}
+
+#[test]
+fn test_detect_by_content_claude_code_via_registry() {
+    let registry = agent_chat_viewer_lib::providers::ProviderRegistry::new();
+    let content = r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u-001","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#;
+    let provider = registry.detect_by_content(content);
+    assert!(provider.is_some());
+    assert_eq!(provider.unwrap().name(), "claude_code");
+}
+
+#[test]
+fn test_detect_by_content_unknown_format() {
+    let registry = agent_chat_viewer_lib::providers::ProviderRegistry::new();
+    let content = r#"{"some":"random","json":"data"}"#;
+    let provider = registry.detect_by_content(content);
+    assert!(provider.is_none());
+}

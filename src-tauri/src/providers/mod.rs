@@ -58,6 +58,14 @@ impl ProviderRegistry {
             .find(|p| p.detect_format(path))
     }
 
+    /// Detect which provider handles the given file content (first lines of a JSONL file).
+    /// Each registered provider's `detect_by_content` is tried; the first match wins.
+    pub fn detect_by_content(&self, first_lines: &str) -> Option<&Arc<dyn ChatProvider>> {
+        self.providers
+            .values()
+            .find(|p| p.detect_by_content(first_lines))
+    }
+
     /// Get default paths for all providers
     pub fn default_paths(&self) -> HashMap<String, String> {
         self.providers
