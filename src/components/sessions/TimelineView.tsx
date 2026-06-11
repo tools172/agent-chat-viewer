@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Filter } from 'lucide-react';
 import type { SessionSummary, SortConfig } from '../../types';
 import { multiSort } from '../../utils/sort';
 import { SessionItem } from './SessionItem';
@@ -103,6 +103,16 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     });
   };
 
+  const allCollapsed = collapsedGroups.size >= groups.length && groups.length > 0;
+
+  const toggleAll = () => {
+    if (allCollapsed) {
+      setCollapsedGroups(new Set());
+    } else {
+      setCollapsedGroups(new Set(groups.map((g) => g.label)));
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* 过滤上下文指示条 */}
@@ -112,6 +122,25 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           <span>
             范围: {filterContext === 'all' ? '全部工作目录' : (filterContextLabel ?? filterContext)}
           </span>
+          {/* 一键折叠/展开 */}
+          {groups.length > 0 && (
+            <button
+              onClick={toggleAll}
+              className={`flex items-center gap-1 px-1.5 py-0.5 text-[11px] rounded-full border transition-colors ${
+                allCollapsed
+                  ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300'
+                  : 'border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:border-gray-300'
+              } ${filterContext === 'all' ? 'ml-auto' : 'ml-1'}`}
+              title={allCollapsed ? '点击展开全部' : '点击折叠全部'}
+            >
+              {allCollapsed ? (
+                <ChevronsDownUp className="h-3 w-3" />
+              ) : (
+                <ChevronsUpDown className="h-3 w-3" />
+              )}
+              {allCollapsed ? '展开' : '折叠'}
+            </button>
+          )}
           {filterContext !== 'all' && onClearFilter && (
             <button
               onClick={onClearFilter}
