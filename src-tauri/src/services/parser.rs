@@ -65,7 +65,7 @@ fn detect_client_from_text(text: &str, provider_name: &str) -> &'static str {
     match provider_name {
         "openclaw" => {
             if text.contains("Sender (untrusted metadata):") {
-                "web"
+                "gui"
             } else if text.contains("[Subagent Task]:") || text.contains("[Subagent Context]") {
                 "subagent"
             } else {
@@ -303,9 +303,9 @@ mod tests {
     // ===== detect_client_from_text 测试 =====
 
     #[test]
-    fn test_detect_openclaw_web_client() {
+    fn test_detect_openclaw_gui_client() {
         let content = "Sender (untrusted metadata):\n```json\n{}\n```\n\n[Tue 2026-06-09 11:21 GMT+8] test";
-        assert_eq!(detect_client_from_text(content, "openclaw"), "web");
+        assert_eq!(detect_client_from_text(content, "openclaw"), "gui");
     }
 
     #[test]

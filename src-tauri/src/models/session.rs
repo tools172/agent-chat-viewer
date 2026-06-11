@@ -22,7 +22,7 @@ pub struct SessionSummary {
     pub provider_name: String,
     /// File modification time (RFC 3339), for sorting by last modified
     pub file_mtime: String,
-    /// Client environment: "vscode", "cli", "web", or "" (unknown)
+    /// Client environment: "vscode", "cli", "gui", "subagent", or "" (unknown)
     pub client_type: String,
 }
 
