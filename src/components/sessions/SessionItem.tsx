@@ -84,11 +84,11 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   const handleOpenProjectFolder = async () => {
     setContextMenu(null);
     try {
-      // cwd 是会话记录中实际的项目工作目录，projectPath 只是 .jsonl 文件的存放目录
+      // cwd 是会话记录中实际的工作目录，projectPath 只是 .jsonl 文件的存放目录
       const projectDir = session.cwd || session.projectPath;
       await tauri.openProjectFolder(projectDir);
     } catch (err) {
-      console.error('打开项目文件夹失败:', err);
+      console.error('打开工作目录失败:', err);
     }
   };
 
@@ -144,7 +144,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
               )}
             </div>
 
-            {/* 项目路径（全部/时间线视图显示） */}
+            {/* 工作目录（全部/时间线视图显示） */}
             {showProject && (
               <p
                 className="text-xs text-gray-400 mt-0.5 truncate"
@@ -176,7 +176,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <Folder className="h-4 w-4 text-gray-400" />
-            打开项目文件夹
+            打开工作目录
           </button>
           <div className="border-t border-gray-100 my-1" />
           <button

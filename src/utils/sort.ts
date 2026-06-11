@@ -19,9 +19,17 @@ const STRATEGIES: Record<SortField, SortStrategy> = {
   },
   path: {
     label: '按路径',
-    ascLabel: '项目 A→Z',
-    descLabel: '项目 Z→A',
-    compare: (a, b) => a.projectName.localeCompare(b.projectName),
+    ascLabel: '工作目录 A→Z',
+    descLabel: '工作目录 Z→A',
+    compare: (a, b) => {
+      // 先按项目目录分组（projectPath 始终存在，同项目会话必然相等）
+      // 再按实际工作目录 cwd 细化（同项目内通常相同）
+      const cmp = a.projectPath.localeCompare(b.projectPath);
+      if (cmp !== 0) return cmp;
+      const pathA = a.cwd || '';
+      const pathB = b.cwd || '';
+      return pathA.localeCompare(pathB);
+    },
   },
   name: {
     label: '按名称',

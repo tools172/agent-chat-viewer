@@ -85,7 +85,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       const targetDir = session?.cwd || projectPath;
       await tauri.openProjectFolder(targetDir);
     } catch (err) {
-      console.error('打开项目文件夹失败:', err);
+      console.error('打开工作目录失败:', err);
     }
   };
 
@@ -100,7 +100,52 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     }
   };
 
-  // 对项目内的会话排序
+  // 对文件夹项排序
+  const sortedProjects = useMemo(() => {
+    if (!sortConfig.length) return projects;
+    return [...projects].sort((a, b) => {
+      for (const level of sortConfig) {
+        let cmp = 0;
+        switch (level.field) {
+          case 'path':
+            cmp = a.path.localeCompare(b.path);
+            break;
+          case 'time':
+            cmp = a.lastActivity.localeCompare(b.lastActivity);
+            break;
+          case 'name':
+            cmp = a.name.localeCompare(b.name);
+            break;
+          case 'messageCount':
+            cmp = a.sessionCount - b.sessionCount;
+            break;
+          case 'agent':
+            cmp = a.providerName.localeCompare(b.providerName);
+            break;
+          default:
+            cmp = a.path.localeCompare(b.path);
+            break;
+        }
+        if (cmp !== 0) {
+          return level.direction === 'asc' ? cmp : -cmp;
+        }
+      }
+      return 0;
+    });
+  }, [projects, sortConfig]);
+
+  // 预计算每个文件夹的工作目录（cwd），用于 tooltip
+  const projectWorkingPaths = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const project of projects) {
+      // 优先使用会话中记录的实际工作目录(cwd)，回退到数据目录路径
+      const session = allSessions?.find((s) => s.projectPath === project.path && s.cwd);
+      map.set(project.path, session?.cwd || project.path);
+    }
+    return map;
+  }, [projects, allSessions]);
+
+  // 对文件夹内的会话排序
   const sortedSessions = useMemo(
     () => multiSort(sessions, sortConfig),
     [sessions, sortConfig]
@@ -108,7 +153,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
   return (
     <div className="py-1">
-      {projects.map((project) => {
+      {sortedProjects.map((project) => {
         const isExpanded = expandedProjects.has(project.path);
         const isSelected = selectedProjectPath === project.path;
 
@@ -129,7 +174,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
               )}
               <Folder className="h-4 w-4 flex-shrink-0 text-yellow-500" />
-              <span className="flex-1 truncate text-left" title={project.name}>
+              <span
+                className="flex-1 truncate text-left"
+                title={`${project.name}\n工作目录: ${projectWorkingPaths.get(project.path) || project.path}`}
+              >
                 {project.name}
               </span>
               <span className="text-xs text-gray-400 flex-shrink-0 bg-gray-100 px-1.5 py-0.5 rounded-full">
@@ -161,7 +209,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         );
       })}
 
-      {/* 项目右键菜单 */}
+      {/* 文件夹右键菜单 */}
       {contextMenu && (
         <div
           ref={menuRef}
@@ -180,7 +228,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <Folder className="h-4 w-4 text-gray-400" />
-            打开项目文件夹
+            打开工作目录
           </button>
         </div>
       )}

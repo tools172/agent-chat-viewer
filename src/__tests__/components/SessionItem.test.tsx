@@ -68,7 +68,7 @@ describe('SessionItem', () => {
     expect(screen.getByText(/15 条消息/)).toBeInTheDocument();
   });
 
-  it('showProject=true 时显示项目名', () => {
+  it('showProject=true 时显示工作目录名', () => {
     render(
       <SessionItem
         session={mockSession}
@@ -119,10 +119,10 @@ describe('SessionItem', () => {
   });
 
   // ============================================================
-  // 右键菜单 — 打开项目文件夹 (cwd 优先)
+  // 右键菜单 — 打开工作目录 (cwd 优先)
   // ============================================================
 
-  it('右键菜单：打开项目文件夹 使用 cwd', () => {
+  it('右键菜单：打开工作目录 使用 cwd', () => {
     render(
       <SessionItem
         session={mockSession}
@@ -132,14 +132,14 @@ describe('SessionItem', () => {
     );
 
     fireEvent.contextMenu(screen.getByRole('button'));
-    const menuItem = screen.getByText('打开项目文件夹');
+    const menuItem = screen.getByText('打开工作目录');
     fireEvent.click(menuItem);
 
     // cwd 存在时优先使用
     expect(mockedOpenProjectFolder).toHaveBeenCalledWith('/test');
   });
 
-  it('右键菜单：打开项目文件夹 在 cwd 为空时回退到 projectPath', () => {
+  it('右键菜单：打开工作目录 在 cwd 为空时回退到 projectPath', () => {
     const sessionNoCwd = { ...mockSession, cwd: '' };
 
     render(
@@ -151,7 +151,7 @@ describe('SessionItem', () => {
     );
 
     fireEvent.contextMenu(screen.getByRole('button'));
-    const menuItem = screen.getByText('打开项目文件夹');
+    const menuItem = screen.getByText('打开工作目录');
     fireEvent.click(menuItem);
 
     // 回退到 projectPath
@@ -188,7 +188,7 @@ describe('SessionItem', () => {
     fireEvent.contextMenu(screen.getByRole('button'));
 
     expect(screen.getByText('打开所在文件夹')).toBeInTheDocument();
-    expect(screen.getByText('打开项目文件夹')).toBeInTheDocument();
+    expect(screen.getByText('打开工作目录')).toBeInTheDocument();
     expect(screen.getByText('复制文件路径')).toBeInTheDocument();
     expect(screen.getByText('复制会话 ID')).toBeInTheDocument();
   });
@@ -203,10 +203,10 @@ describe('SessionItem', () => {
     );
 
     fireEvent.contextMenu(screen.getByRole('button'));
-    expect(screen.getByText('打开项目文件夹')).toBeInTheDocument();
+    expect(screen.getByText('打开工作目录')).toBeInTheDocument();
 
     // 点击外部 → 菜单关闭
     fireEvent.mouseDown(document.body);
-    expect(screen.queryByText('打开项目文件夹')).not.toBeInTheDocument();
+    expect(screen.queryByText('打开工作目录')).not.toBeInTheDocument();
   });
 });

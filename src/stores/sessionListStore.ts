@@ -104,7 +104,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     }
   },
 
-  // 加载项目列表
+  // 加载工作目录列表
   loadProjects: async (settings) => {
     set({ isLoadingProjects: true, error: null });
     try {
@@ -115,7 +115,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     }
   },
 
-  // 选中项目，加载会话
+  // 选中工作目录，加载会话
   selectProject: async (projectPath, provider) => {
     set({
       isLoadingProject: true,
@@ -145,7 +145,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     }
   },
 
-  /** 刷新当前视图的数据：重载项目列表 + 全部会话，并根据当前视图状态重载搜索/项目会话 */
+  /** 刷新当前视图的数据：重载工作目录列表 + 全部会话，并根据当前视图状态重载搜索/工作目录会话 */
   refresh: async (settings: AppSettings) => {
     const { viewMode, searchQuery, projectFilter } = get();
     // 并行重载基础数据

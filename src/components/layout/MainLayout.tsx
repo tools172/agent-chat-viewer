@@ -132,7 +132,7 @@ export const MainLayout: React.FC = () => {
     try {
       await tauri.openProjectFolder(currentProjectPath);
     } catch (err) {
-      console.error('打开项目文件夹失败:', err);
+      console.error('打开工作目录失败:', err);
     }
   };
 
@@ -162,7 +162,7 @@ export const MainLayout: React.FC = () => {
     }
   }, [list.highlightEnabled, list.viewMode, localSearchQuery]);
 
-  // 选择项目 → 也设置时间线过滤
+  // 选择工作目录 → 也设置时间线过滤
   const handleSelectProject = useCallback(
     (projectPath: string, providerName: string) => {
       list.selectProject(projectPath, providerName);
@@ -170,7 +170,7 @@ export const MainLayout: React.FC = () => {
     [list]
   );
 
-  // 清除项目过滤
+  // 清除工作目录过滤
   const handleClearProjectFilter = useCallback(() => {
     list.setProjectFilter(null);
   }, [list]);
@@ -189,7 +189,7 @@ export const MainLayout: React.FC = () => {
     [list, settings]
   );
 
-  // 视图切换（文件夹视图自动设置项目过滤）
+  // 视图切换（文件夹视图自动设置工作目录过滤）
   const handleViewModeChange = useCallback(
     (mode: import('../../types').ViewMode) => {
       if (mode === 'by-project') {
@@ -227,7 +227,7 @@ export const MainLayout: React.FC = () => {
       ?.content?.find((b) => b.blockType === 'text')?.text?.slice(0, 60) ||
     'Untitled';
 
-  // 从会话列表查找当前会话的项目目录（优先 cwd，即实际工作目录）
+  // 从会话列表查找当前会话的工作目录（优先 cwd，即实际工作目录）
   const currentProjectPath = useMemo(() => {
     if (!selectedSessionPath) return null;
     const session = list.allSessions.find(
@@ -351,7 +351,7 @@ export const MainLayout: React.FC = () => {
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                 >
                   <Folder className="h-4 w-4 text-gray-400" />
-                  打开项目文件夹
+                  打开工作目录
                 </button>
                 <button
                   onClick={handleCopySessionPath}
@@ -389,7 +389,7 @@ export const MainLayout: React.FC = () => {
           <EmptyState
             icon={<MessageSquare className="h-20 w-20" />}
             title="选择一个会话查看聊天记录"
-            description="使用左侧面板浏览项目或搜索会话。"
+            description="使用左侧面板浏览工作目录或搜索会话。"
           />
         )}
       </div>

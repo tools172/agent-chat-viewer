@@ -110,7 +110,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
           <Filter className="h-3 w-3" />
           <span>
-            范围: {filterContext === 'all' ? '全部项目' : (filterContextLabel ?? filterContext)}
+            范围: {filterContext === 'all' ? '全部工作目录' : (filterContextLabel ?? filterContext)}
           </span>
           {filterContext !== 'all' && onClearFilter && (
             <button

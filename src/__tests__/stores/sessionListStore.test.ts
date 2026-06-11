@@ -55,7 +55,7 @@ describe('sessionListStore', () => {
   // ============================================================
 
   describe('refresh', () => {
-    it('应并行重载项目列表和全部会话', async () => {
+    it('应并行重载工作目录列表和全部会话', async () => {
       mockedListProjects.mockResolvedValue([
         { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code' },
       ]);
@@ -97,7 +97,7 @@ describe('sessionListStore', () => {
       expect(mockedSearchSessions).not.toHaveBeenCalled();
     });
 
-    it('有 projectFilter 时应重载该项目会话', async () => {
+    it('有 projectFilter 时应重载该工作目录会话', async () => {
       useSessionListStore.setState({
         projectFilter: '/p',
         projects: [
@@ -120,7 +120,7 @@ describe('sessionListStore', () => {
       expect(useSessionListStore.getState().projectSessions).toHaveLength(2);
     });
 
-    it('projectFilter 对应项目不存在时不应崩溃', async () => {
+    it('projectFilter 对应工作目录不存在时不应崩溃', async () => {
       useSessionListStore.setState({
         projectFilter: '/nonexistent',
         projects: [],
@@ -137,7 +137,7 @@ describe('sessionListStore', () => {
       expect(mockedListSessions).not.toHaveBeenCalled();
     });
 
-    it('同时有搜索查询和项目过滤时应都刷新', async () => {
+    it('同时有搜索查询和工作目录过滤时应都刷新', async () => {
       useSessionListStore.setState({
         viewMode: 'search',
         searchQuery: 'test',

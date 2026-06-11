@@ -239,7 +239,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <Database className="h-3 w-3" />
           <span>
-            {projects.length} 个项目 · {totalSessions} 个会话
+            {projects.length} 个工作目录 · {totalSessions} 个会话
           </span>
         </div>
       </div>
