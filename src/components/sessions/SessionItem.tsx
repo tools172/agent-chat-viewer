@@ -20,8 +20,8 @@ function getClientBadge(clientType: string): { label: string; color: string } | 
   switch (clientType) {
     case 'vscode':
       return { label: 'VSCode', color: 'bg-blue-100 text-blue-600 border-blue-300' };
-    case 'gui':
-      return { label: 'GUI', color: 'bg-emerald-100 text-emerald-600 border-emerald-300' };
+    case 'ui':
+      return { label: 'UI', color: 'bg-emerald-100 text-emerald-600 border-emerald-300' };
     case 'subagent':
       return { label: 'Sub', color: 'bg-amber-100 text-amber-600 border-amber-300' };
     default:
