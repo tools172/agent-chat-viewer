@@ -23,13 +23,21 @@ lazy_static! {
 fn clean_display_text(text: &str, provider_name: &str) -> String {
     match provider_name {
         "openclaw" => {
+            // 1) "Sender (untrusted metadata):" + JSON 代码块 + 时间戳行
             if let Some(caps) = OPENCLAW_PREFIX_RE.find(text) {
                 let stripped = text[caps.end()..].trim().to_string();
                 if !stripped.is_empty() {
                     return stripped;
                 }
             }
-            // 兜底：如果只有时间戳行（没有 sender 元数据），也尝试去除
+            // 2) Subagent 格式: "[...] [Subagent Context] ...\n\n[Subagent Task]: 实际任务"
+            if let Some(idx) = text.find("[Subagent Task]:") {
+                let after = text[idx + "[Subagent Task]:".len()..].trim().to_string();
+                if !after.is_empty() {
+                    return after;
+                }
+            }
+            // 3) 兜底：如果只有时间戳行（没有 sender 元数据），也尝试去除
             if let Some(stripped) = text.strip_prefix(|c: char| c == '[') {
                 if let Some(idx) = stripped.find("] ") {
                     let after = stripped[idx + 2..].trim().to_string();
@@ -259,6 +267,13 @@ mod tests {
         let text = "直接的问题文本";
         let cleaned = clean_display_text(text, "openclaw");
         assert_eq!(cleaned, "直接的问题文本");
+    }
+
+    #[test]
+    fn test_clean_openclaw_display_subagent_format() {
+        let text = "[Mon 2026-06-08 20:45 GMT+8] [Subagent Context] You are running as a subagent (depth 1/1). Results auto-announce to your requester; do not busy-poll for status.\n\n[Subagent Task]: 请使用 cnki-yx-literature-search 技能检索关键词\"智障恢复\"的文献，返回结构化结果（标题、作者、来源、摘要、被引频次等）。";
+        let cleaned = clean_display_text(text, "openclaw");
+        assert_eq!(cleaned, "请使用 cnki-yx-literature-search 技能检索关键词\"智障恢复\"的文献，返回结构化结果（标题、作者、来源、摘要、被引频次等）。");
     }
 
     #[test]
