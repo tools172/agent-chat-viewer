@@ -139,17 +139,11 @@ export const SessionItem: React.FC<SessionItemProps> = ({
           <div className="flex-1 min-w-0">
             {isSkeleton ? (
               <>
-                <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />
-                <div className="flex items-center gap-1.5 mt-1">
-                  <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
-                  {showProvider && (
-                    <span
-                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
-                    >
-                      {getProviderLabel(session.providerName)}
-                    </span>
-                  )}
-                </div>
+                <div className="h-[20px] w-3/4 bg-gray-200 rounded" />
+                <div className="h-[16px] w-1/3 bg-gray-100 rounded mt-1" />
+                {showProject && (
+                  <div className="h-[16px] w-2/5 bg-gray-100 rounded mt-0.5" />
+                )}
               </>
             ) : (
               <>
