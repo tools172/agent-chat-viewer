@@ -65,7 +65,7 @@ function applyHighlights(
   return result;
 }
 
-export const EventCard: React.FC<EventCardProps> = ({
+export const EventCard: React.FC<EventCardProps> = React.memo(({
   event,
   expandedThinking,
   expandedToolCalls,
@@ -288,4 +288,16 @@ export const EventCard: React.FC<EventCardProps> = ({
       )}
     </div>
   );
-};
+}, (prev, next) => {
+  // 快速路径：event uuid 相同则所有内容相同
+  return (
+    prev.event.uuid === next.event.uuid &&
+    prev.searchHighlight === next.searchHighlight &&
+    prev.findHighlight === next.findHighlight &&
+    prev.expandedThinking === next.expandedThinking &&
+    prev.expandedToolCalls === next.expandedToolCalls &&
+    prev.expandedToolResults === next.expandedToolResults &&
+    prev.searchColors === next.searchColors
+    // toggle/blockKey 都是稳定引用，无需比较
+  );
+});

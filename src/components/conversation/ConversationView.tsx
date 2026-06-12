@@ -46,7 +46,7 @@ interface ConversationViewProps {
   onStatsChange?: (s: { totalEvents: number; userCount: number; assistantCount: number; thinkingCount: number; toolCallCount: number }) => void;
 }
 
-export const ConversationView: React.FC<ConversationViewProps> = ({
+export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
   events,
   isLoading,
   searchHighlight,
@@ -174,4 +174,12 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
       </div>
     </div>
   );
-};
+}, (prev, next) => {
+  return (
+    prev.events === next.events &&
+    prev.isLoading === next.isLoading &&
+    prev.searchHighlight === next.searchHighlight &&
+    prev.showFindBar === next.showFindBar
+    // scrollHostRef / onToggleFind / onStatsChange 都是稳定引用
+  );
+});

@@ -9,7 +9,8 @@ interface FlatSessionListProps {
   selectedSessionPath: string | null;
   /** 搜索高亮词 */
   highlight?: string;
-  onSelectSession: (path: string, providerName: string) => void;
+  onSelectSession: (path: string, providerName: string, cwd?: string) => void;
+  onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
 }
 
 export const FlatSessionList: React.FC<FlatSessionListProps> = ({
@@ -18,6 +19,7 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
   selectedSessionPath,
   highlight,
   onSelectSession,
+  onOpenInNewTab,
 }) => {
   const sorted = useMemo(
     () => multiSort(sessions, sortConfig),
@@ -43,6 +45,7 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
           showProvider={true}
           highlight={highlight}
           onClick={onSelectSession}
+          onOpenInNewTab={onOpenInNewTab}
         />
       ))}
     </div>

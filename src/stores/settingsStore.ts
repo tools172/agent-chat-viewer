@@ -22,6 +22,7 @@ interface SettingsState {
   updateSidebarWidth: (width: number) => void;
   updateNavigatorWidth: (width: number) => void;
   updatePolishBatchSize: (size: number) => void;
+  updateRestoreTabsOnStartup: (restore: boolean) => void;
   resetSearchColors: () => void;
   resetFilter: () => void;
   clearError: () => void;
@@ -49,6 +50,7 @@ const defaultSettings: AppSettings = {
   sidebarWidth: 320,
   navigatorWidth: 256,
   polishBatchSize: 5,
+  restoreTabsOnStartup: true,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -180,6 +182,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         polishBatchSize: size,
+      },
+    });
+  },
+
+  updateRestoreTabsOnStartup: (restore: boolean) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        restoreTabsOnStartup: restore,
       },
     });
   },

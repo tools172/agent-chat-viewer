@@ -118,6 +118,8 @@ export interface AppSettings {
   navigatorWidth?: number;
   /** 渐进 polish 每批文件数：5/10/20/30/50，默认 5 */
   polishBatchSize?: number;
+  /** 启动时恢复上次打开的标签页 */
+  restoreTabsOnStartup?: boolean;
 }
 
 export interface ProviderInfo {
@@ -143,4 +145,49 @@ export interface ExportOptions {
   includeToolCalls: boolean;
   includeToolResults: boolean;
   excludeEmptyToolResults: boolean;
+}
+
+// ===== Tab System =====
+
+/** 单个标签页的完整状态快照 */
+export interface TabState {
+  /** 唯一标识 */
+  id: string;
+  /** 会话文件路径（去重依据） */
+  sessionPath: string;
+  /** Provider 名称 */
+  providerName: string;
+  /** 会话详情（events 等），加载完成后填充 */
+  sessionDetail: SessionDetail | null;
+  /** 是否正在加载会话内容 */
+  isLoading: boolean;
+  /** 加载错误信息 */
+  error: string | null;
+  /** 该标签页独立的过滤器配置 */
+  filter: FilterConfig;
+  /** 该标签页独立的查找栏状态 */
+  showFindBar: boolean;
+  /** 该标签页的搜索高亮词（来自左侧列表搜索） */
+  searchHighlight: string | undefined;
+  /** 该标签页的滚动位置（scrollTop），切换回来时恢复 */
+  scrollTop: number;
+  /** 该标签页展开的 thinking block UUID 集合 */
+  expandedThinking: string[];
+  /** 该标签页展开的 tool call block UUID 集合 */
+  expandedToolCalls: string[];
+  /** 该标签页展开的 tool result block UUID 集合 */
+  expandedToolResults: string[];
+  /** 标签页标题 */
+  title: string;
+  /** 标签页是否被"钉住" */
+  pinned: boolean;
+  /** 工作目录（cwd），用于 hint 显示 */
+  workingDir?: string;
+}
+
+/** 标签页的轻量摘要（用于持久化恢复和关闭历史） */
+export interface TabSnapshot {
+  sessionPath: string;
+  providerName: string;
+  pinned: boolean;
 }

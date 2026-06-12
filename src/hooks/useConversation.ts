@@ -1,18 +1,28 @@
 import { useMemo, useState, useCallback } from 'react';
 import type { ChatEvent } from '../types';
 
+export interface InitialExpanded {
+  thinking?: string[];
+  toolCalls?: string[];
+  toolResults?: string[];
+}
+
 /**
  * Hook for managing conversation display, filtering, and navigation.
+ * Accepts optional initial expanded state for tab restoration.
  */
-export function useConversation(events: ChatEvent[]) {
+export function useConversation(
+  events: ChatEvent[],
+  initialExpanded?: InitialExpanded
+) {
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
-    new Set()
+    new Set(initialExpanded?.thinking ?? [])
   );
   const [expandedToolCalls, setExpandedToolCalls] = useState<Set<string>>(
-    new Set()
+    new Set(initialExpanded?.toolCalls ?? [])
   );
   const [expandedToolResults, setExpandedToolResults] = useState<Set<string>>(
-    new Set()
+    new Set(initialExpanded?.toolResults ?? [])
   );
 
   // Toggle thinking block expansion

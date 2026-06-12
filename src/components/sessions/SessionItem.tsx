@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder } from 'lucide-react';
+import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder, ExternalLink } from 'lucide-react';
 import { relativeTime } from '../../utils/time';
 import { getProviderLabel, getProviderColor } from '../../utils/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -12,7 +12,9 @@ interface SessionItemProps {
   showProject?: boolean;
   highlight?: string;
   showProvider?: boolean;
-  onClick: (path: string, providerName: string) => void;
+  onClick: (path: string, providerName: string, cwd?: string) => void;
+  /** 在新标签页中打开（中键/Ctrl+点击/右键菜单） */
+  onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
 }
 
 /** 返回客户端环境标签（CLI 不显示，属于默认） */
@@ -36,6 +38,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   highlight,
   showProvider = true,
   onClick,
+  onOpenInNewTab,
 }) => {
   const searchColors = useSettingsStore((s) => s.settings.searchColors);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -119,10 +122,34 @@ export const SessionItem: React.FC<SessionItemProps> = ({
     }
   };
 
+  const sessionCwd = session.cwd || session.projectPath;
+
+  const handleOpenInNewTab = () => {
+    setContextMenu(null);
+    if (onOpenInNewTab) {
+      onOpenInNewTab(session.filePath, session.providerName, sessionCwd);
+    }
+  };
+
   return (
     <>
       <button
-        onClick={() => onClick(session.filePath, session.providerName)}
+        onClick={(e) => {
+          // Ctrl+Click / Cmd+Click → 在新标签页打开
+          if ((e.ctrlKey || e.metaKey) && onOpenInNewTab) {
+            e.preventDefault();
+            onOpenInNewTab(session.filePath, session.providerName, sessionCwd);
+            return;
+          }
+          onClick(session.filePath, session.providerName, sessionCwd);
+        }}
+        onMouseDown={(e) => {
+          // 中键点击 → 在新标签页打开
+          if (e.button === 1 && onOpenInNewTab) {
+            e.preventDefault();
+            onOpenInNewTab(session.filePath, session.providerName, sessionCwd);
+          }
+        }}
         onContextMenu={handleContextMenu}
         className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors duration-150 group ${
           isSelected
@@ -195,6 +222,15 @@ export const SessionItem: React.FC<SessionItemProps> = ({
           className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
+          {onOpenInNewTab && (
+            <button
+              onClick={handleOpenInNewTab}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <ExternalLink className="h-4 w-4 text-gray-400" />
+              在新标签页中打开
+            </button>
+          )}
           <button
             onClick={handleOpenFolder}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"

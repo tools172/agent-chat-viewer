@@ -55,7 +55,8 @@ interface SessionNavigatorProps {
   onViewModeChange: (mode: ViewMode) => void;
   onSortChange: (config: SortConfig) => void;
   onSelectProject: (path: string, providerName: string) => void;
-  onSelectSession: (path: string, providerName: string) => void;
+  onSelectSession: (path: string, providerName: string, cwd?: string) => void;
+  onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
   onSearchQueryChange: (query: string) => void;
   onSearch: (query: string) => void;
   onToggleHighlight: () => void;
@@ -85,6 +86,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   onSortChange,
   onSelectProject,
   onSelectSession,
+  onOpenInNewTab,
   onSearchQueryChange,
   onSearch,
   onToggleHighlight,
@@ -228,6 +230,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               sortConfig={sortConfig}
               selectedSessionPath={selectedSessionPath}
               onSelectSession={onSelectSession}
+              onOpenInNewTab={onOpenInNewTab}
             />
           )
         )}
@@ -245,6 +248,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               selectedSessionPath={selectedSessionPath}
               onSelectProject={onSelectProject}
               onSelectSession={onSelectSession}
+              onOpenInNewTab={onOpenInNewTab}
               isLoadingProject={isLoadingProject}
             />
           )
@@ -267,6 +271,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
                   : undefined
               }
               onSelectSession={onSelectSession}
+              onOpenInNewTab={onOpenInNewTab}
               onClearFilter={
                 projectFilter ? onClearProjectFilter : undefined
               }
@@ -283,6 +288,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
             onQueryChange={onSearchQueryChange}
             onSearch={onSearch}
             onSelectSession={onSelectSession}
+            onOpenInNewTab={onOpenInNewTab}
             onToggleHighlight={onToggleHighlight}
             selectedSessionPath={selectedSessionPath}
           />

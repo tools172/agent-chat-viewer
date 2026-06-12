@@ -386,6 +386,38 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               </div>
             </div>
 
+            {/* 启动恢复标签页 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  标签页
+                </span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  启动时恢复上次打开的标签页
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  store.updateRestoreTabsOnStartup(
+                    !(settings.restoreTabsOnStartup ?? true)
+                  )
+                }
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  (settings.restoreTabsOnStartup ?? true)
+                    ? 'bg-primary-600'
+                    : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                    (settings.restoreTabsOnStartup ?? true)
+                      ? 'translate-x-[18px]'
+                      : 'translate-x-[3px]'
+                  }`}
+                />
+              </button>
+            </div>
+
             {/* 批次刷新量 */}
             <div className="flex items-center justify-between">
               <div>

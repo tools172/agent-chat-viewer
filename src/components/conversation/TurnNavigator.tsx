@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { PanelRightClose, PanelRightOpen, GripVertical } from 'lucide-react';
 import type { ChatEvent } from '../../types';
+import { extractUserText } from '../../utils/filterEvents';
 
 /** 小尖括号 + 顶部横线：回到最顶部 */
 function ScrollTopIcon() {
@@ -26,9 +27,13 @@ function ScrollBottomIcon() {
   );
 }
 
+const TURN_HINT_MAX_LEN = 2000;
+
 interface Turn {
   uuid: string;
   label: string;
+  /** 完整内容（用于 hint，超过 2000 字截断加 ...） */
+  hint: string;
   index: number;
 }
 
@@ -47,9 +52,24 @@ function extractTurns(events: ChatEvent[]): Turn[] {
     const hasText = event.content.some((b) => b.blockType === 'text');
     if (!hasText) continue;
     turnIndex++;
-    const label =
-      event.content.find((b) => b.blockType === 'text')?.text?.slice(0, 40)?.replace(/\n/g, ' ') || '(空)';
-    turns.push({ uuid: event.uuid, label: label.length >= 40 ? label + '…' : label, index: turnIndex });
+    // 跳过系统注解块，取真实用户消息
+    const fullText = extractUserText(event);
+    // 显示标签：40 字，替换换行
+    const flatText = fullText.replace(/\n/g, ' ');
+    const label = flatText.slice(0, 40) || '(空)';
+    // 仅当内容被截断时才设置 hint（超出 2000 字再截断一次）
+    const truncated = flatText.length > 40;
+    const hint = truncated
+      ? (fullText.length > TURN_HINT_MAX_LEN
+          ? fullText.slice(0, TURN_HINT_MAX_LEN) + '...'
+          : fullText)
+      : '';
+    turns.push({
+      uuid: event.uuid,
+      label: label.length >= 40 ? label + '…' : label,
+      hint,
+      index: turnIndex,
+    });
   }
   return turns;
 }
@@ -263,7 +283,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
                 ? 'border-primary-500 bg-primary-50 text-primary-700'
                 : 'border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
             }`}
-            title={turn.label}
+            title={turn.hint || undefined}
           >
             <span className="font-medium text-[10px] text-gray-400 mr-0.5">
               {turn.index}

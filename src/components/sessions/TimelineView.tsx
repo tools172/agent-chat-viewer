@@ -11,7 +11,8 @@ interface TimelineViewProps {
   /** 当前过滤上下文 */
   filterContext: 'all' | string;
   filterContextLabel?: string;
-  onSelectSession: (path: string, providerName: string) => void;
+  onSelectSession: (path: string, providerName: string, cwd?: string) => void;
+  onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
   onClearFilter?: () => void;
 }
 
@@ -81,6 +82,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   filterContext,
   filterContextLabel,
   onSelectSession,
+  onOpenInNewTab,
   onClearFilter,
 }) => {
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(
@@ -180,6 +182,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     showProject={filterContext === 'all'}
                     showProvider={true}
                     onClick={onSelectSession}
+                    onOpenInNewTab={onOpenInNewTab}
                   />
                 ))}
               </div>

@@ -9,7 +9,7 @@ interface MarkdownRendererProps {
   allowHtml?: boolean;
 }
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({
   content,
   allowHtml,
 }) => {
@@ -23,4 +23,4 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       </ReactMarkdown>
     </div>
   );
-};
+}, (prev, next) => prev.content === next.content && prev.allowHtml === next.allowHtml);

@@ -15,7 +15,8 @@ interface ProjectListProps {
   selectedSessionPath: string | null;
   isLoadingProject?: boolean;
   onSelectProject: (path: string, providerName: string) => void;
-  onSelectSession: (path: string, providerName: string) => void;
+  onSelectSession: (path: string, providerName: string, cwd?: string) => void;
+  onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = ({
@@ -28,6 +29,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   isLoadingProject = false,
   onSelectProject,
   onSelectSession,
+  onOpenInNewTab,
 }) => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
     new Set()
@@ -205,6 +207,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                       showProject={false}
                       showProvider={true}
                       onClick={onSelectSession}
+                      onOpenInNewTab={onOpenInNewTab}
                     />
                   ))
                 )}

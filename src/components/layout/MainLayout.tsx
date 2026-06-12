@@ -1,26 +1,25 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   Download,
-  MessageSquare,
   FolderOpen,
   Folder,
   Copy,
   Check,
   Hash,
   RefreshCw,
+  Layout,
+  Undo2,
 } from 'lucide-react';
-import { useSessions } from '../../hooks/useSessions';
 import { useSessionList } from '../../hooks/useSessionList';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { filterEvents, collapseConsecutiveEvents } from '../../utils/filterEvents';
+import { useTabStore } from '../../stores/tabStore';
 import { SessionNavigator } from './SessionNavigator';
-import { FilterBar } from '../filter/FilterBar';
-import { ConversationView } from '../conversation/ConversationView';
-import { TurnNavigator } from '../conversation/TurnNavigator';
+import { TabBar } from '../tabs/TabBar';
+import { TabContextMenu, type TabContextAction } from '../tabs/TabContextMenu';
+import { TabContent } from '../tabs/TabContent';
 import { ExportDialog } from '../export/ExportDialog';
 import { SettingsPanel } from '../settings/SettingsPanel';
 import { EmptyState } from '../common/EmptyState';
-import { ErrorBanner } from '../common/ErrorBanner';
 import { LoadingOverlay } from '../common/LoadingOverlay';
 import * as tauri from '../../utils/tauri';
 
@@ -28,34 +27,51 @@ export const MainLayout: React.FC = () => {
   // 会话列表 store
   const list = useSessionList();
 
-  // 会话内容 store
+  // 标签页 store
   const {
-    currentSession,
-    selectedSessionPath,
-    isLoadingConversation,
-    error,
-    selectSession,
-    clearError,
-  } = useSessions();
+    tabs,
+    activeTabId,
+    closedTabs,
+    tabOrder,
+    openTab,
+    closeTab,
+    activateTab,
+    closeOtherTabs,
+    closeTabsToRight,
+    closeAllTabs,
+    reopenClosedTab,
+    togglePinTab,
+    moveTab,
+    updateTabFilter,
+    updateTabFindBar,
+    refreshTab,
+  } = useTabStore();
 
-  const { settings, updateFilter } = useSettingsStore();
+  const activeTab = useMemo(
+    () => tabs.find((t) => t.id === activeTabId) ?? null,
+    [tabs, activeTabId]
+  );
+
+  const { settings } = useSettingsStore();
   const [showExport, setShowExport] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [activeFilter, setActiveFilter] = useState(settings.defaultFilter);
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   // 当前激活的搜索高亮词（同时用于左侧列表和右侧对话内容）
   const [activeSearchHighlight, setActiveSearchHighlight] = useState<string | undefined>();
-  const [showFindBar, setShowFindBar] = useState(false);
-  const [convStats, setConvStats] = useState<{ totalEvents: number; userCount: number; assistantCount: number; thinkingCount: number; toolCallCount: number } | null>(null);
 
-  // 对话滚动容器 ref（供 TurnNavigator 使用，需包含 null 以支持赋值）
-  const convScrollRef = useRef<HTMLDivElement | null>(null);
+  // 标签栏右键菜单
+  const [tabContextMenu, setTabContextMenu] = useState<{
+    x: number;
+    y: number;
+    tabId: string;
+  } | null>(null);
 
-  // 右键菜单
+  // 对话区域右键菜单
   const [convContextMenu, setConvContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [copiedPath, setCopiedPath] = useState(false);
   const convMenuRef = useRef<HTMLDivElement>(null);
 
+  // 对话区域右键菜单 — 点击外部关闭
   useEffect(() => {
     if (!convContextMenu) return;
     const handler = (e: MouseEvent) => {
@@ -67,7 +83,7 @@ export const MainLayout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, [convContextMenu]);
 
-  // 调整菜单位置不超出视口边界
+  // 调整对话区域菜单位置
   useLayoutEffect(() => {
     if (!convContextMenu || !convMenuRef.current) return;
     const rect = convMenuRef.current.getBoundingClientRect();
@@ -82,6 +98,145 @@ export const MainLayout: React.FC = () => {
     }
   }, [convContextMenu]);
 
+  // 高亮开关变化时，同步更新激活的高亮
+  useEffect(() => {
+    if (!list.highlightEnabled) {
+      setActiveSearchHighlight(undefined);
+    } else if (list.viewMode === 'search' && localSearchQuery.trim()) {
+      setActiveSearchHighlight(localSearchQuery);
+    }
+  }, [list.highlightEnabled, list.viewMode, localSearchQuery]);
+
+  // 搜索高亮变化时，同步到 activeTab
+  useEffect(() => {
+    if (activeTabId) {
+      useTabStore
+        .getState()
+        .updateTabSearchHighlight(activeTabId, activeSearchHighlight);
+    }
+  }, [activeSearchHighlight, activeTabId]);
+
+  // 选择工作目录
+  const handleSelectProject = useCallback(
+    (projectPath: string, providerName: string) => {
+      list.selectProject(projectPath, providerName);
+    },
+    [list]
+  );
+
+  const handleClearProjectFilter = useCallback(() => {
+    list.setProjectFilter(null);
+  }, [list]);
+
+  const handleSortChange = useCallback(
+    (config: import('../../types').SortConfig) => list.setSortConfig(config),
+    [list]
+  );
+
+  const handleSearch = useCallback(
+    (query: string) => {
+      list.search(query, settings);
+    },
+    [list, settings]
+  );
+
+  const handleViewModeChange = useCallback(
+    (mode: import('../../types').ViewMode) => {
+      if (mode === 'by-project') {
+        list.setProjectFilter(null);
+      }
+      list.setViewMode(mode);
+    },
+    [list]
+  );
+
+  // === 标签栏操作 ===
+
+  const handleTabContextMenu = useCallback(
+    (e: React.MouseEvent, tabId: string) => {
+      e.preventDefault();
+      setTabContextMenu({ x: e.clientX, y: e.clientY, tabId });
+    },
+    []
+  );
+
+  const handleTabContextAction = useCallback(
+    async (action: TabContextAction, tabId: string) => {
+      const tab = tabs.find((t) => t.id === tabId);
+      if (!tab) return;
+
+      switch (action) {
+        case 'refresh':
+          refreshTab(tabId);
+          break;
+        case 'togglePin':
+          togglePinTab(tabId);
+          break;
+        case 'close':
+          closeTab(tabId);
+          break;
+        case 'closeOthers':
+          closeOtherTabs(tabId);
+          break;
+        case 'closeToRight':
+          closeTabsToRight(tabId);
+          break;
+        case 'closeAll':
+          closeAllTabs();
+          break;
+        case 'copyPath':
+          try {
+            await navigator.clipboard.writeText(tab.sessionPath);
+          } catch { /* ignore */ }
+          break;
+        case 'copyId':
+          if (tab.sessionDetail?.id) {
+            try {
+              await navigator.clipboard.writeText(tab.sessionDetail.id);
+            } catch { /* ignore */ }
+          }
+          break;
+        case 'openFolder':
+          try {
+            await tauri.openContainingFolder(tab.sessionPath);
+          } catch (err) {
+            console.error('打开文件夹失败:', err);
+          }
+          break;
+        case 'openProjectFolder': {
+          // 查找该会话的工作目录
+          const session = list.allSessions.find(
+            (s) => s.filePath === tab.sessionPath
+          );
+          const projectDir = session?.cwd || session?.projectPath;
+          if (projectDir) {
+            try {
+              await tauri.openProjectFolder(projectDir);
+            } catch (err) {
+              console.error('打开工作目录失败:', err);
+            }
+          }
+          break;
+        }
+        case 'export':
+          activateTab(tabId);
+          setShowExport(true);
+          break;
+      }
+    },
+    [
+      tabs,
+      list.allSessions,
+      refreshTab,
+      togglePinTab,
+      closeTab,
+      closeOtherTabs,
+      closeTabsToRight,
+      closeAllTabs,
+      activateTab,
+    ]
+  );
+
   const handleConvContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     setConvContextMenu({ x: e.clientX, y: e.clientY });
@@ -89,9 +244,9 @@ export const MainLayout: React.FC = () => {
 
   const handleOpenSessionFolder = async () => {
     setConvContextMenu(null);
-    if (!currentSession?.filePath) return;
+    if (!activeTab?.sessionPath) return;
     try {
-      await tauri.openContainingFolder(currentSession.filePath);
+      await tauri.openContainingFolder(activeTab.sessionPath);
     } catch (err) {
       console.error('打开文件夹失败:', err);
     }
@@ -99,9 +254,9 @@ export const MainLayout: React.FC = () => {
 
   const handleCopySessionPath = async () => {
     setConvContextMenu(null);
-    if (!currentSession?.filePath) return;
+    if (!activeTab?.sessionPath) return;
     try {
-      await navigator.clipboard.writeText(currentSession.filePath);
+      await navigator.clipboard.writeText(activeTab.sessionPath);
       setCopiedPath(true);
       setTimeout(() => setCopiedPath(false), 2000);
     } catch (err) {
@@ -111,9 +266,9 @@ export const MainLayout: React.FC = () => {
 
   const handleCopySessionId = async () => {
     setConvContextMenu(null);
-    if (!currentSession?.id) return;
+    if (!activeTab?.sessionDetail?.id) return;
     try {
-      await navigator.clipboard.writeText(currentSession.id);
+      await navigator.clipboard.writeText(activeTab.sessionDetail.id);
       setCopiedPath(true);
       setTimeout(() => setCopiedPath(false), 2000);
     } catch (err) {
@@ -123,9 +278,64 @@ export const MainLayout: React.FC = () => {
 
   const handleRefreshSession = () => {
     setConvContextMenu(null);
-    if (!currentSession?.filePath || !currentSession?.providerName) return;
-    selectSession(currentSession.filePath, currentSession.providerName);
+    if (activeTabId) refreshTab(activeTabId);
   };
+
+  // 合并所有已知会话来源，去重（路径归一化处理）
+  const allKnownSessions = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: import('../../types').SessionSummary[] = [];
+    for (const s of [
+      ...list.allSessions,
+      ...list.searchResults,
+      ...list.projectSessions,
+    ]) {
+      const normalized = s.filePath.replace(/\\/g, '/');
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        merged.push(s);
+      }
+    }
+    return merged;
+  }, [list.allSessions, list.searchResults, list.projectSessions]);
+
+  // 获取当前会话的工作目录（用于右键菜单等）
+  const currentProjectPath = useMemo(() => {
+    if (!activeTab?.sessionPath) return null;
+    const normalizedPath = activeTab.sessionPath.replace(/\\/g, '/');
+    const session = allKnownSessions.find(
+      (s) => s.filePath.replace(/\\/g, '/') === normalizedPath
+    );
+    if (!session) return null;
+    return session.cwd || session.projectPath;
+  }, [activeTab?.sessionPath, allKnownSessions]);
+
+  // === 会话选择 ===
+
+  /** 单击会话 → 在当前激活标签页打开（无标签则新建并激活） */
+  const handleSelectSession = useCallback(
+    (sessionPath: string, providerName: string, cwd?: string) => {
+      if (
+        list.viewMode === 'search' &&
+        localSearchQuery.trim() &&
+        list.highlightEnabled
+      ) {
+        setActiveSearchHighlight(localSearchQuery);
+      } else {
+        setActiveSearchHighlight(undefined);
+      }
+      openTab(sessionPath, providerName, true, cwd);
+    },
+    [openTab, list.viewMode, localSearchQuery, list.highlightEnabled]
+  );
+
+  /** Ctrl+Click / 中键 / 右键菜单 → 在后台新标签页打开 */
+  const handleOpenInNewTab = useCallback(
+    (sessionPath: string, providerName: string, cwd?: string) => {
+      openTab(sessionPath, providerName, false, cwd);
+    },
+    [openTab]
+  );
 
   const handleOpenProjectFolder = async () => {
     setConvContextMenu(null);
@@ -137,106 +347,28 @@ export const MainLayout: React.FC = () => {
     }
   };
 
-  // 选择会话：仅在搜索视图且高亮开启时传递高亮词
-  const handleSelectSession = useCallback(
-    (sessionPath: string, providerName: string) => {
-      if (
-        list.viewMode === 'search' &&
-        localSearchQuery.trim() &&
-        list.highlightEnabled
-      ) {
-        setActiveSearchHighlight(localSearchQuery);
-      } else {
-        setActiveSearchHighlight(undefined);
-      }
-      selectSession(sessionPath, providerName);
-    },
-    [selectSession, list.viewMode, localSearchQuery, list.highlightEnabled]
+  // === keepAlive 排名计算 ===
+  const keepAliveRanks = useMemo(() => {
+    const ranks = new Map<string, number>();
+    tabOrder.forEach((id, i) => {
+      ranks.set(id, i);
+    });
+    // 未在 tabOrder 中的 tab 给一个很大的 rank
+    tabs.forEach((t) => {
+      if (!ranks.has(t.id)) ranks.set(t.id, 999);
+    });
+    return ranks;
+  }, [tabs, tabOrder]);
+
+  const getKeepAliveRank = useCallback(
+    (tabId: string) => keepAliveRanks.get(tabId) ?? 999,
+    [keepAliveRanks]
   );
 
-  // 高亮开关变化时，同步更新激活的高亮
-  React.useEffect(() => {
-    if (!list.highlightEnabled) {
-      setActiveSearchHighlight(undefined);
-    } else if (list.viewMode === 'search' && localSearchQuery.trim()) {
-      setActiveSearchHighlight(localSearchQuery);
-    }
-  }, [list.highlightEnabled, list.viewMode, localSearchQuery]);
-
-  // 选择工作目录 → 也设置时间线过滤
-  const handleSelectProject = useCallback(
-    (projectPath: string, providerName: string) => {
-      list.selectProject(projectPath, providerName);
-    },
-    [list]
-  );
-
-  // 清除工作目录过滤
-  const handleClearProjectFilter = useCallback(() => {
-    list.setProjectFilter(null);
-  }, [list]);
-
-  // 排序
-  const handleSortChange = useCallback(
-    (config: import('../../types').SortConfig) => list.setSortConfig(config),
-    [list]
-  );
-
-  // 搜索
-  const handleSearch = useCallback(
-    (query: string) => {
-      list.search(query, settings);
-    },
-    [list, settings]
-  );
-
-  // 视图切换（文件夹视图自动设置工作目录过滤）
-  const handleViewModeChange = useCallback(
-    (mode: import('../../types').ViewMode) => {
-      if (mode === 'by-project') {
-        list.setProjectFilter(null);
-      }
-      list.setViewMode(mode);
-    },
-    [list]
-  );
-
-  // 过滤器变更 — 纯前端过滤，不重新请求后端
-  const handleFilterChange = useCallback(
-    (filterUpdate: Partial<typeof activeFilter>) => {
-      const newFilter = { ...activeFilter, ...filterUpdate };
-      setActiveFilter(newFilter);
-      updateFilter(filterUpdate);
-    },
-    [updateFilter, activeFilter]
-  );
-
-  // 前端侧过滤：后端返回全量事件，这里按 activeFilter 筛选
-  const filteredEvents = useMemo(() => {
-    if (!currentSession) return [];
-    const filtered = filterEvents(currentSession.events, activeFilter);
-    if (activeFilter.collapseConsecutive) {
-      return collapseConsecutiveEvents(filtered);
-    }
-    return filtered;
-  }, [currentSession, activeFilter]);
-
-  // 获取会话标题
-  const sessionTitle =
-    currentSession?.events
-      ?.find((e) => e.eventType === 'user')
-      ?.content?.find((b) => b.blockType === 'text')?.text?.slice(0, 60) ||
-    'Untitled';
-
-  // 从会话列表查找当前会话的工作目录（优先 cwd，即实际工作目录）
-  const currentProjectPath = useMemo(() => {
-    if (!selectedSessionPath) return null;
-    const session = list.allSessions.find(
-      (s) => s.filePath === selectedSessionPath
-    );
-    if (!session) return null;
-    return session.cwd || session.projectPath;
-  }, [selectedSessionPath, list.allSessions]);
+  // === 导出 ===
+  const exportSessionTitle = activeTab?.title || 'Untitled';
+  const exportSessionPath = activeTab?.sessionPath || '';
+  const exportProviderName = activeTab?.providerName || 'claude_code';
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -256,12 +388,13 @@ export const MainLayout: React.FC = () => {
         isRefreshing={list.isRefreshing}
         projectFilter={list.projectFilter}
         selectedProjectPath={list.projectFilter}
-        selectedSessionPath={selectedSessionPath}
+        selectedSessionPath={activeTab?.sessionPath ?? null}
         sidebarWidth={settings.sidebarWidth ?? 320}
         onViewModeChange={handleViewModeChange}
         onSortChange={handleSortChange}
         onSelectProject={handleSelectProject}
         onSelectSession={handleSelectSession}
+        onOpenInNewTab={handleOpenInNewTab}
         onSearchQueryChange={setLocalSearchQuery}
         onSearch={handleSearch}
         onToggleHighlight={list.toggleHighlight}
@@ -270,63 +403,62 @@ export const MainLayout: React.FC = () => {
         onRefresh={list.reload}
       />
 
-      {/* Main content */}
+      {/* 右侧：标签页系统 */}
       <div className="flex-1 flex flex-col min-w-0">
-        {error && <ErrorBanner message={error} onDismiss={clearError} />}
-
-        {currentSession ? (
+        {activeTab ? (
           <>
-            <div className="px-4 py-2 border-b bg-white">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-3 min-w-0">
-                  <h2
-                    className="text-sm font-medium text-gray-800 truncate"
-                    title={currentProjectPath ? `工作目录: ${currentProjectPath}\n存储路径: ${currentSession?.filePath || ''}` : sessionTitle}
-                  >
-                    {sessionTitle}
-                  </h2>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => setShowExport(true)}
-                    className="flex items-center gap-1.5 px-3 py-1 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    导出
-                  </button>
-                </div>
-              </div>
-              <FilterBar
-                filter={activeFilter}
-                onChange={handleFilterChange}
-                stats={convStats ?? undefined}
-                showFindBar={showFindBar}
-                onToggleFind={() => setShowFindBar((v) => !v)}
-              />
-            </div>
+            {/* 标签栏 */}
+            <TabBar
+              tabs={tabs}
+              activeTabId={activeTabId}
+              onActivateTab={activateTab}
+              onCloseTab={closeTab}
+              onMoveTab={moveTab}
+              onOpenContextMenu={handleTabContextMenu}
+            />
 
+            {/* 标签页内容 */}
             <div
-              className="flex-1 flex overflow-hidden"
+              className="flex-1 flex flex-col min-h-0"
               onContextMenu={handleConvContextMenu}
             >
-              <ConversationView
-                events={filteredEvents}
-                isLoading={isLoadingConversation}
-                searchHighlight={activeSearchHighlight}
-                scrollHostRef={convScrollRef}
-                showFindBar={showFindBar}
-                onToggleFind={() => setShowFindBar((v) => !v)}
-                onStatsChange={setConvStats}
-              />
-              <TurnNavigator
-                events={filteredEvents}
-                containerRef={convScrollRef}
-                defaultWidth={settings.navigatorWidth ?? 256}
-              />
+              {tabs.map((tab) => (
+                <TabContent
+                  key={tab.id}
+                  tab={tab}
+                  isActive={tab.id === activeTabId}
+                  keepAliveRank={getKeepAliveRank(tab.id)}
+                  onFilterChange={updateTabFilter}
+                  onFindBarToggle={updateTabFindBar}
+                />
+              ))}
             </div>
 
+            {/* 标签栏右键菜单 */}
+            {tabContextMenu && (
+              <TabContextMenu
+                x={tabContextMenu.x}
+                y={tabContextMenu.y}
+                tabId={tabContextMenu.tabId}
+                isPinned={
+                  tabs.find((t) => t.id === tabContextMenu.tabId)?.pinned ??
+                  false
+                }
+                sessionPath={
+                  tabs.find((t) => t.id === tabContextMenu.tabId)
+                    ?.sessionPath ?? ''
+                }
+                sessionId={
+                  tabs.find((t) => t.id === tabContextMenu.tabId)
+                    ?.sessionDetail?.id
+                }
+                onAction={handleTabContextAction}
+                onClose={() => setTabContextMenu(null)}
+              />
+            )}
+
             {/* 对话区域右键菜单 */}
-            {convContextMenu && currentSession && (
+            {convContextMenu && activeTab && (
               <div
                 ref={convMenuRef}
                 className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px]"
@@ -387,20 +519,32 @@ export const MainLayout: React.FC = () => {
             )}
           </>
         ) : (
+          /* 无标签页时的空状态 */
           <EmptyState
-            icon={<MessageSquare className="h-20 w-20" />}
-            title="选择一个会话查看聊天记录"
-            description="使用左侧面板浏览工作目录或搜索会话。"
+            icon={<Layout className="h-20 w-20" />}
+            title="打开一个会话开始查看"
+            description="从左侧面板选择会话，或使用搜索找到您想查看的聊天记录。"
+            action={
+              closedTabs.length > 0 ? (
+                <button
+                  onClick={reopenClosedTab}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  <Undo2 className="h-4 w-4" />
+                  恢复最近关闭的标签页
+                </button>
+              ) : undefined
+            }
           />
         )}
       </div>
 
       {/* Dialogs */}
-      {showExport && currentSession && (
+      {showExport && activeTab && (
         <ExportDialog
-          sessionPath={currentSession.filePath}
-          sessionTitle={sessionTitle}
-          providerName={currentSession.providerName || 'claude_code'}
+          sessionPath={exportSessionPath}
+          sessionTitle={exportSessionTitle}
+          providerName={exportProviderName}
           onClose={() => setShowExport(false)}
         />
       )}
@@ -412,7 +556,7 @@ export const MainLayout: React.FC = () => {
         />
       )}
 
-      {/* 首次加载会话数据 — 半透明遮罩浮在页面上方 */}
+      {/* 首次加载 — 半透明遮罩 */}
       {list.isLoadingAll && list.allSessions.length === 0 && (
         <LoadingOverlay />
       )}

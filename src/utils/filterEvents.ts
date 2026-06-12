@@ -84,3 +84,31 @@ function shouldShowBlock(block: ContentBlock, config: FilterConfig): boolean {
       return true;
   }
 }
+
+// ===== 用户消息文本提取 =====
+
+/** 系统注解标签，这些块应跳过，取后面的真实用户输入 */
+const SYSTEM_ANNOTATION_PATTERN = /^<[a-z][a-z0-9_-]*>[\s\S]*<\/[a-z][a-z0-9_-]*>$/;
+
+/** 判断一个 text block 是否为系统注解（如 <ide_opened_file>、<system-reminder> 等） */
+function isSystemAnnotation(text: string): boolean {
+  return SYSTEM_ANNOTATION_PATTERN.test(text.trim());
+}
+
+/**
+ * 从 ChatEvent 的 content 中提取"真实"用户消息文本。
+ * 跳过系统注解块（如 <ide_opened_file>），取第一个非系统 text block。
+ * 如果全是系统注解，则返回第一个 text block。
+ */
+export function extractUserText(
+  event: import('../types').ChatEvent
+): string {
+  const textBlocks = event.content.filter(
+    (b) => b.blockType === 'text'
+  ) as import('../types').TextBlock[];
+  if (textBlocks.length === 0) return '';
+
+  // 优先取第一个非系统注解的 text block
+  const realBlock = textBlocks.find((b) => !isSystemAnnotation(b.text));
+  return realBlock?.text || textBlocks[0].text;
+}
