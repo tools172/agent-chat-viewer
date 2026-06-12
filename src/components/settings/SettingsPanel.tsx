@@ -105,6 +105,40 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+          {/* Agent 支持 */}
+          <section>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+              🔌 Agent 支持
+            </h3>
+            <div className="space-y-2">
+              {Object.entries(settings.providerEnabled).map(([name, enabled]) => (
+                <label
+                  key={name}
+                  className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    onChange={(e) =>
+                      store.toggleProvider(name, e.target.checked)
+                    }
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="capitalize">{name.replace('_', ' ')}</span>
+                  <span
+                    className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
+                      enabled
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {enabled ? '已启用' : '未启用'}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+
           {/* Watch directories */}
           <section>
             <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
@@ -372,39 +406,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             </div>
           </section>
 
-          {/* Provider settings */}
-          <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              🔌 Agent 支持
-            </h3>
-            <div className="space-y-2">
-              {Object.entries(settings.providerEnabled).map(([name, enabled]) => (
-                <label
-                  key={name}
-                  className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={enabled}
-                    onChange={(e) =>
-                      store.toggleProvider(name, e.target.checked)
-                    }
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="capitalize">{name.replace('_', ' ')}</span>
-                  <span
-                    className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
-                      enabled
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-400'
-                    }`}
-                  >
-                    {enabled ? '已启用' : '未启用'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </section>
         </div>
 
         {/* Footer */}
