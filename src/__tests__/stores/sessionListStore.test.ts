@@ -57,7 +57,7 @@ describe('sessionListStore', () => {
   describe('refresh', () => {
     it('应并行重载工作目录列表和全部会话', async () => {
       mockedListProjects.mockResolvedValue([
-        { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
+        { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code' },
       ]);
       mockedListAllSessions.mockResolvedValue([
         { id: 's1', projectName: 'proj', projectPath: '/p', display: 'hi', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
@@ -101,12 +101,12 @@ describe('sessionListStore', () => {
       useSessionListStore.setState({
         projectFilter: '/p',
         projects: [
-          { name: 'proj', path: '/p', sessionCount: 2, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
+          { name: 'proj', path: '/p', sessionCount: 2, lastActivity: '', providerName: 'claude_code' },
         ],
       });
 
       mockedListProjects.mockResolvedValue([
-        { name: 'proj', path: '/p', sessionCount: 2, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
+        { name: 'proj', path: '/p', sessionCount: 2, lastActivity: '', providerName: 'claude_code' },
       ]);
       mockedListAllSessions.mockResolvedValue([]);
       mockedListSessions.mockResolvedValue([
@@ -143,12 +143,12 @@ describe('sessionListStore', () => {
         searchQuery: 'test',
         projectFilter: '/p',
         projects: [
-          { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
+          { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code' },
         ],
       });
 
       mockedListProjects.mockResolvedValue([
-        { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code', fileMtime: '' },
+        { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code' },
       ]);
       mockedListAllSessions.mockResolvedValue([]);
       mockedSearchSessions.mockResolvedValue([]);

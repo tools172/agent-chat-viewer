@@ -49,6 +49,8 @@ interface SessionListState {
     settings: AppSettings
   ) => Promise<void>;
   refresh: (settings: AppSettings) => Promise<void>;
+  polishAllSessions: (sessions: SessionSummary[]) => Promise<void>;
+  polishProjectSessions: (sessions: SessionSummary[]) => Promise<void>;
   setSearchQuery: (query: string) => void;
   clearError: () => void;
 }
