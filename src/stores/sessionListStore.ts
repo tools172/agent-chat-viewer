@@ -118,7 +118,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
         set((state) => ({
           allSessions: state.allSessions.map((s) => {
             const p = map.get(s.filePath);
-            return p ? { ...s, display: p.display, clientType: p.clientType } : s;
+            return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
           }),
         }));
       } catch {
@@ -166,7 +166,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
       set((state) => ({
         projectSessions: state.projectSessions.map((s) => {
           const p = map.get(s.filePath);
-          return p ? { ...s, display: p.display, clientType: p.clientType } : s;
+          return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
         }),
       }));
     } catch {

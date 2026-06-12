@@ -129,6 +129,42 @@ pub fn parse_session_detail(
     })
 }
 
+/// 仅用文件元数据创建骨架 SessionSummary，完全不读文件内容。
+/// 速度快（仅 stat 调用），用于渐进式加载的第一遍渲染。
+pub fn create_skeleton_summary(
+    file_path: &Path,
+    project_name: &str,
+    project_path: &str,
+    provider_name: &str,
+) -> Option<SessionSummary> {
+    let metadata = std::fs::metadata(file_path).ok()?;
+    let id = file_path.file_stem()?.to_str()?.to_string();
+    let file_size = metadata.len();
+    let file_mtime = metadata
+        .modified()
+        .ok()
+        .map(|m| {
+            let dt: chrono::DateTime<chrono::Utc> = m.into();
+            dt.to_rfc3339()
+        })
+        .unwrap_or_default();
+
+    Some(SessionSummary {
+        id: id.clone(),
+        project_name: project_name.to_string(),
+        project_path: project_path.to_string(),
+        display: id, // 骨架阶段用文件名作为占位标题，polish 后替换
+        timestamp: file_mtime.clone(), // 用文件修改时间作为初始时间戳，polish 后用真实时间戳替换
+        message_count: 0, // polish 后填充
+        file_size,
+        cwd: String::new(), // polish 后填充
+        file_path: file_path.to_string_lossy().to_string(),
+        provider_name: provider_name.to_string(),
+        file_mtime,
+        client_type: String::new(), // polish 后填充
+    })
+}
+
 /// Create a SessionSummary by reading first and last events from a file.
 ///
 /// When `quick` is true, skips display cleaning and client type detection —
@@ -253,17 +289,20 @@ pub fn create_session_summary(
     })
 }
 
-/// 渐进式加载用：对已快速加载的会话进行 display 清洗 + client_type 检测。
-/// 返回更新后的 display 和 client_type，前端按 filePath 匹配更新列表。
+/// 渐进式加载用：对骨架会话进行内容读取 + display 清洗 + client_type 检测。
+/// 返回更新后的字段，前端按 filePath 匹配更新列表。
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionPolish {
     pub file_path: String,
     pub display: String,
+    pub timestamp: String,
+    pub message_count: u32,
+    pub cwd: String,
     pub client_type: String,
 }
 
-/// 对单个会话文件执行清洗和检测，返回 polish 结果。
+/// 对单个会话文件执行内容解析，返回 polish 结果。
 pub fn polish_session(
     file_path: &Path,
     provider: &Arc<dyn ChatProvider>,
@@ -271,6 +310,9 @@ pub fn polish_session(
 ) -> Option<SessionPolish> {
     let content = std::fs::read_to_string(file_path).ok()?;
     let mut display = String::from("(Empty session)");
+    let mut timestamp = String::new();
+    let mut message_count: u32 = 0;
+    let mut cwd = String::new();
     let mut client_type = String::new();
     let mut client_detected = false;
     let mut first_raw = String::new();
@@ -281,6 +323,22 @@ pub fn polish_session(
             continue;
         }
         if let Ok(event) = provider.parse_event(trimmed) {
+            if timestamp.is_empty() {
+                timestamp = event.timestamp.clone();
+            }
+            if cwd.is_empty() {
+                if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                    if let Some(raw_cwd) = value["cwd"].as_str() {
+                        cwd = raw_cwd.to_string();
+                    }
+                }
+            }
+            match event.event_type {
+                crate::models::EventType::User | crate::models::EventType::Assistant => {
+                    message_count += 1;
+                }
+                _ => {}
+            }
             if display == "(Empty session)" {
                 if let crate::models::EventType::User = event.event_type {
                     for block in &event.content {
@@ -317,6 +375,9 @@ pub fn polish_session(
     Some(SessionPolish {
         file_path: file_path.to_string_lossy().to_string(),
         display,
+        timestamp,
+        message_count,
+        cwd,
         client_type,
     })
 }

@@ -55,6 +55,9 @@ export async function listAllSessions(
 export interface SessionPolish {
   filePath: string;
   display: string;
+  timestamp: string;
+  messageCount: number;
+  cwd: string;
   clientType: string;
 }
 

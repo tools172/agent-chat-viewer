@@ -271,13 +271,11 @@ pub async fn list_sessions(
         let mut sessions: Vec<SessionSummary> = session_files
             .iter()
             .filter_map(|file_path| {
-                crate::services::parser::create_session_summary(
+                crate::services::parser::create_skeleton_summary(
                     file_path,
                     &project_name,
                     &project_path,
-                    &provider,
                     &provider_name,
-                    true, // quick mode — display cleaning deferred to progressive polish
                 )
             })
             .collect();
@@ -323,19 +321,13 @@ pub async fn list_all_sessions(
                     {
                         continue;
                     }
-                    let provider = match reg.get(&detected_provider) {
-                        Some(p) => p.clone(),
-                        None => continue,
-                    };
                     for file_path in files {
                         if let Some(summary) =
-                            crate::services::parser::create_session_summary(
+                            crate::services::parser::create_skeleton_summary(
                                 file_path,
                                 &project_name,
                                 &project_path_str,
-                                &provider,
                                 &detected_provider,
-                                true, // quick mode
                             )
                         {
                             all.push(summary);
@@ -361,13 +353,11 @@ pub async fn list_all_sessions(
                             provider.enumerate_session_files(&project_path)
                         {
                             if let Some(summary) =
-                                crate::services::parser::create_session_summary(
+                                crate::services::parser::create_skeleton_summary(
                                     &file_path,
                                     &project_name,
                                     &project_path.to_string_lossy(),
-                                    &provider,
                                     provider_name,
-                                    true,
                                 )
                             {
                                 all.push(summary);
