@@ -386,14 +386,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               </div>
             </div>
 
-            {/* 渐进加载每批文件数 */}
+            {/* 批次刷新量 */}
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-sm font-medium text-gray-700">
-                  加载批次
+                  批次刷新量
                 </span>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  每批并行加载的文件数，外置硬盘建议调大
+                  每批加载文件数，电脑及磁盘性能较好建议调大
                 </p>
               </div>
               <select
