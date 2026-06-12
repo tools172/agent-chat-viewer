@@ -384,17 +384,32 @@ pub async fn polish_sessions(
 ) -> Result<Vec<crate::services::parser::SessionPolish>, String> {
     let reg = registry.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
-        sessions
-            .into_iter()
-            .filter_map(|(file_path, provider_name)| {
-                let provider = reg.get(&provider_name)?;
-                crate::services::parser::polish_session(
-                    Path::new(&file_path),
-                    provider,
-                    &provider_name,
-                )
-            })
-            .collect()
+        use std::sync::{Arc, Mutex};
+        let results = Arc::new(Mutex::new(Vec::new()));
+        let reg = Arc::new(reg);
+        let mut handles = Vec::new();
+        for chunk in sessions.chunks(20) {
+            let results = Arc::clone(&results);
+            let reg = Arc::clone(&reg);
+            let chunk: Vec<_> = chunk.to_vec();
+            handles.push(std::thread::spawn(move || {
+                for (file_path, provider_name) in &chunk {
+                    if let Some(provider) = reg.get(provider_name) {
+                        if let Some(polish) = crate::services::parser::polish_session(
+                            Path::new(&file_path),
+                            provider,
+                            provider_name,
+                        ) {
+                            results.lock().unwrap().push(polish);
+                        }
+                    }
+                }
+            }));
+        }
+        for h in handles {
+            h.join().ok();
+        }
+        Arc::try_unwrap(results).unwrap().into_inner().unwrap()
     })
     .await
     .map_err(|e| format!("polish 失败: {}", e))
