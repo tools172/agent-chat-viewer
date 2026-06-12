@@ -6,9 +6,8 @@
 
 | 层级 | 框架 | 测试文件 | 测试数 |
 |---|---|---|---|
-| 前端单元测试 | Vitest + @testing-library/react | 17 | 146 |
-| 前端集成测试 | Vitest | 3 | 27 |
-| Rust 单元测试 | cargo test | 11 | 48 |
+| 前端测试 | Vitest + @testing-library/react | 19 | 208 |
+| Rust 单元测试 | cargo test | 8 | 68 |
 | Rust 集成测试 | cargo test | 1 | 28 |
 
 ## 快速命令
