@@ -486,6 +486,81 @@ mod tests {
         assert_eq!(detect_client_from_text("anything", "unknown"), "");
     }
 
+    // ===== create_skeleton_summary 测试 =====
+
+    #[test]
+    fn test_skeleton_uses_file_metadata() {
+        let (_dir, file_path) = create_temp_jsonl(
+            r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u1","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#,
+        );
+        let summary = create_skeleton_summary(
+            &file_path,
+            "test-proj",
+            "/test/proj",
+            "claude_code",
+        )
+        .unwrap();
+
+        assert_eq!(summary.project_name, "test-proj");
+        assert_eq!(summary.provider_name, "claude_code");
+        assert_eq!(summary.client_type, ""); // 骨架阶段为空
+        assert_eq!(summary.message_count, 0); // 骨架阶段为 0
+        assert_eq!(summary.cwd, "");
+        assert!(!summary.file_mtime.is_empty());
+        assert!(summary.file_size > 0);
+    }
+
+    #[test]
+    fn test_skeleton_returns_none_for_missing_file() {
+        let result = create_skeleton_summary(
+            Path::new("/nonexistent/file.jsonl"),
+            "p",
+            "/p",
+            "claude_code",
+        );
+        assert!(result.is_none());
+    }
+
+    // ===== polish_session 测试 =====
+
+    #[test]
+    fn test_polish_session_fills_all_fields() {
+        let (_dir, file_path) = create_temp_jsonl(
+            r#"{"type":"user","message":{"role":"user","content":"Hello Claude"},"uuid":"u1","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1","cwd":"/work"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Hi there!"}]},"uuid":"u2","timestamp":"2026-06-09T10:00:01Z","sessionId":"s1"}
+"#,
+        );
+        let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
+        let polished = polish_session(&file_path, &provider, "claude_code").unwrap();
+
+        assert_eq!(polished.file_path, file_path.to_string_lossy());
+        assert_eq!(polished.display, "Hello Claude");
+        assert_eq!(polished.client_type, "cli"); // 无 <ide_selection>
+        assert_eq!(polished.message_count, 2); // 1 user + 1 assistant
+        assert!(!polished.timestamp.is_empty());
+        assert_eq!(polished.cwd, "/work");
+    }
+
+    #[test]
+    fn test_polish_session_vscode_display_cleaned() {
+        let (_dir, file_path) = create_temp_jsonl(
+            r#"{"type":"user","message":{"role":"user","content":[{"type":"text","text":"<ide_selection>selected lines</ide_selection>"},{"type":"text","text":"实际的问题内容"}]},"uuid":"u1","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}
+"#,
+        );
+        let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
+        let polished = polish_session(&file_path, &provider, "claude_code").unwrap();
+
+        assert_eq!(polished.display, "实际的问题内容"); // 第一个 block 被跳过
+        assert_eq!(polished.client_type, "vscode"); // 从第一个 block 检测到
+    }
+
+    #[test]
+    fn test_polish_session_returns_none_for_missing_file() {
+        let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
+        let result = polish_session(Path::new("/nonexistent/file.jsonl"), &provider, "claude_code");
+        assert!(result.is_none());
+    }
+
     fn create_temp_jsonl(content: &str) -> (tempfile::TempDir, std::path::PathBuf) {
         let dir = tempfile::tempdir().unwrap();
         let file_path = dir.path().join("test-session.jsonl");
