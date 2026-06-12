@@ -388,7 +388,7 @@ pub async fn polish_sessions(
         let results = Arc::new(Mutex::new(Vec::new()));
         let reg = Arc::new(reg);
         let mut handles = Vec::new();
-        for chunk in sessions.chunks(20) {
+        for chunk in sessions.chunks(5) {
             let results = Arc::clone(&results);
             let reg = Arc::clone(&reg);
             let chunk: Vec<_> = chunk.to_vec();
