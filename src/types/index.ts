@@ -116,6 +116,8 @@ export interface AppSettings {
   sidebarWidth?: number;
   /** 右侧轮次导航默认宽度（px），160-400，默认 256 */
   navigatorWidth?: number;
+  /** 渐进 polish 每批文件数：5/10/20/30/50，默认 5 */
+  polishBatchSize?: number;
 }
 
 export interface ProviderInfo {

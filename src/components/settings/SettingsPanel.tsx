@@ -347,6 +347,29 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 </div>
               </div>
             </div>
+
+            {/* 渐进加载每批文件数 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  加载批次
+                </span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  每批并行加载的文件数，外置硬盘建议调大
+                </p>
+              </div>
+              <select
+                value={settings.polishBatchSize ?? 5}
+                onChange={(e) =>
+                  store.updatePolishBatchSize(Number(e.target.value))
+                }
+                className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                {[5, 10, 20, 30, 50].map((n) => (
+                  <option key={n} value={n}>{n} 个/批</option>
+                ))}
+              </select>
+            </div>
           </section>
 
           {/* Provider settings */}

@@ -6,6 +6,7 @@ import type {
   AppSettings,
 } from '../types';
 import { DEFAULT_SORTS } from '../utils/sort';
+import { useSettingsStore } from './settingsStore';
 import * as tauri from '../utils/tauri';
 
 interface SessionListState {
@@ -108,9 +109,9 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     }
   },
 
-  /** 后台渐进 polish：每批 20 个，避免阻塞 UI */
+  /** 后台渐进 polish：分批进行，批次大小从设置中读取 */
   polishAllSessions: async (sessions: SessionSummary[]) => {
-    const BATCH = 5;
+    const BATCH = useSettingsStore.getState().settings.polishBatchSize ?? 5;
     const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
     for (let i = 0; i < pairs.length; i += BATCH) {
       const batch = pairs.slice(i, i + BATCH);
@@ -161,7 +162,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
   /** 后台 polish 项目会话，分批更新使内容更快出现 */
   polishProjectSessions: async (sessions: SessionSummary[]) => {
     if (sessions.length === 0) return;
-    const BATCH = 5;
+    const BATCH = useSettingsStore.getState().settings.polishBatchSize ?? 5;
     const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
     for (let i = 0; i < pairs.length; i += BATCH) {
       const batch = pairs.slice(i, i + BATCH);

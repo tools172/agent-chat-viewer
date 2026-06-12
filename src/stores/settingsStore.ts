@@ -21,6 +21,7 @@ interface SettingsState {
   updateSearchColors: (colors: Partial<import('../types').SearchColors>) => void;
   updateSidebarWidth: (width: number) => void;
   updateNavigatorWidth: (width: number) => void;
+  updatePolishBatchSize: (size: number) => void;
   resetSearchColors: () => void;
   resetFilter: () => void;
   clearError: () => void;
@@ -47,6 +48,7 @@ const defaultSettings: AppSettings = {
   },
   sidebarWidth: 320,
   navigatorWidth: 256,
+  polishBatchSize: 5,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -168,6 +170,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         navigatorWidth: Math.max(160, Math.min(400, width)),
+      },
+    });
+  },
+
+  updatePolishBatchSize: (size: number) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        polishBatchSize: size,
       },
     });
   },
