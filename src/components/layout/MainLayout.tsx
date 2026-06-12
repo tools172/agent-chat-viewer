@@ -35,7 +35,6 @@ export const MainLayout: React.FC = () => {
     isLoadingConversation,
     error,
     selectSession,
-    clearSelection,
     clearError,
   } = useSessions();
 
@@ -46,6 +45,8 @@ export const MainLayout: React.FC = () => {
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   // 当前激活的搜索高亮词（同时用于左侧列表和右侧对话内容）
   const [activeSearchHighlight, setActiveSearchHighlight] = useState<string | undefined>();
+  const [showFindBar, setShowFindBar] = useState(false);
+  const [convStats, setConvStats] = useState<{ totalEvents: number; userCount: number; assistantCount: number; thinkingCount: number; toolCallCount: number } | null>(null);
 
   // 对话滚动容器 ref（供 TurnNavigator 使用，需包含 null 以支持赋值）
   const convScrollRef = useRef<HTMLDivElement | null>(null);
@@ -278,15 +279,9 @@ export const MainLayout: React.FC = () => {
             <div className="px-4 py-2 border-b bg-white">
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button
-                    onClick={clearSelection}
-                    className="text-xs text-gray-500 hover:text-gray-700 flex-shrink-0"
-                  >
-                    ← 返回
-                  </button>
                   <h2
                     className="text-sm font-medium text-gray-800 truncate"
-                    title={sessionTitle}
+                    title={currentProjectPath ? `工作目录: ${currentProjectPath}\n存储路径: ${currentSession?.filePath || ''}` : sessionTitle}
                   >
                     {sessionTitle}
                   </h2>
@@ -304,6 +299,9 @@ export const MainLayout: React.FC = () => {
               <FilterBar
                 filter={activeFilter}
                 onChange={handleFilterChange}
+                stats={convStats ?? undefined}
+                showFindBar={showFindBar}
+                onToggleFind={() => setShowFindBar((v) => !v)}
               />
             </div>
 
@@ -316,6 +314,9 @@ export const MainLayout: React.FC = () => {
                 isLoading={isLoadingConversation}
                 searchHighlight={activeSearchHighlight}
                 scrollHostRef={convScrollRef}
+                showFindBar={showFindBar}
+                onToggleFind={() => setShowFindBar((v) => !v)}
+                onStatsChange={setConvStats}
               />
               <TurnNavigator
                 events={filteredEvents}

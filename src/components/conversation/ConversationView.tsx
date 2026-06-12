@@ -1,5 +1,5 @@
 import React, { useCallback, useRef } from 'react';
-import { Search, MessageSquare } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import type { ChatEvent } from '../../types';
 import { useConversation } from '../../hooks/useConversation';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -39,6 +39,11 @@ interface ConversationViewProps {
   searchHighlight?: string;
   /** 外部传入 ref，用于 TurnNavigator 等组件获取滚动容器 */
   scrollHostRef?: { current: HTMLDivElement | null };
+  /** 查找栏状态 */
+  showFindBar?: boolean;
+  onToggleFind?: () => void;
+  /** 统计信息变化回调 */
+  onStatsChange?: (s: { totalEvents: number; userCount: number; assistantCount: number; thinkingCount: number; toolCallCount: number }) => void;
 }
 
 export const ConversationView: React.FC<ConversationViewProps> = ({
@@ -46,6 +51,9 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
   isLoading,
   searchHighlight,
   scrollHostRef: externalRef,
+  showFindBar: externalShowFindBar,
+  onToggleFind,
+  onStatsChange,
 }) => {
   const {
     expandedThinking,
@@ -59,8 +67,8 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
   } = useConversation(events);
 
   const searchColors = useSettingsStore((s) => s.settings.searchColors);
-  const [showFindBar, setShowFindBar] = React.useState(false);
   const [findQuery, setFindQuery] = React.useState('');
+  const showFindBar = externalShowFindBar ?? false;
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -86,6 +94,11 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
   const scrollToTop = () => topRef.current?.scrollIntoView({ block: 'start' });
   const scrollToBottom = () => bottomRef.current?.scrollIntoView({ block: 'end' });
 
+  // 通知父组件统计信息变化
+  React.useEffect(() => {
+    onStatsChange?.(stats);
+  }, [stats, onStatsChange]);
+
   // NOT intercepting Ctrl+F — let browser handle native find
 
   if (isLoading) {
@@ -108,35 +121,9 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
       <ConversationFindBar
         events={events}
         visible={showFindBar}
-        onClose={() => setShowFindBar(false)}
+        onClose={() => onToggleFind?.()}
         onQueryChange={setFindQuery}
       />
-
-      {/* Stats bar */}
-      <div className="flex items-center gap-4 px-4 py-1.5 bg-gray-100/50 border-b text-xs text-gray-500">
-        <span>共 {stats.totalEvents} 条事件</span>
-        <span>{stats.userCount} 用户消息</span>
-        <span>{stats.assistantCount} 助手回复</span>
-        {stats.thinkingCount > 0 && (
-          <span>{stats.thinkingCount} 思考块</span>
-        )}
-        {stats.toolCallCount > 0 && (
-          <span>{stats.toolCallCount} 工具调用</span>
-        )}
-        {/* 会话内查找按钮 */}
-        <button
-          onClick={() => setShowFindBar(!showFindBar)}
-          className={`ml-auto flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors ${
-            showFindBar
-              ? 'bg-orange-100 text-orange-700'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-200'
-          }`}
-          title="在会话中查找"
-        >
-          <Search className="h-3 w-3" />
-          <span>查找</span>
-        </button>
-      </div>
 
       {/* Event list */}
       <div
