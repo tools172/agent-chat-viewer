@@ -110,7 +110,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
 
   /** 后台渐进 polish：每批 20 个，避免阻塞 UI */
   polishAllSessions: async (sessions: SessionSummary[]) => {
-    const BATCH = 20;
+    const BATCH = 5;
     const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
     for (let i = 0; i < pairs.length; i += BATCH) {
       const batch = pairs.slice(i, i + BATCH);
@@ -158,21 +158,25 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     }
   },
 
-  /** 后台 polish 项目会话（通常数量少，一批完成） */
+  /** 后台 polish 项目会话，分批更新使内容更快出现 */
   polishProjectSessions: async (sessions: SessionSummary[]) => {
     if (sessions.length === 0) return;
-    try {
-      const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
-      const polished = await tauri.polishSessions(pairs);
-      const map = new Map(polished.map((p) => [p.filePath, p]));
-      set((state) => ({
-        projectSessions: state.projectSessions.map((s) => {
-          const p = map.get(s.filePath);
-          return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
-        }),
-      }));
-    } catch {
-      // polish 失败不影响已加载数据
+    const BATCH = 5;
+    const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
+    for (let i = 0; i < pairs.length; i += BATCH) {
+      const batch = pairs.slice(i, i + BATCH);
+      try {
+        const polished = await tauri.polishSessions(batch);
+        const map = new Map(polished.map((p) => [p.filePath, p]));
+        set((state) => ({
+          projectSessions: state.projectSessions.map((s) => {
+            const p = map.get(s.filePath);
+            return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
+          }),
+        }));
+      } catch {
+        // polish 失败不影响已加载数据
+      }
     }
   },
 
