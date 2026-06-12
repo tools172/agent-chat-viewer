@@ -33,9 +33,9 @@ describe('ProjectList', () => {
   ];
 
   const mockSessions = [
-    { id: 's1', projectName: 'project-a', projectPath: '/data/project-a', display: 'Session 1', timestamp: '2026-06-10T00:00:00Z', messageCount: 5, fileSize: 100, cwd: '/real/project-a', filePath: '/data/project-a/s1.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
-    { id: 's2', projectName: 'project-a', projectPath: '/data/project-a', display: 'Session 2', timestamp: '2026-06-09T00:00:00Z', messageCount: 3, fileSize: 50, cwd: '/real/project-a', filePath: '/data/project-a/s2.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
-    { id: 's3', projectName: 'project-b', projectPath: '/data/project-b', display: 'Session 3', timestamp: '2026-06-09T00:00:00Z', messageCount: 1, fileSize: 20, cwd: '', filePath: '/data/project-b/s3.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
+    { id: 's1', projectName: 'project-a', projectPath: '/data/project-a', display: 'Session 1', timestamp: '2026-06-10T00:00:00Z', messageCount: 5, fileSize: 100, cwd: '/real/project-a', filePath: '/data/project-a/s1.jsonl', providerName: 'claude_code', fileMtime: '', clientType: 'cli' },
+    { id: 's2', projectName: 'project-a', projectPath: '/data/project-a', display: 'Session 2', timestamp: '2026-06-09T00:00:00Z', messageCount: 3, fileSize: 50, cwd: '/real/project-a', filePath: '/data/project-a/s2.jsonl', providerName: 'claude_code', fileMtime: '', clientType: 'cli' },
+    { id: 's3', projectName: 'project-b', projectPath: '/data/project-b', display: 'Session 3', timestamp: '2026-06-09T00:00:00Z', messageCount: 1, fileSize: 20, cwd: '', filePath: '/data/project-b/s3.jsonl', providerName: 'claude_code', fileMtime: '', clientType: 'cli' },
   ];
 
   const defaultProps = {
@@ -82,7 +82,7 @@ describe('ProjectList', () => {
 
   it('右键菜单：打开工作目录 使用 allSessions 中的 cwd', async () => {
     const allSessions = [
-      { id: 's1', projectName: 'project-a', projectPath: '/data/project-a', display: '', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/real/project-a', filePath: '/data/project-a/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
+      { id: 's1', projectName: 'project-a', projectPath: '/data/project-a', display: '', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/real/project-a', filePath: '/data/project-a/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: 'cli' },
     ];
 
     render(
@@ -104,7 +104,7 @@ describe('ProjectList', () => {
   it('右键菜单：打开工作目录 在 cwd 为空时回退到 project.path', async () => {
     // project-b 的 session 没有 cwd
     const allSessions = [
-      { id: 's3', projectName: 'project-b', projectPath: '/data/project-b', display: '', timestamp: '', messageCount: 1, fileSize: 0, cwd: '', filePath: '/data/project-b/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
+      { id: 's3', projectName: 'project-b', projectPath: '/data/project-b', display: '', timestamp: '', messageCount: 1, fileSize: 0, cwd: '', filePath: '/data/project-b/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: 'cli' },
     ];
 
     render(

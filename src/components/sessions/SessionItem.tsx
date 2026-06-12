@@ -43,6 +43,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   const [copiedId, setCopiedId] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const clientBadge = getClientBadge(session.clientType || '');
+  const isSkeleton = !session.clientType; // 骨架阶段：clientType 为空，等待 polish
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -136,44 +137,58 @@ export const SessionItem: React.FC<SessionItemProps> = ({
             }`}
           />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" title={session.display}>
-              {highlight
-                ? highlightText(session.display || '(空会话)', highlight, searchColors.search)
-                : (session.display || '(空会话)')}
-            </p>
-
-            {/* 元信息行 */}
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 flex-wrap">
-              <span>{relativeTime(session.timestamp)}</span>
-              {session.messageCount > 0 && (
-                <span className="text-gray-400">
-                  · {session.messageCount} 条消息
-                </span>
-              )}
-              {showProvider && (
-                <span
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
-                >
-                  {getProviderLabel(session.providerName)}
-                </span>
-              )}
-              {clientBadge && (
-                <span
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${clientBadge.color}`}
-                >
-                  {clientBadge.label}
-                </span>
-              )}
-            </div>
-
-            {/* 工作目录（全部/时间线视图显示） */}
-            {showProject && (
-              <p
-                className="text-xs text-gray-400 mt-0.5 truncate"
-                title={`会话存储路径: ${session.projectPath}\n工作目录: ${session.cwd || session.projectPath}`}
-              >
-                📁 {session.projectName}
-              </p>
+            {isSkeleton ? (
+              <>
+                <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
+                  {showProvider && (
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
+                    >
+                      {getProviderLabel(session.providerName)}
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium truncate" title={session.display}>
+                  {highlight
+                    ? highlightText(session.display || '(空会话)', highlight, searchColors.search)
+                    : (session.display || '(空会话)')}
+                </p>
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 flex-wrap">
+                  <span>{relativeTime(session.timestamp)}</span>
+                  {session.messageCount > 0 && (
+                    <span className="text-gray-400">
+                      · {session.messageCount} 条消息
+                    </span>
+                  )}
+                  {showProvider && (
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
+                    >
+                      {getProviderLabel(session.providerName)}
+                    </span>
+                  )}
+                  {clientBadge && (
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${clientBadge.color}`}
+                    >
+                      {clientBadge.label}
+                    </span>
+                  )}
+                </div>
+                {showProject && (
+                  <p
+                    className="text-xs text-gray-400 mt-0.5 truncate"
+                    title={`会话存储路径: ${session.projectPath}\n工作目录: ${session.cwd || session.projectPath}`}
+                  >
+                    📁 {session.projectName}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
