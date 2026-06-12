@@ -307,6 +307,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   key: 'hideEmptyToolResults',
                   label: '隐藏空工具结果',
                 },
+                {
+                  key: 'collapseConsecutive',
+                  label: '合并连发',
+                },
               ].map(({ key, label, icon }) => (
                 <label
                   key={key}
