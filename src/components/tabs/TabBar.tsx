@@ -1,6 +1,10 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import type { TabState } from '../../types';
 import { TabItem } from './TabItem';
+import {
+  scrollOneLeft as utilScrollOneLeft,
+  scrollOneRight as utilScrollOneRight,
+} from '../../utils/tabScroll';
 
 interface TabBarProps {
   tabs: TabState[];
@@ -23,20 +27,38 @@ export const TabBar: React.FC<TabBarProps> = ({
   onOpenContextMenu,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const dragIndexRef = useRef<number | null>(null);
   const wheelTimeRef = useRef(0);
   const [overflowLeft, setOverflowLeft] = useState(0);
   const [overflowRight, setOverflowRight] = useState(0);
 
-  // 监听滚动，计算左右两侧视口外各有几个标签
+  // 当 activeTabId 变化时，将激活的标签页滚动到视野内
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || tabs.length === 0) return;
+    if (!el || !activeTabId) return;
+    // 延迟一帧，等 DOM 更新完成再滚动
+    const raf = requestAnimationFrame(() => {
+      const activeItem = el.querySelector<HTMLElement>(
+        `[data-tab-id="${activeTabId}"]`
+      );
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [activeTabId]);
+
+  // 监听滚动、容器尺寸变化、窗口尺寸变化，计算溢出标签数
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    const containerEl = containerRef.current;
+    if (!scrollEl || !containerEl || tabs.length === 0) return;
 
     const calc = () => {
-      const leftEdge = el.scrollLeft;
-      const rightEdge = leftEdge + el.clientWidth;
-      const items = el.querySelectorAll<HTMLElement>('[data-tab-item]');
+      const leftEdge = scrollEl.scrollLeft;
+      const rightEdge = leftEdge + scrollEl.clientWidth;
+      const items = scrollEl.querySelectorAll<HTMLElement>('[data-tab-item]');
       let hiddenLeft = 0;
       let hiddenRight = 0;
       for (let i = 0; i < items.length; i++) {
@@ -52,15 +74,19 @@ export const TabBar: React.FC<TabBarProps> = ({
     };
 
     calc();
-    el.addEventListener('scroll', calc, { passive: true });
-    const observer =
+    scrollEl.addEventListener('scroll', calc, { passive: true });
+    // 观察外层容器：侧边栏拖拽 / 窗口 resize 都会触发容器宽度变化
+    const ro =
       typeof ResizeObserver !== 'undefined'
         ? new ResizeObserver(calc)
         : null;
-    observer?.observe(el);
+    ro?.observe(containerEl);
+    // 窗口 resize 作为兜底
+    window.addEventListener('resize', calc);
     return () => {
-      el.removeEventListener('scroll', calc);
-      observer?.disconnect();
+      scrollEl.removeEventListener('scroll', calc);
+      ro?.disconnect();
+      window.removeEventListener('resize', calc);
     };
   }, [tabs]);
 
@@ -105,10 +131,51 @@ export const TabBar: React.FC<TabBarProps> = ({
     }
   }, []);
 
-  const scrollToStart = () => {
+  /** 向左滚动一个标签：使用 scrollIntoView 确保亚像素精度 */
+  const scrollOneLeft = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) utilScrollOneLeft(el);
+  }, []);
+
+  /** 向右滚动一个标签：使用 scrollIntoView 确保亚像素精度 */
+  const scrollOneRight = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) utilScrollOneRight(el);
+  }, []);
+
+  const scrollToStart = useCallback(() => {
     const el = scrollRef.current;
     if (el) el.scrollTo({ left: 0, behavior: 'smooth' });
-  };
+  }, []);
+
+  const scrollToEnd = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+  }, []);
+
+  /** 左侧按钮点击：普通=滚动一个标签，Shift=跳到最左 */
+  const handleLeftClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.shiftKey) {
+        scrollToStart();
+      } else {
+        scrollOneLeft();
+      }
+    },
+    [scrollOneLeft, scrollToStart]
+  );
+
+  /** 右侧按钮点击：普通=滚动一个标签，Shift=跳到最右 */
+  const handleRightClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.shiftKey) {
+        scrollToEnd();
+      } else {
+        scrollOneRight();
+      }
+    },
+    [scrollOneRight, scrollToEnd]
+  );
 
   // 滚轮滚动后 250ms 内抑制标签激活，防止滚轮误触切换选中
   const handleActivate = useCallback(
@@ -120,15 +187,11 @@ export const TabBar: React.FC<TabBarProps> = ({
     [onActivateTab]
   );
 
-  const scrollToEnd = () => {
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
-  };
-
   if (tabs.length === 0) return null;
 
   return (
     <div
+      ref={containerRef}
       className="flex items-stretch bg-gray-100 border-b border-gray-200 flex-shrink-0 relative"
       style={{ height: 36 }}
     >
@@ -137,8 +200,12 @@ export const TabBar: React.FC<TabBarProps> = ({
         className={`flex-shrink-0 flex items-center gap-1 mr-1.5 pr-1.5 pl-1.5 text-xs border-r border-gray-200
           bg-gradient-to-r from-gray-100 via-gray-100 to-transparent
           ${overflowLeft > 0 ? 'text-primary-600 hover:text-primary-700 cursor-pointer font-bold' : 'text-gray-300'}`}
-        title={overflowLeft > 0 ? `左侧还有 ${overflowLeft} 个标签页` : '已到最左侧'}
-        onClick={overflowLeft > 0 ? scrollToStart : undefined}
+        title={
+          overflowLeft > 0
+            ? `点击向左滚动一个标签 · Shift+点击直接跳到最左侧（左侧还有 ${overflowLeft} 个标签页）`
+            : '已到最左侧'
+        }
+        onClick={overflowLeft > 0 ? handleLeftClick : undefined}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -155,7 +222,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {tabs.map((tab, i) => (
-          <div key={tab.id} data-tab-item className="flex-shrink-0">
+          <div key={tab.id} data-tab-item data-tab-id={tab.id} className="flex-shrink-0">
             <TabItem
               tab={tab}
               isActive={tab.id === activeTabId}
@@ -176,8 +243,12 @@ export const TabBar: React.FC<TabBarProps> = ({
         className={`flex-shrink-0 flex items-center gap-1 ml-1.5 pl-1.5 pr-1.5 text-xs border-l border-gray-200
           bg-gradient-to-l from-gray-100 via-gray-100 to-transparent
           ${overflowRight > 0 ? 'text-primary-600 hover:text-primary-700 cursor-pointer font-bold' : 'text-gray-300'}`}
-        title={overflowRight > 0 ? `右侧还有 ${overflowRight} 个标签页` : '所有标签页已展示'}
-        onClick={overflowRight > 0 ? scrollToEnd : undefined}
+        title={
+          overflowRight > 0
+            ? `点击向右滚动一个标签 · Shift+点击直接跳到最右侧（右侧还有 ${overflowRight} 个标签页）`
+            : '所有标签页已展示'
+        }
+        onClick={overflowRight > 0 ? handleRightClick : undefined}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
