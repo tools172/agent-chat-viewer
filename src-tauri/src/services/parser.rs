@@ -366,16 +366,16 @@ pub fn polish_session(
                             if cleaned.is_empty() {
                                 continue;
                             }
-                            display = cleaned.chars().take(80).collect();
-                            if cleaned.len() > 80 {
+                            display = cleaned.chars().take(1000).collect();
+                            if cleaned.len() > 1000 {
                                 display.push_str("...");
                             }
                             break;
                         }
                     }
                     if display == "(Empty session)" && !first_raw.is_empty() {
-                        display = first_raw.chars().take(80).collect();
-                        if first_raw.len() > 80 {
+                        display = first_raw.chars().take(1000).collect();
+                        if first_raw.len() > 1000 {
                             display.push_str("...");
                         }
                     }

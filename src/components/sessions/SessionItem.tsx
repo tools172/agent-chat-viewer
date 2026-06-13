@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder, ExternalLink } from 'lucide-react';
-import { relativeTime } from '../../utils/time';
+import { relativeTime, formatDateTime } from '../../utils/time';
 import { getProviderLabel, getProviderColor } from '../../utils/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { highlightText } from '../../utils/highlight';
@@ -187,7 +187,9 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                     : (session.display || '(空会话)')}
                 </p>
                 <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 flex-wrap">
-                  <span>{relativeTime(session.timestamp)}</span>
+                  <span title={`创建: ${formatDateTime(session.timestamp)}${session.fileMtime ? `\n修改: ${formatDateTime(session.fileMtime)}` : ''}`}>
+                    {relativeTime(session.timestamp)}
+                  </span>
                   {session.messageCount > 0 && (
                     <span className="text-gray-400">
                       · {session.messageCount} 条消息
