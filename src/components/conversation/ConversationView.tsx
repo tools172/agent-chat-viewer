@@ -73,6 +73,7 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
   const topRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [showScrollBtns, setShowScrollBtns] = React.useState({ top: false, bottom: true });
+  const lastScrollTopRef = useRef(0);
 
   // 回调 ref：同步设置内部 ref 和外部 ref，确保 TurnNavigator 立即可用
   const setScrollRef = useCallback(
@@ -86,6 +87,7 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
+    lastScrollTopRef.current = el.scrollTop;
     const nearTop = el.scrollTop < 100;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     setShowScrollBtns({ top: !nearTop, bottom: !nearBottom });
@@ -93,6 +95,25 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
 
   const scrollToTop = () => topRef.current?.scrollIntoView({ block: 'start' });
   const scrollToBottom = () => bottomRef.current?.scrollIntoView({ block: 'end' });
+
+  // 加载完成后恢复滚动位置并修正按钮状态
+  const wasLoadingRef = useRef(isLoading);
+  React.useEffect(() => {
+    if (wasLoadingRef.current && !isLoading) {
+      requestAnimationFrame(() => {
+        const el = scrollContainerRef.current;
+        if (el) {
+          el.scrollTop = lastScrollTopRef.current;
+          requestAnimationFrame(() => {
+            const nearTop = el.scrollTop < 100;
+            const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+            setShowScrollBtns({ top: !nearTop, bottom: !nearBottom });
+          });
+        }
+      });
+    }
+    wasLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   // 通知父组件统计信息变化
   React.useEffect(() => {

@@ -522,7 +522,7 @@ export const MainLayout: React.FC = () => {
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                 >
                   <RefreshCw className="h-4 w-4 text-gray-400" />
-                  刷新
+                  重新加载
                 </button>
                 <div className="border-t border-gray-100 my-1" />
                 <button

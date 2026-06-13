@@ -93,6 +93,41 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
 
   // 导航列表自身的滚动容器 ref
   const listRef = useRef<HTMLDivElement>(null);
+  // 列表中溢出可视区域的轮次数
+  const [overflowAbove, setOverflowAbove] = useState(0);
+  const [overflowBelow, setOverflowBelow] = useState(0);
+
+  const calcOverflow = useCallback(() => {
+    const list = listRef.current;
+    if (!list || turns.length === 0) {
+      setOverflowAbove(0);
+      setOverflowBelow(0);
+      return;
+    }
+    const listTop = list.scrollTop;
+    const listBottom = listTop + list.clientHeight;
+    let above = 0;
+    let below = 0;
+    for (const turn of turns) {
+      const el = list.querySelector(`[data-turn-index="${turn.index}"]`) as HTMLElement | null;
+      if (!el) continue;
+      const top = el.offsetTop;
+      const bottom = top + el.offsetHeight;
+      if (bottom <= listTop) above++;
+      else if (top >= listBottom) below++;
+    }
+    setOverflowAbove(above);
+    setOverflowBelow(below);
+  }, [turns]);
+
+  // 轮次变化或列表尺寸变化时重新计算溢出量
+  useEffect(() => {
+    calcOverflow();
+  }, [turns, width, collapsed, calcOverflow]);
+
+  const handleListScroll = useCallback(() => {
+    calcOverflow();
+  }, [calcOverflow]);
 
   // ---- IntersectionObserver ----
   useEffect(() => {
@@ -252,14 +287,17 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
 
       {/* 顶部按钮行 */}
       <div className="flex items-center border-b border-gray-200">
-        <span className="pl-2 text-[10px] text-gray-400 whitespace-nowrap select-none">
+        <span className="pl-2 text-xs font-semibold text-gray-700 whitespace-nowrap select-none">
           共 {turns.length} 轮
         </span>
         <button
           onClick={scrollToTop}
-          className="flex-1 flex items-center justify-center py-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="flex-1 flex items-center justify-center gap-0.5 py-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           title="回到顶部"
         >
+          {overflowAbove > 0 && (
+            <span className="text-xs font-semibold tabular-nums text-gray-900">{overflowAbove}</span>
+          )}
           <ScrollTopIcon />
         </button>
         <button
@@ -272,7 +310,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
       </div>
 
       {/* 轮次列表 */}
-      <div ref={listRef} className="flex-1 overflow-y-auto py-1">
+      <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-y-auto py-1">
         {turns.map((turn) => (
           <button
             key={turn.uuid}
@@ -296,10 +334,13 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
       {/* 底部按钮 */}
       <button
         onClick={scrollToBottom}
-        className="flex items-center justify-center py-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors border-t border-gray-200"
+        className="flex items-center justify-center gap-0.5 py-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors border-t border-gray-200"
         title="回到底部"
       >
         <ScrollBottomIcon />
+        {overflowBelow > 0 && (
+          <span className="text-xs font-semibold tabular-nums text-gray-900">{overflowBelow}</span>
+        )}
       </button>
     </div>
   );
