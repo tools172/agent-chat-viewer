@@ -52,6 +52,7 @@ interface SessionListState {
   refresh: (settings: AppSettings) => Promise<void>;
   polishAllSessions: (sessions: SessionSummary[]) => Promise<void>;
   polishProjectSessions: (sessions: SessionSummary[]) => Promise<void>;
+  polishSearchResults: (sessions: SessionSummary[]) => Promise<void>;
   setSearchQuery: (query: string) => void;
   clearError: () => void;
 }
@@ -181,6 +182,28 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     }
   },
 
+  /** 后台 polish 搜索结果，分批更新使内容更快出现 */
+  polishSearchResults: async (sessions: SessionSummary[]) => {
+    if (sessions.length === 0) return;
+    const BATCH = useSettingsStore.getState().settings.polishBatchSize ?? 5;
+    const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
+    for (let i = 0; i < pairs.length; i += BATCH) {
+      const batch = pairs.slice(i, i + BATCH);
+      try {
+        const polished = await tauri.polishSessions(batch);
+        const map = new Map(polished.map((p) => [p.filePath, p]));
+        set((state) => ({
+          searchResults: state.searchResults.map((s) => {
+            const p = map.get(s.filePath);
+            return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
+          }),
+        }));
+      } catch {
+        // polish 失败不影响已加载数据
+      }
+    }
+  },
+
   // 搜索
   search: async (query, settings) => {
     if (!query.trim()) {
@@ -191,6 +214,8 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     try {
       const searchResults = await tauri.searchSessions(query, settings);
       set({ searchResults, isLoadingSearch: false });
+      // 渐进 polish 搜索结果，填充 display/clientType 等信息
+      get().polishSearchResults(searchResults);
     } catch (err) {
       set({ error: String(err), isLoadingSearch: false });
     }
