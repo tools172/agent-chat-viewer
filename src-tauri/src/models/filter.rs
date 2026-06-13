@@ -87,6 +87,13 @@ pub struct AppSettings {
     /// 右侧轮次导航宽度（px），默认 256
     #[serde(default = "default_navigator_width")]
     pub navigator_width: u32,
+    /// 主题模式：light | dark | eyecare | system，默认 system
+    #[serde(default = "default_theme")]
+    pub theme: String,
+}
+
+fn default_theme() -> String {
+    "system".to_string()
 }
 
 fn default_sidebar_width() -> u32 {
@@ -110,6 +117,7 @@ impl Default for AppSettings {
             search_colors: SearchColors::default(),
             sidebar_width: 320,
             navigator_width: 256,
+            theme: "system".to_string(),
         }
     }
 }

@@ -50,7 +50,7 @@ export const TabItem: React.FC<TabItemProps> = ({
         min-w-[100px] max-w-[200px] transition-colors duration-100 border-r border-gray-200
         ${isActive
           ? 'bg-white text-gray-800 border-b-2 border-b-primary-500'
-          : 'bg-gray-100/70 text-gray-500 hover:bg-gray-200/70'
+          : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
         }
         ${tab.error ? 'text-red-600' : ''}
       `}

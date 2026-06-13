@@ -15,9 +15,16 @@ import {
   PanelLeft,
   ExternalLink,
   Filter,
+  Sun,
+  Moon,
+  Leaf,
+  Monitor,
+  SwatchBook,
+  Highlighter,
 } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../stores/settingsStore';
+import type { ThemeMode } from '../../types';
 import * as tauri from '../../utils/tauri';
 
 interface SettingsPanelProps {
@@ -229,8 +236,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
 
           {/* 搜索高亮配色 */}
           <section>
-            <h3 className="text-base font-semibold text-gray-700 mb-2">
-              🎨 搜索高亮配色
+            <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+              <Highlighter className="h-4 w-4" />
+              搜索高亮配色
             </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -411,11 +419,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 }`}
               >
                 <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform ${
                     (settings.restoreTabsOnStartup ?? true)
                       ? 'translate-x-[18px]'
                       : 'translate-x-[3px]'
                   }`}
+                  style={{ backgroundColor: '#fff' }}
                 />
               </button>
             </div>
@@ -441,6 +450,44 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   <option key={n} value={n}>{n} 个/批</option>
                 ))}
               </select>
+            </div>
+          </section>
+
+          {/* 主题选择 */}
+          <section>
+            <h3 className="text-base font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+              <SwatchBook className="h-4 w-4" />
+              主题
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              {([
+                { value: 'light' as ThemeMode, label: '浅色', icon: Sun, preview: 'bg-white' },
+                { value: 'dark' as ThemeMode, label: '深色', icon: Moon, preview: 'bg-gray-800' },
+                { value: 'eyecare' as ThemeMode, label: '护眼', icon: Leaf, preview: 'bg-[#c7edcc]' },
+                { value: 'system' as ThemeMode, label: '系统', icon: Monitor, preview: 'bg-gradient-to-br from-white to-gray-800' },
+              ]).map(({ value, label, icon: Icon, preview }) => {
+                const isSelected = (settings.theme ?? 'system') === value;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => store.updateTheme(value)}
+                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg border-2 transition-all ${
+                      isSelected
+                        ? 'border-primary-500 bg-primary-50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-md border border-gray-300 shadow-sm overflow-hidden ${preview}`}>
+                      <Icon className="h-5 w-5 m-1.5 text-gray-500 mix-blend-difference invert" />
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      isSelected ? 'text-primary-700' : 'text-gray-600'
+                    }`}>
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </section>
 

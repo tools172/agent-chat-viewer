@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AppSettings, FilterConfig, WatchDirectory } from '../types';
+import type { AppSettings, FilterConfig, WatchDirectory, ThemeMode } from '../types';
 import * as tauri from '../utils/tauri';
 
 interface SettingsState {
@@ -23,6 +23,7 @@ interface SettingsState {
   updateNavigatorWidth: (width: number) => void;
   updatePolishBatchSize: (size: number) => void;
   updateRestoreTabsOnStartup: (restore: boolean) => void;
+  updateTheme: (theme: ThemeMode) => void;
   resetSearchColors: () => void;
   resetFilter: () => void;
   clearError: () => void;
@@ -51,6 +52,7 @@ const defaultSettings: AppSettings = {
   navigatorWidth: 256,
   polishBatchSize: 5,
   restoreTabsOnStartup: true,
+  theme: 'system',
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -192,6 +194,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         restoreTabsOnStartup: restore,
+      },
+    });
+  },
+
+  updateTheme: (theme: ThemeMode) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        theme,
       },
     });
   },

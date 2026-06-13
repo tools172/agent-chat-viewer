@@ -192,13 +192,13 @@ export const TabBar: React.FC<TabBarProps> = ({
   return (
     <div
       ref={containerRef}
-      className="flex items-stretch bg-gray-100 border-b border-gray-200 flex-shrink-0 relative"
+      className="flex items-stretch bg-gray-50 border-b border-gray-200 flex-shrink-0 relative"
       style={{ height: 36 }}
     >
       {/* 左侧指示器始终存在 */}
       <div
         className={`flex-shrink-0 flex items-center gap-1 mr-1.5 pr-1.5 pl-1.5 text-xs border-r border-gray-200
-          bg-gradient-to-r from-gray-100 via-gray-100 to-transparent
+          bg-gray-50/80
           ${overflowLeft > 0 ? 'text-primary-600 hover:text-primary-700 cursor-pointer font-bold' : 'text-gray-300'}`}
         title={
           overflowLeft > 0
@@ -241,7 +241,7 @@ export const TabBar: React.FC<TabBarProps> = ({
       {/* 右侧指示器始终存在，撑住位置防止标签关闭按钮位移 */}
       <div
         className={`flex-shrink-0 flex items-center gap-1 ml-1.5 pl-1.5 pr-1.5 text-xs border-l border-gray-200
-          bg-gradient-to-l from-gray-100 via-gray-100 to-transparent
+          bg-gray-50/80
           ${overflowRight > 0 ? 'text-primary-600 hover:text-primary-700 cursor-pointer font-bold' : 'text-gray-300'}`}
         title={
           overflowRight > 0
