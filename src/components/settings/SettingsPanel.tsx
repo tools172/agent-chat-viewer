@@ -14,6 +14,7 @@ import {
   Plus,
   PanelLeft,
   ExternalLink,
+  Filter,
 } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -107,7 +108,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
           {/* Agent 支持 */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+            <h3 className="text-base font-semibold text-gray-700 mb-2">
               🔌 Agent 支持
             </h3>
             <div className="space-y-2">
@@ -141,7 +142,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
 
           {/* Watch directories */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+            <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
               <FolderPlus className="h-4 w-4" />
               监控目录
             </h3>
@@ -228,7 +229,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
 
           {/* 搜索高亮配色 */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+            <h3 className="text-base font-semibold text-gray-700 mb-2">
               🎨 搜索高亮配色
             </h3>
             <div className="space-y-3">
@@ -283,8 +284,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
 
           {/* 默认过滤器 */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              📋 默认过滤器
+            <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+              <Filter className="h-4 w-4" />
+              默认过滤器
             </h3>
             <div className="space-y-2">
               {[
@@ -337,7 +339,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
 
           {/* 布局设置 */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+            <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
               <PanelLeft className="h-4 w-4" />
               布局
             </h3>
@@ -445,23 +447,23 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t bg-gray-50 space-y-2">
+        <div className="pl-4 pr-[13px] py-4 border-t bg-gray-50 space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <button
                 onClick={store.resetFilter}
-                className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 重置过滤器
               </button>
               <button
                 onClick={handleOpenSettingsFile}
-                className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap"
                 title="在资源管理器中打开 settings.json"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
-                打开设置文件所在目录
+                打开设置存储目录
               </button>
             </div>
             {saveMessage ? (
@@ -469,7 +471,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             ) : (
               <button
                 onClick={handleSave}
-                className="px-4 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1"
+                className="px-4 py-[7px] text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Save className="h-3.5 w-3.5" />
                 保存设置
