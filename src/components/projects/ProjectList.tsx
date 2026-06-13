@@ -37,16 +37,23 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; projectPath: string } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // 点击外部关闭菜单
+  // 点击外部 / Esc 关闭菜单
   useEffect(() => {
     if (!contextMenu) return;
-    const handler = (e: MouseEvent) => {
+    const clickHandler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setContextMenu(null);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setContextMenu(null);
+    };
+    document.addEventListener('mousedown', clickHandler);
+    document.addEventListener('keydown', keyHandler);
+    return () => {
+      document.removeEventListener('mousedown', clickHandler);
+      document.removeEventListener('keydown', keyHandler);
+    };
   }, [contextMenu]);
 
   // 调整菜单位置不超出视口边界

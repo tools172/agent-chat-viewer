@@ -69,18 +69,26 @@ export const MainLayout: React.FC = () => {
   // 对话区域右键菜单
   const [convContextMenu, setConvContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [copiedPath, setCopiedPath] = useState(false);
+  const [copiedSelection, setCopiedSelection] = useState(false);
   const convMenuRef = useRef<HTMLDivElement>(null);
 
-  // 对话区域右键菜单 — 点击外部关闭
+  // 对话区域右键菜单 — 点击外部 / Esc 关闭
   useEffect(() => {
     if (!convContextMenu) return;
-    const handler = (e: MouseEvent) => {
+    const clickHandler = (e: MouseEvent) => {
       if (convMenuRef.current && !convMenuRef.current.contains(e.target as Node)) {
         setConvContextMenu(null);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConvContextMenu(null);
+    };
+    document.addEventListener('mousedown', clickHandler);
+    document.addEventListener('keydown', keyHandler);
+    return () => {
+      document.removeEventListener('mousedown', clickHandler);
+      document.removeEventListener('keydown', keyHandler);
+    };
   }, [convContextMenu]);
 
   // 调整对话区域菜单位置
@@ -281,6 +289,15 @@ export const MainLayout: React.FC = () => {
     if (activeTabId) refreshTab(activeTabId);
   };
 
+  const handleCopySelection = async () => {
+    setConvContextMenu(null);
+    try {
+      await navigator.clipboard.writeText(window.getSelection()?.toString() ?? '');
+      setCopiedSelection(true);
+      setTimeout(() => setCopiedSelection(false), 2000);
+    } catch { /* ignore */ }
+  };
+
   // 合并所有已知会话来源，去重（路径归一化处理）
   const allKnownSessions = useMemo(() => {
     const seen = new Set<string>();
@@ -458,12 +475,48 @@ export const MainLayout: React.FC = () => {
             )}
 
             {/* 对话区域右键菜单 */}
-            {convContextMenu && activeTab && (
+            {convContextMenu && activeTab && (() => {
+              // 检查右键位置是否在选取文本范围内
+              const selection = window.getSelection();
+              const selectedText = selection?.toString().trim();
+              let clickOnSelection = false;
+              if (selectedText && selection && selection.rangeCount > 0) {
+                const rects = selection.getRangeAt(0).getClientRects();
+                for (let i = 0; i < rects.length; i++) {
+                  const r = rects[i];
+                  if (
+                    convContextMenu.x >= r.left &&
+                    convContextMenu.x <= r.right &&
+                    convContextMenu.y >= r.top &&
+                    convContextMenu.y <= r.bottom
+                  ) {
+                    clickOnSelection = true;
+                    break;
+                  }
+                }
+              }
+              return (
               <div
                 ref={convMenuRef}
                 className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px]"
                 style={{ left: convContextMenu.x, top: convContextMenu.y }}
               >
+                {clickOnSelection && (
+                  <>
+                    <button
+                      onClick={handleCopySelection}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      {copiedSelection ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4 text-gray-400" />
+                      )}
+                      复制
+                    </button>
+                    <div className="border-t border-gray-100 my-1" />
+                  </>
+                )}
                 <button
                   onClick={handleRefreshSession}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
@@ -516,7 +569,8 @@ export const MainLayout: React.FC = () => {
                   导出会话...
                 </button>
               </div>
-            )}
+              );
+            })()}
           </>
         ) : (
           /* 无标签页时的空状态 */
