@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/dev/crates/tauri-config-schema/schema.json",
   "productName": "Agent Chat Viewer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "com.agent-chat-viewer.app",
   "build": {
     "beforeDevCommand": "pnpm dev",

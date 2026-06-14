@@ -1,5 +1,6 @@
 pub mod base;
 pub mod claude_code;
+pub mod codex;
 pub mod openclaw;
 
 use std::collections::HashMap;
@@ -30,6 +31,7 @@ impl ProviderRegistry {
 
         // Register built-in providers
         registry.register(Arc::new(claude_code::ClaudeCodeProvider::new()));
+        registry.register(Arc::new(codex::CodexProvider::new()));
         registry.register(Arc::new(openclaw::OpenClawProvider::new()));
 
         registry

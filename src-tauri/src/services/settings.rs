@@ -67,6 +67,8 @@ mod tests {
         // just verify the default settings can be created
         let settings = AppSettings::default();
         assert!(settings.provider_enabled.contains_key("claude_code"));
+        assert!(settings.provider_enabled.contains_key("codex"));
+        assert!(settings.provider_enabled.contains_key("openclaw"));
         assert!(!settings.default_filter.show_thinking);
     }
 

@@ -8,6 +8,10 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     label: 'Claude',
     color: 'bg-amber-100 text-amber-700 border-amber-300',
   },
+  codex: {
+    label: 'Codex',
+    color: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+  },
   openclaw: {
     label: 'OpenClaw',
     color: 'bg-purple-100 text-purple-700 border-purple-300',

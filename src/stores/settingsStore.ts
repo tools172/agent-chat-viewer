@@ -42,6 +42,7 @@ const defaultSettings: AppSettings = {
   },
   providerEnabled: {
     claude_code: true,
+    codex: true,
     openclaw: false,
   },
   searchColors: {
@@ -73,6 +74,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (!settings.searchColors) {
         settings.searchColors = { ...defaultSettings.searchColors };
       }
+      // 合并默认 providerEnabled（兼容旧版本设置文件缺少新增 agent）
+      settings.providerEnabled = {
+        ...defaultSettings.providerEnabled,
+        ...settings.providerEnabled,
+      };
       set({ settings, defaultPaths, isLoaded: true, isLoading: false });
     } catch (err) {
       set({

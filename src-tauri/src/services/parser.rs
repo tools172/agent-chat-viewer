@@ -62,6 +62,39 @@ fn clean_display_text(text: &str, provider_name: &str) -> String {
             }
             result.to_string()
         }
+        "codex" => {
+            // 去除 Codex 的环境上下文 XML 标签，提取实际用户消息
+            let mut result = text;
+            // 去除 <environment_context>...</environment_context>
+            if let Some(end) = result.find("</environment_context>") {
+                result = result[end + "</environment_context>".len()..].trim_start();
+            }
+            // 去除 <app-context>...</app-context>
+            if let Some(end) = result.find("</app-context>") {
+                result = result[end + "</app-context>".len()..].trim_start();
+            }
+            // 去除 <permissions instructions>...</permissions instructions>
+            if let Some(end) = result.find("</permissions instructions>") {
+                result = result[end + "</permissions instructions>".len()..].trim_start();
+            }
+            // 去除 <skills_instructions>...</skills_instructions>
+            if let Some(end) = result.find("</skills_instructions>") {
+                result = result[end + "</skills_instructions>".len()..].trim_start();
+            }
+            // 去除 <plugins_instructions>...</plugins_instructions>
+            if let Some(end) = result.find("</plugins_instructions>") {
+                result = result[end + "</plugins_instructions>".len()..].trim_start();
+            }
+            // 去除 <collaboration_mode>...</collaboration_mode>
+            if let Some(end) = result.find("</collaboration_mode>") {
+                result = result[end + "</collaboration_mode>".len()..].trim_start();
+            }
+            if result.is_empty() {
+                text.to_string()
+            } else {
+                result.to_string()
+            }
+        }
         _ => text.to_string(),
     }
 }
@@ -83,6 +116,15 @@ fn detect_client_from_text(text: &str, provider_name: &str) -> &'static str {
                 "vscode"
             } else {
                 "cli"
+            }
+        }
+        "codex" => {
+            // Codex 用户消息以 <environment_context> 或 <app-context> 等 XML 标签开头
+            // 实际用户消息可能在同一行后面，也可能在后续的 event_msg.user_message 中
+            if text.contains("<environment_context>") || text.contains("<app-context>") {
+                "desktop"
+            } else {
+                "desktop" // Codex 默认返回 desktop，避免 clientType 为空导致骨架状态
             }
         }
         _ => "",
@@ -228,6 +270,9 @@ pub fn create_session_summary(
                 {
                     if let Some(raw_cwd) = value["cwd"].as_str() {
                         cwd = raw_cwd.to_string();
+                    } else if let Some(raw_cwd) = value["payload"]["cwd"].as_str() {
+                        // Codex sessions nest cwd inside payload
+                        cwd = raw_cwd.to_string();
                     }
                 }
             }
@@ -341,6 +386,9 @@ pub fn polish_session(
             if cwd.is_empty() {
                 if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
                     if let Some(raw_cwd) = value["cwd"].as_str() {
+                        cwd = raw_cwd.to_string();
+                    } else if let Some(raw_cwd) = value["payload"]["cwd"].as_str() {
+                        // Codex sessions nest cwd inside payload
                         cwd = raw_cwd.to_string();
                     }
                 }

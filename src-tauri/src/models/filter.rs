@@ -108,6 +108,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         let mut provider_enabled = std::collections::HashMap::new();
         provider_enabled.insert("claude_code".to_string(), true);
+        provider_enabled.insert("codex".to_string(), true);
         provider_enabled.insert("openclaw".to_string(), false);
 
         Self {
