@@ -56,3 +56,6 @@ next-env.d.ts
 .temp/
 tmp/
 temp/
+
+# Windows NUL device file (accidentally created by tools that treat "nul" as a filename)
+nul
