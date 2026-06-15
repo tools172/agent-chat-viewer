@@ -332,6 +332,48 @@ impl ChatProvider for OpenClawProvider {
         }
         files
     }
+
+    fn clean_display_text(&self, text: &str) -> String {
+        // 1) "Sender (untrusted metadata):" + JSON block + timestamp line
+        if text.contains("Sender (untrusted metadata):") {
+            if let Some(ts_line) = text.rfind("\n[") {
+                let after = &text[ts_line + 1..];
+                if let Some(ts_end) = after.find("] ") {
+                    let result = after[ts_end + 2..].trim().to_string();
+                    if !result.is_empty() {
+                        return result;
+                    }
+                }
+            }
+        }
+        // 2) Subagent format: "[Subagent Task]: actual task"
+        if let Some(idx) = text.find("[Subagent Task]:") {
+            let after = text[idx + "[Subagent Task]:".len()..].trim().to_string();
+            if !after.is_empty() {
+                return after;
+            }
+        }
+        // 3) Fallback: timestamp-only line "[Tue ... GMT+8] message"
+        if let Some(stripped) = text.strip_prefix(|c: char| c == '[') {
+            if let Some(idx) = stripped.find("] ") {
+                let after = stripped[idx + 2..].trim().to_string();
+                if !after.is_empty() {
+                    return after;
+                }
+            }
+        }
+        text.to_string()
+    }
+
+    fn detect_client_from_text(&self, text: &str) -> &'static str {
+        if text.contains("Sender (untrusted metadata):") {
+            "ui"
+        } else if text.contains("[Subagent Task]:") || text.contains("[Subagent Context]") {
+            "subagent"
+        } else {
+            "cli"
+        }
+    }
 }
 
 #[cfg(test)]

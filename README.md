@@ -1,6 +1,6 @@
 # Agent Chat Viewer
 
-一个基于 Tauri v2 开发的桌面应用，用于浏览、查看和导出 Claude Code 等 Agent 的聊天记录。
+一个基于 Tauri v2 开发的桌面应用，用于浏览、查看和导出 Claude Code、Codex (OpenAI)、OpenClaw 等 Agent 的聊天记录。
 
 ## ✨ 功能
 
@@ -12,11 +12,13 @@
 - 🧹 **智能标题** — 自动剥离元数据前缀，只显示真正的对话内容
   - **OpenClaw**：去除 `Sender (untrusted metadata):` 块、时间戳行、`[Subagent Task]:` 等元数据
   - **Claude Code VSCode**：跳过 `<ide_selection>` 代码选区标记块，取用户实际提问
+  - **Codex (OpenAI)**：剥离 `<environment_context>`、`<app-context>` 等 XML 标签，提取用户真实输入
   - **兜底回退**：非预期格式时保持原文，不清空
 - 🏷️ **客户端环境标签** — 侧边栏一眼区分会话来源
   - `VSCode` — Claude Code 插件对话
   - `UI` — OpenClaw 图形客户端（qclaw、workbuddy、Web UI 等）
   - `Sub` — OpenClaw 子 Agent 会话
+  - `Desktop` — Codex Desktop 客户端
   - CLI（命令行）为默认情况，不显示标签
 - 📁 **文件夹浏览** — 按工作目录/文件夹浏览所有聊天记录
 - 📅 **时间线视图** — 按时间分组查看会话
@@ -41,7 +43,7 @@
 - 🎨 **搜索高亮配色** — 自定义搜索和查找高亮颜色
 - 📏 **面板宽度** — 侧边栏 (200-600px) 和轮次导航 (160-400px) 可调
 - 📂 **自定义监控目录** — 递归扫描（深度 4 层），自动识别会话格式，支持任意目录结构
-- 🔌 **多 Agent 支持** — Claude Code / OpenClaw 可切换启用
+- 🔌 **多 Agent 支持** — Claude Code / Codex / OpenClaw 可切换启用
 - 📁 **打开设置文件** — 一键在资源管理器中打开 settings.json
 
 ## 📖 核心概念
@@ -52,7 +54,7 @@
 |---|---|---|
 | **工作目录** | 用户执行 Agent 命令时的**当前目录**，即 Agent 实际工作所在的目录。应用左侧栏的文件夹项按此目录分组展示。 | `D:\my-project` |
 | **会话 (Session)** | 一次完整的 Agent 对话。聊天记录以 `.jsonl` 文件保存在用户目录的监控目录下（如 `.claude\projects\`），由应用自动发现和解析。 | `C:\Users\xxx\.claude\projects\D--my-project\abc123.jsonl` |
-| **提供者 (Provider)** | 解析不同 Agent 聊天格式的**适配器**。不同 Agent（Claude Code、OpenClaw 等）写入的文件格式不同，Provider 负责统一解析。 | `claude_code`、`openclaw` |
+| **提供者 (Provider)** | 解析不同 Agent 聊天格式的**适配器**。不同 Agent（Claude Code、Codex、OpenClaw 等）写入的文件格式不同，Provider 负责统一解析。所有 Provider 实现同一 trait，通过运行时多态（策略模式）统一调用。 | `claude_code`、`codex`、`openclaw` |
 | **客户端环境** | 会话的**来源环境**标识：VSCode 插件、OpenClaw 图形客户端、子 Agent 或命令行。展示为侧边栏的小标签，CLI 为默认不显示。 | `VSCode` `UI` `Sub` |
 | **刷新 🔄** | 重新从磁盘扫描所有数据源，确保列表与磁盘同步。 | 点击侧边栏顶部的刷新按钮 |
 
@@ -152,7 +154,7 @@ pnpm tauri build
 
 ## 🧩 扩展支持新 Agent
 
-要添加新的 Agent（如 OpenClaw），只需：
+要添加新的 Agent，只需实现 `ChatProvider` trait 并注册。所有 Provider 通过**运行时多态（策略模式）**统一调用 — 新增 agent 对现有代码零侵入。
 
 1. 在 `src-tauri/src/providers/` 下实现 `ChatProvider` trait
 2. 在 `ProviderRegistry` 中注册
@@ -161,16 +163,24 @@ pnpm tauri build
 ```rust
 // 示例：添加新 Provider
 impl ChatProvider for MyNewProvider {
+    // === 必须实现 ===
     fn name(&self) -> &'static str { "my_agent" }
-    fn default_base_dir(&self) -> PathBuf { /* ... */ }
-    fn parse_event(&self, line: &str) -> Result<ChatEvent, ParseError> { /* ... */ }
-    fn detect_format(&self, path: &Path) -> bool { /* ... */ }
+    fn display_name(&self) -> &'static str { "My Agent" }
+    fn default_base_dir(&self) -> PathBuf { /* 默认存储路径 */ }
+    fn parse_event(&self, line: &str) -> Result<ChatEvent, ParseError> { /* 解析逻辑 */ }
+    fn detect_format(&self, path: &Path) -> bool { /* 路径检测 */ }
+    fn metadata_path(&self) -> Option<PathBuf> { /* 元数据文件路径 */ }
+
+    // === 推荐覆盖（有合理的默认实现） ===
     fn detect_by_content(&self, first_lines: &str) -> bool { /* 内容指纹检测 */ }
-    fn metadata_path(&self) -> Option<PathBuf> { /* ... */ }
+    fn enumerate_session_files(&self, project_dir: &Path) -> Vec<PathBuf> { /* 文件枚举 */ }
+    fn clean_display_text(&self, text: &str) -> String { /* 标题清洗 */ }
+    fn detect_client_from_text(&self, text: &str) -> &'static str { /* 客户端检测 */ }
+    fn extract_cwd(&self, value: &serde_json::Value) -> Option<String> { /* CWD 提取 */ }
 }
 ```
 
-`detect_by_content` 通过读取 `.jsonl` 文件第一行内容来识别格式，使自定义监控目录不再依赖路径结构猜测 provider，支持任意目录布局。
+`detect_by_content` 通过读取 `.jsonl` 文件第一行内容来识别格式。`clean_display_text` 和 `detect_client_from_text` 取代了旧架构中的字符串匹配自由函数，支持各 Provider 独立定制标题清洗和客户端识别逻辑。
 
 ## 🧪 测试
 

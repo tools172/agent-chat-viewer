@@ -398,7 +398,6 @@ pub async fn polish_sessions(
                         if let Some(polish) = crate::services::parser::polish_session(
                             Path::new(&file_path),
                             provider,
-                            provider_name,
                         ) {
                             results.lock().unwrap().push(polish);
                         }
@@ -491,7 +490,6 @@ pub async fn search_sessions(
                                         &project_name,
                                         &project_path_str,
                                         &provider,
-                                        &detected_provider,
                                         true,
                                     )
                                 {
@@ -532,7 +530,6 @@ pub async fn search_sessions(
                                             &project_name,
                                             &project_path.to_string_lossy(),
                                             &provider,
-                                            provider_name,
                                             true,
                                         )
                                     {

@@ -116,6 +116,8 @@ agent_chat_viewer/
 │   │   ├── providers/            # Agent Provider（策略模式）
 │   │   │   ├── base.rs           # ChatProvider trait 定义
 │   │   │   ├── claude_code.rs    # Claude Code 格式解析
+│   │   │   ├── codex.rs          # Codex (OpenAI) 格式解析
+│   │   │   ├── mod.rs            # ProviderRegistry 注册中心
 │   │   │   └── openclaw.rs       # OpenClaw 格式解析
 │   │   ├── services/             # 业务逻辑
 │   │   │   ├── filter.rs         # 事件过滤
@@ -138,7 +140,12 @@ agent_chat_viewer/
 │
 ├── docs/                         # 项目文档
 │   ├── ci-cd.md                  # CI/CD 实现文档
-│   └── development-guide.md      # 本文件
+│   ├── development-guide.md      # 本文件
+│   ├── feature-roadmap.md        # 功能路线图
+│   ├── multi-tab-design.md       # 多标签设计
+│   ├── provider-detection.md     # Provider 检测策略
+│   ├── testing-guide.md          # 测试指南
+│   └── theme-system-refactoring.md # 主题系统重构
 │
 ├── package.json                  # 前端依赖 + 脚本
 ├── tsconfig.json                 # TypeScript 配置

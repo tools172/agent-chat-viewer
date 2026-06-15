@@ -102,19 +102,28 @@ pnpm tauri build
 
 ## 🧩 添加新 Agent Provider
 
-要支持新的 Agent 聊天记录格式，实现 `ChatProvider` trait：
+要支持新的 Agent 聊天记录格式，实现 `ChatProvider` trait（详见 [Provider 检测策略](docs/provider-detection.md#6-扩展新-agent)）：
 
 ```rust
 impl ChatProvider for MyNewProvider {
+    // === 必须实现 ===
     fn name(&self) -> &'static str { "my_agent" }
-    fn default_base_dir(&self) -> PathBuf { /* ... */ }
-    fn parse_event(&self, line: &str) -> Result<ChatEvent, ParseError> { /* ... */ }
-    fn detect_format(&self, path: &Path) -> bool { /* ... */ }
-    fn metadata_path(&self) -> Option<PathBuf> { /* ... */ }
+    fn display_name(&self) -> &'static str { "My Agent" }
+    fn default_base_dir(&self) -> PathBuf { /* 默认存储路径 */ }
+    fn parse_event(&self, line: &str) -> Result<ChatEvent, ParseError> { /* 解析逻辑 */ }
+    fn detect_format(&self, path: &Path) -> bool { /* 路径检测 */ }
+    fn metadata_path(&self) -> Option<PathBuf> { /* 元数据文件，没有则 None */ }
+
+    // === 推荐覆盖（有合理的默认实现） ===
+    fn detect_by_content(&self, first_lines: &str) -> bool { /* 内容指纹 */ }
+    fn enumerate_session_files(&self, project_dir: &Path) -> Vec<PathBuf> { /* 文件发现 */ }
+    fn clean_display_text(&self, text: &str) -> String { /* 标题清洗 */ }
+    fn detect_client_from_text(&self, text: &str) -> &'static str { /* 客户端检测 */ }
+    fn extract_cwd(&self, value: &serde_json::Value) -> Option<String> { /* CWD 提取 */ }
 }
 ```
 
-然后在 `ProviderRegistry` 中注册，前端无需任何修改。
+然后在 `ProviderRegistry::new()` 中注册，前端无需任何修改。所有 Provider 通过运行时多态（trait object）统一调用。
 
 ## 🔀 Pull Request 流程
 

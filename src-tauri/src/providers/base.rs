@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use serde_json::Value;
 use crate::models::ChatEvent;
 
 /// Errors that can occur during parsing
@@ -85,5 +86,34 @@ pub trait ChatProvider: Send + Sync {
         } else {
             false
         }
+    }
+
+    /// Clean a display text by removing provider-specific metadata/context tags.
+    ///
+    /// Default: return the text unchanged.
+    fn clean_display_text(&self, text: &str) -> String {
+        text.to_string()
+    }
+
+    /// Detect the client type from the first user message text.
+    ///
+    /// Returns a static string like "cli", "vscode", "ui", "desktop", "subagent", etc.
+    /// Default: empty string (unknown client type).
+    fn detect_client_from_text(&self, _text: &str) -> &'static str {
+        ""
+    }
+
+    /// Extract the working directory (cwd) from a JSONL line value.
+    ///
+    /// Default: try top-level `cwd` field, then `payload.cwd` (Codex convention).
+    /// Providers with different structures should override this.
+    fn extract_cwd(&self, value: &Value) -> Option<String> {
+        if let Some(cwd) = value["cwd"].as_str() {
+            return Some(cwd.to_string());
+        }
+        if let Some(cwd) = value["payload"]["cwd"].as_str() {
+            return Some(cwd.to_string());
+        }
+        None
     }
 }

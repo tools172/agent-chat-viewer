@@ -185,6 +185,33 @@ impl ChatProvider for ClaudeCodeProvider {
         }
         false
     }
+
+    fn clean_display_text(&self, text: &str) -> String {
+        let mut result = text;
+        loop {
+            let mut changed = false;
+            for tag in &["</ide_selection>", "</ide_opened_file>",
+                          "</local-command-caveat>", "</command-name>",
+                          "</command-message>", "</command-args>"] {
+                if let Some(end) = result.find(tag) {
+                    result = result[end + tag.len()..].trim_start();
+                    changed = true;
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+        result.to_string()
+    }
+
+    fn detect_client_from_text(&self, text: &str) -> &'static str {
+        if text.contains("<ide_selection>") || text.contains("<ide_opened_file>") {
+            "vscode"
+        } else {
+            "cli"
+        }
+    }
 }
 
 /// Helper to get the user's home directory (cross-platform)

@@ -1,6 +1,6 @@
 # Provider 检测策略
 
-本文档说明 Agent Chat Viewer 如何判断一个 `.jsonl` 会话文件属于哪个 Agent（Claude Code、OpenClaw 或未来的其他工具），以及如何从任意目录结构中自动发现和组织会话记录。
+本文档说明 Agent Chat Viewer 如何判断一个 `.jsonl` 会话文件属于哪个 Agent（Claude Code、Codex、OpenClaw 或未来的其他工具），以及如何从任意目录结构中自动发现和组织会话记录。
 
 ---
 
@@ -193,45 +193,46 @@ impl ProviderRegistry {
 }
 ```
 
-**检测顺序**：按注册顺序依次尝试，第一个返回 `true` 的 provider 胜出。当前注册顺序为 Claude Code → OpenClaw，但指纹设计保证了互斥性，顺序不影响结果。
+**检测顺序**：按注册顺序依次尝试，第一个返回 `true` 的 provider 胜出。当前注册顺序为 Claude Code → Codex → OpenClaw，但指纹设计保证了互斥性，顺序不影响结果。
 
 ### 当前指纹对照表
 
 | Provider | 第一行特征字段 | 互斥保证 |
 |----------|---------------|---------|
-| OpenClaw | `type: "session"` + `version` 字段 | Claude Code 不会有 `type: "session"` |
-| Claude Code | `type: "user"` / `"assistant"` / `"system"` | OpenClaw 的第一行永远是 `type: "session"` |
+| Claude Code | `type: "user"` / `"assistant"` / `"system"` | 其他 provider 不会有这些 type 值 |
+| Codex (OpenAI) | `type: "session_meta"` / `"response_item"` / `"event_msg"` | Claude Code 和 OpenClaw 不会有这些 type 值 |
+| OpenClaw | `type: "session"` + `version` 字段 | Claude Code / Codex 不会有 `type: "session"` |
 
 ---
 
 ## 6. 扩展新 Agent
 
-新增一个 Agent（如 Cursor、Codex）只需以下步骤：
+新增一个 Agent 只需以下步骤：
 
 ### 6.1 实现 ChatProvider trait
 
 ```rust
-// src-tauri/src/providers/cursor.rs
+// src-tauri/src/providers/my_agent.rs
 
-impl ChatProvider for CursorProvider {
-    fn name(&self) -> &'static str { "cursor" }
-    fn display_name(&self) -> &'static str { "Cursor" }
+impl ChatProvider for MyAgentProvider {
+    // === 必须实现 ===
+    fn name(&self) -> &'static str { "my_agent" }
+    fn display_name(&self) -> &'static str { "My Agent" }
 
-    // 默认存储路径（可选）
+    // 默认存储路径
     fn default_base_dir(&self) -> PathBuf {
-        home_dir().join(".cursor").join("sessions")
+        home_dir().join(".my_agent").join("sessions")
     }
 
-    // 路径检测：标准的 ~/.cursor 路径
+    // 路径检测
     fn detect_format(&self, path: &Path) -> bool {
-        path.starts_with(home_dir().join(".cursor"))
+        path.starts_with(home_dir().join(".my_agent"))
     }
 
-    // ★ 内容检测：定义 Cursor 文件的指纹
+    // ★ 内容检测：定义 MyAgent 文件的指纹
     fn detect_by_content(&self, first_lines: &str) -> bool {
         if let Some(line) = first_lines.lines().find(|l| !l.trim().is_empty()) {
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
-                // Cursor 假设的格式：{"type":"conversation","model":...}
                 return v["type"].as_str() == Some("conversation")
                     && v["model"].as_str().is_some();
             }
@@ -241,10 +242,30 @@ impl ChatProvider for CursorProvider {
 
     // 解析逻辑
     fn parse_event(&self, line: &str) -> Result<ChatEvent, ParseError> {
-        // Cursor 特有的 JSONL 解析逻辑
+        // Agent 特有的 JSONL 解析逻辑
     }
+
+    // 元数据文件路径（没有则返回 None）
+    fn metadata_path(&self) -> Option<PathBuf> {
+        Some(home_dir().join(".my_agent").join("history.jsonl"))
+    }
+
+    // === 推荐覆盖（有合理默认实现） ===
+    // 文件枚举（默认平铺扫描，嵌套结构需要覆盖）
+    fn enumerate_session_files(&self, project_dir: &Path) -> Vec<PathBuf> { /* ... */ }
+
+    // 标题清洗：剥离元数据标签，提取用户实际输入
+    fn clean_display_text(&self, text: &str) -> String { /* ... */ }
+
+    // 客户端检测：从首条消息识别来源（cli / vscode / ui / desktop / subagent）
+    fn detect_client_from_text(&self, text: &str) -> &'static str { /* ... */ }
+
+    // CWD 提取：从 JSON 行中获取工作目录
+    fn extract_cwd(&self, value: &serde_json::Value) -> Option<String> { /* ... */ }
 }
 ```
+
+> **设计要点**：`clean_display_text`、`detect_client_from_text`、`extract_cwd` 是 trait 方法而非自由函数。旧架构在 `parser.rs` 中通过 `match provider_name` 字符串分发，新增 agent 需修改核心 parser 代码。重构后各 Provider 自行实现，真正做到了对现有代码零侵入。
 
 ### 6.2 注册到 ProviderRegistry
 
@@ -256,6 +277,7 @@ registry.register(Arc::new(cursor::CursorProvider::new()));
 ### 6.3 不需要改的
 
 - 扫描/发现逻辑（`browser.rs`）
+- 标题清洗和客户端检测（`parser.rs` — 已通过 trait 方法多态分发）
 - 前端 UI 组件
 - 设置面板（自动识别新 provider）
 
@@ -286,7 +308,8 @@ registry.register(Arc::new(cursor::CursorProvider::new()));
 
 ### 容错设计
 
-- **内容检测失败** → 回退为 `claude_code`
+- **内容检测失败** → 回退为 `claude_code` 尝试解析
 - **解析失败的行** → `eprintln!` 警告后跳过该行，不中断整体解析
 - **空文件 / 全无效行** → 生成摘要但标记为 `"(Empty session)"`
+- **所有 User 事件均为元数据** → 最终兜底使用第一条原文（而非在每个 User 事件后过早回退）
 - **非 `.jsonl` 文件** → 在扫描阶段即被过滤（`is_session_file` 检查扩展名）

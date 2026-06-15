@@ -4,133 +4,6 @@ use std::sync::Arc;
 use crate::models::{ChatEvent, SessionDetail, SessionSummary};
 use crate::providers::base::ChatProvider;
 
-/// 清理会话显示文本：去除元数据前缀，提取实际对话内容。
-/// 全部使用轻量字符串操作，无正则、无额外依赖。
-fn clean_display_text(text: &str, provider_name: &str) -> String {
-    match provider_name {
-        "openclaw" => {
-            // 1) "Sender (untrusted metadata):" + JSON 代码块 + 时间戳行
-            //    格式: Sender (untrusted metadata):\n```json\n{...}\n```\n\n[Tue ... GMT+8] 实际消息
-            //    策略: 找到最后一个 "\n["（时间戳行开头），提取 "] " 之后的内容
-            if text.contains("Sender (untrusted metadata):") {
-                if let Some(ts_line) = text.rfind("\n[") {
-                    let after = &text[ts_line + 1..]; // skip \n, now at "[..."
-                    if let Some(ts_end) = after.find("] ") {
-                        let result = after[ts_end + 2..].trim().to_string();
-                        if !result.is_empty() {
-                            return result;
-                        }
-                    }
-                }
-            }
-            // 2) Subagent 格式: "[...] [Subagent Context] ...\n\n[Subagent Task]: 实际任务"
-            if let Some(idx) = text.find("[Subagent Task]:") {
-                let after = text[idx + "[Subagent Task]:".len()..].trim().to_string();
-                if !after.is_empty() {
-                    return after;
-                }
-            }
-            // 3) 兜底：只有时间戳行的情况 "[Tue ... GMT+8] 消息"
-            if let Some(stripped) = text.strip_prefix(|c: char| c == '[') {
-                if let Some(idx) = stripped.find("] ") {
-                    let after = stripped[idx + 2..].trim().to_string();
-                    if !after.is_empty() {
-                        return after;
-                    }
-                }
-            }
-            text.to_string()
-        }
-        "claude_code" => {
-            // 去除 VSCode IDE 标记和 CLI 元命令标记（可能出现在开头）
-            // 支持的标签：<ide_selection>, <ide_opened_file>, <local-command-caveat>,
-            //            <command-name>, <command-message>, <command-args>
-            let mut result = text;
-            loop {
-                let mut changed = false;
-                for tag in &["</ide_selection>", "</ide_opened_file>",
-                              "</local-command-caveat>", "</command-name>",
-                              "</command-message>", "</command-args>"] {
-                    if let Some(end) = result.find(tag) {
-                        result = result[end + tag.len()..].trim_start();
-                        changed = true;
-                    }
-                }
-                if !changed {
-                    break;
-                }
-            }
-            result.to_string()
-        }
-        "codex" => {
-            // 去除 Codex 的环境上下文 XML 标签，提取实际用户消息
-            let mut result = text;
-            // 去除 <environment_context>...</environment_context>
-            if let Some(end) = result.find("</environment_context>") {
-                result = result[end + "</environment_context>".len()..].trim_start();
-            }
-            // 去除 <app-context>...</app-context>
-            if let Some(end) = result.find("</app-context>") {
-                result = result[end + "</app-context>".len()..].trim_start();
-            }
-            // 去除 <permissions instructions>...</permissions instructions>
-            if let Some(end) = result.find("</permissions instructions>") {
-                result = result[end + "</permissions instructions>".len()..].trim_start();
-            }
-            // 去除 <skills_instructions>...</skills_instructions>
-            if let Some(end) = result.find("</skills_instructions>") {
-                result = result[end + "</skills_instructions>".len()..].trim_start();
-            }
-            // 去除 <plugins_instructions>...</plugins_instructions>
-            if let Some(end) = result.find("</plugins_instructions>") {
-                result = result[end + "</plugins_instructions>".len()..].trim_start();
-            }
-            // 去除 <collaboration_mode>...</collaboration_mode>
-            if let Some(end) = result.find("</collaboration_mode>") {
-                result = result[end + "</collaboration_mode>".len()..].trim_start();
-            }
-            if result.is_empty() {
-                text.to_string()
-            } else {
-                result.to_string()
-            }
-        }
-        _ => text.to_string(),
-    }
-}
-
-/// 从首条用户消息的原始文本中检测客户端类型（轻量，仅字符串查找）
-fn detect_client_from_text(text: &str, provider_name: &str) -> &'static str {
-    match provider_name {
-        "openclaw" => {
-            if text.contains("Sender (untrusted metadata):") {
-                "ui"
-            } else if text.contains("[Subagent Task]:") || text.contains("[Subagent Context]") {
-                "subagent"
-            } else {
-                "cli"
-            }
-        }
-        "claude_code" => {
-            if text.contains("<ide_selection>") || text.contains("<ide_opened_file>") {
-                "vscode"
-            } else {
-                "cli"
-            }
-        }
-        "codex" => {
-            // Codex 用户消息以 <environment_context> 或 <app-context> 等 XML 标签开头
-            // 实际用户消息可能在同一行后面，也可能在后续的 event_msg.user_message 中
-            if text.contains("<environment_context>") || text.contains("<app-context>") {
-                "desktop"
-            } else {
-                "desktop" // Codex 默认返回 desktop，避免 clientType 为空导致骨架状态
-            }
-        }
-        _ => "",
-    }
-}
-
 /// Parse a JSONL session file and return all parsed events
 pub fn parse_session_file(
     file_path: &Path,
@@ -228,7 +101,6 @@ pub fn create_session_summary(
     project_name: &str,
     project_path: &str,
     provider: &Arc<dyn ChatProvider>,
-    provider_name: &str,
     quick: bool,
 ) -> Option<SessionSummary> {
     let content = std::fs::read_to_string(file_path).ok()?;
@@ -250,6 +122,7 @@ pub fn create_session_summary(
     let mut cwd = String::new();
     let mut client_type = String::new();
     let mut client_detected = false;
+    let mut first_raw = String::new();
 
     for line in content.lines() {
         let trimmed = line.trim();
@@ -268,11 +141,8 @@ pub fn create_session_summary(
                 if let Ok(value) =
                     serde_json::from_str::<serde_json::Value>(trimmed)
                 {
-                    if let Some(raw_cwd) = value["cwd"].as_str() {
-                        cwd = raw_cwd.to_string();
-                    } else if let Some(raw_cwd) = value["payload"]["cwd"].as_str() {
-                        // Codex sessions nest cwd inside payload
-                        cwd = raw_cwd.to_string();
+                    if let Some(raw_cwd) = provider.extract_cwd(&value) {
+                        cwd = raw_cwd;
                     }
                 }
             }
@@ -288,7 +158,6 @@ pub fn create_session_summary(
             // Find first user text message for display title + client type detection
             if display == "(Empty session)" {
                 if let crate::models::EventType::User = event.event_type {
-                    let mut first_raw = String::new();
                     for block in &event.content {
                         if let crate::models::ContentBlock::Text { text } = block {
                             if first_raw.is_empty() {
@@ -304,10 +173,10 @@ pub fn create_session_summary(
                             }
                             // 完整模式：检测类型 + 清理显示文本
                             if !client_detected {
-                                client_type = detect_client_from_text(text, provider_name).to_string();
+                                client_type = provider.detect_client_from_text(text).to_string();
                                 client_detected = true;
                             }
-                            let cleaned = clean_display_text(text, provider_name);
+                            let cleaned = provider.clean_display_text(text);
                             if cleaned.is_empty() {
                                 continue;
                             }
@@ -318,17 +187,20 @@ pub fn create_session_summary(
                             break;
                         }
                     }
-                    // 兜底：所有 text block 都是元数据，用第一条的原文
-                    if display == "(Empty session)" && !first_raw.is_empty() {
-                        display = first_raw.chars().take(80).collect();
-                        if first_raw.len() > 80 {
-                            display.push_str("...");
-                        }
-                    }
                 }
             }
         }
     }
+
+    // 最终兜底：所有 User 事件的文本都是元数据/空，用第一条原文
+    if display == "(Empty session)" && !first_raw.is_empty() {
+        display = first_raw.chars().take(80).collect();
+        if first_raw.len() > 80 {
+            display.push_str("...");
+        }
+    }
+
+    let provider_name = provider.name().to_string();
 
     Some(SessionSummary {
         id,
@@ -340,7 +212,7 @@ pub fn create_session_summary(
         file_size,
         cwd,
         file_path: file_path.to_string_lossy().to_string(),
-        provider_name: provider_name.to_string(),
+        provider_name,
         file_mtime,
         client_type,
     })
@@ -363,7 +235,6 @@ pub struct SessionPolish {
 pub fn polish_session(
     file_path: &Path,
     provider: &Arc<dyn ChatProvider>,
-    provider_name: &str,
 ) -> Option<SessionPolish> {
     let content = std::fs::read_to_string(file_path).ok()?;
     let mut display = String::from("(Empty session)");
@@ -385,11 +256,8 @@ pub fn polish_session(
             }
             if cwd.is_empty() {
                 if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
-                    if let Some(raw_cwd) = value["cwd"].as_str() {
-                        cwd = raw_cwd.to_string();
-                    } else if let Some(raw_cwd) = value["payload"]["cwd"].as_str() {
-                        // Codex sessions nest cwd inside payload
-                        cwd = raw_cwd.to_string();
+                    if let Some(raw_cwd) = provider.extract_cwd(&value) {
+                        cwd = raw_cwd;
                     }
                 }
             }
@@ -407,10 +275,10 @@ pub fn polish_session(
                                 first_raw = text.clone();
                             }
                             if !client_detected {
-                                client_type = detect_client_from_text(text, provider_name).to_string();
+                                client_type = provider.detect_client_from_text(text).to_string();
                                 client_detected = true;
                             }
-                            let cleaned = clean_display_text(text, provider_name);
+                            let cleaned = provider.clean_display_text(text);
                             if cleaned.is_empty() {
                                 continue;
                             }
@@ -421,14 +289,16 @@ pub fn polish_session(
                             break;
                         }
                     }
-                    if display == "(Empty session)" && !first_raw.is_empty() {
-                        display = first_raw.chars().take(1000).collect();
-                        if first_raw.len() > 1000 {
-                            display.push_str("...");
-                        }
-                    }
                 }
             }
+        }
+    }
+
+    // 最终兜底：所有 User 事件的文本都是元数据/空，用第一条原文
+    if display == "(Empty session)" && !first_raw.is_empty() {
+        display = first_raw.chars().take(1000).collect();
+        if first_raw.len() > 1000 {
+            display.push_str("...");
         }
     }
 
@@ -446,139 +316,182 @@ pub fn polish_session(
 mod tests {
     use super::*;
     use crate::providers::claude_code::ClaudeCodeProvider;
+    use crate::providers::codex::CodexProvider;
+    use crate::providers::openclaw::OpenClawProvider;
     use std::io::Write;
 
     // ===== clean_display_text 测试 =====
 
     #[test]
     fn test_clean_openclaw_display_with_sender_metadata() {
+        let provider = OpenClawProvider::new();
         let text = "Sender (untrusted metadata):\n```json\n{\"label\": \"test\"}\n```\n\n[Tue 2026-06-09 11:21 GMT+8] 如何配置子agent？";
-        let cleaned = clean_display_text(text, "openclaw");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "如何配置子agent？");
     }
 
     #[test]
     fn test_clean_openclaw_display_with_web_ui_sender() {
+        let provider = OpenClawProvider::new();
         let text = "Sender (untrusted metadata):\n```json\n{\"label\": \"openclaw-control-ui\", \"id\": \"openclaw-control-ui\"}\n```\n\n[Thu 2026-06-11 18:06 GMT+8] 请从知网查找5篇文献";
-        let cleaned = clean_display_text(text, "openclaw");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "请从知网查找5篇文献");
     }
 
     #[test]
     fn test_clean_openclaw_display_timestamp_only() {
-        // 只有时间戳行，没有 sender 元数据
+        let provider = OpenClawProvider::new();
         let text = "[Tue 2026-06-09 11:21 GMT+8] 如何配置子agent？";
-        let cleaned = clean_display_text(text, "openclaw");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "如何配置子agent？");
     }
 
     #[test]
     fn test_clean_openclaw_display_no_prefix() {
-        // 普通消息，无需清理
+        let provider = OpenClawProvider::new();
         let text = "直接的问题文本";
-        let cleaned = clean_display_text(text, "openclaw");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "直接的问题文本");
     }
 
     #[test]
     fn test_clean_openclaw_display_subagent_format() {
+        let provider = OpenClawProvider::new();
         let text = "[Mon 2026-06-08 20:45 GMT+8] [Subagent Context] You are running as a subagent (depth 1/1). Results auto-announce to your requester; do not busy-poll for status.\n\n[Subagent Task]: 请使用 cnki-yx-literature-search 技能检索关键词\"智障恢复\"的文献，返回结构化结果（标题、作者、来源、摘要、被引频次等）。";
-        let cleaned = clean_display_text(text, "openclaw");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "请使用 cnki-yx-literature-search 技能检索关键词\"智障恢复\"的文献，返回结构化结果（标题、作者、来源、摘要、被引频次等）。");
     }
 
     #[test]
     fn test_clean_claude_code_display_with_ide_selection() {
+        let provider = ClaudeCodeProvider::new();
         let text = "<ide_selection>The user selected lines 13 to 13 from file.ts:\nTomlConfig\n\nThis may or may not be related to the current task.</ide_selection>\n现在我在config.toml文件中增加local_frontend_res = 1";
-        let cleaned = clean_display_text(text, "claude_code");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "现在我在config.toml文件中增加local_frontend_res = 1");
     }
 
     #[test]
     fn test_clean_claude_code_display_no_ide_selection() {
+        let provider = ClaudeCodeProvider::new();
         let text = "这是一条普通的消息";
-        let cleaned = clean_display_text(text, "claude_code");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "这是一条普通的消息");
     }
 
     #[test]
     fn test_clean_claude_code_display_only_ide_selection() {
-        // 纯元数据块，清理后为空（由调用方跳过取下一个 text block）
+        let provider = ClaudeCodeProvider::new();
         let text = "<ide_selection>only selection</ide_selection>";
-        let cleaned = clean_display_text(text, "claude_code");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "");
     }
 
     #[test]
     fn test_clean_claude_code_display_ide_opened_file() {
+        let provider = ClaudeCodeProvider::new();
         let text = "<ide_opened_file>The user opened the file f:\\work_project\\config.toml in the IDE. This may or may not be related to the current task.</ide_opened_file>\nconfig.toml这个文件的内容符合标准格式吗？";
-        let cleaned = clean_display_text(text, "claude_code");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "config.toml这个文件的内容符合标准格式吗？");
     }
 
     #[test]
     fn test_clean_claude_code_display_only_ide_opened_file() {
+        let provider = ClaudeCodeProvider::new();
         let text = "<ide_opened_file>opened config.toml</ide_opened_file>";
-        let cleaned = clean_display_text(text, "claude_code");
-        assert_eq!(cleaned, ""); // 纯元数据，返回空
+        let cleaned = provider.clean_display_text(text);
+        assert_eq!(cleaned, "");
     }
 
     #[test]
     fn test_clean_claude_code_display_local_command_caveat() {
+        let provider = ClaudeCodeProvider::new();
         let text = "<local-command-caveat>Caveat: The messages below were generated by the user while running local commands.</local-command-caveat>";
-        let cleaned = clean_display_text(text, "claude_code");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "");
     }
 
     #[test]
     fn test_clean_claude_code_display_mixed_tags() {
-        // <ide_selection> + <ide_opened_file> 都可能出现
+        let provider = ClaudeCodeProvider::new();
         let text = "<ide_opened_file>opened file</ide_opened_file>\n<ide_selection>selected lines</ide_selection>\n实际的问题";
-        let cleaned = clean_display_text(text, "claude_code");
+        let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "实际的问题");
+    }
+
+    #[test]
+    fn test_clean_codex_display_strips_environment_context() {
+        let provider = CodexProvider::new();
+        let text = "<environment_context>\n  <cwd>/test</cwd>\n  <shell>powershell</shell>\n</environment_context>";
+        let cleaned = provider.clean_display_text(text);
+        assert_eq!(cleaned, "");
+    }
+
+    #[test]
+    fn test_clean_codex_display_strips_tags_preserves_user_message() {
+        let provider = CodexProvider::new();
+        let text = "<environment_context>\n  <cwd>/test</cwd>\n</environment_context>\n今天几号了？";
+        let cleaned = provider.clean_display_text(text);
+        assert_eq!(cleaned, "今天几号了？");
     }
 
     // ===== detect_client_from_text 测试 =====
 
     #[test]
     fn test_detect_openclaw_ui_client() {
+        let provider = OpenClawProvider::new();
         let content = "Sender (untrusted metadata):\n```json\n{}\n```\n\n[Tue 2026-06-09 11:21 GMT+8] test";
-        assert_eq!(detect_client_from_text(content, "openclaw"), "ui");
+        assert_eq!(provider.detect_client_from_text(content), "ui");
     }
 
     #[test]
     fn test_detect_openclaw_cli_client() {
+        let provider = OpenClawProvider::new();
         let content = "普通对话内容，没有 sender 元数据";
-        assert_eq!(detect_client_from_text(content, "openclaw"), "cli");
+        assert_eq!(provider.detect_client_from_text(content), "cli");
     }
 
     #[test]
     fn test_detect_openclaw_subagent_client() {
+        let provider = OpenClawProvider::new();
         let content = "[Mon 2026-06-08 20:45 GMT+8] [Subagent Context] You are running as a subagent (depth 1/1).\n\n[Subagent Task]: 请检索文献";
-        assert_eq!(detect_client_from_text(content, "openclaw"), "subagent");
+        assert_eq!(provider.detect_client_from_text(content), "subagent");
     }
 
     #[test]
     fn test_detect_claude_code_vscode_client() {
+        let provider = ClaudeCodeProvider::new();
         let content = "<ide_selection>selected text</ide_selection>\n用户消息";
-        assert_eq!(detect_client_from_text(content, "claude_code"), "vscode");
+        assert_eq!(provider.detect_client_from_text(content), "vscode");
     }
 
     #[test]
     fn test_detect_claude_code_vscode_via_ide_opened_file() {
+        let provider = ClaudeCodeProvider::new();
         let content = "<ide_opened_file>opened config.toml</ide_opened_file>\n用户消息";
-        assert_eq!(detect_client_from_text(content, "claude_code"), "vscode");
+        assert_eq!(provider.detect_client_from_text(content), "vscode");
     }
 
     #[test]
     fn test_detect_claude_code_cli_client() {
+        let provider = ClaudeCodeProvider::new();
         let content = "用户在命令行中的消息";
-        assert_eq!(detect_client_from_text(content, "claude_code"), "cli");
+        assert_eq!(provider.detect_client_from_text(content), "cli");
     }
 
     #[test]
-    fn test_detect_unknown_provider() {
-        assert_eq!(detect_client_from_text("anything", "unknown"), "");
+    fn test_detect_codex_desktop_client() {
+        let provider = CodexProvider::new();
+        let content = "<environment_context><cwd>/test</cwd></environment_context>";
+        assert_eq!(provider.detect_client_from_text(content), "desktop");
+    }
+
+    #[test]
+    fn test_trait_default_detect_client() {
+        // The trait default returns empty string
+        use crate::providers::base::ChatProvider;
+        // Verify Codex always returns desktop even without XML tags
+        let provider = CodexProvider::new();
+        assert_eq!(provider.detect_client_from_text("plain message"), "desktop");
     }
 
     // ===== create_skeleton_summary 测试 =====
@@ -626,7 +539,7 @@ mod tests {
 "#,
         );
         let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
-        let polished = polish_session(&file_path, &provider, "claude_code").unwrap();
+        let polished = polish_session(&file_path, &provider).unwrap();
 
         assert_eq!(polished.file_path, file_path.to_string_lossy());
         assert_eq!(polished.display, "Hello Claude");
@@ -643,7 +556,7 @@ mod tests {
 "#,
         );
         let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
-        let polished = polish_session(&file_path, &provider, "claude_code").unwrap();
+        let polished = polish_session(&file_path, &provider).unwrap();
 
         assert_eq!(polished.display, "实际的问题内容"); // 第一个 block 被跳过
         assert_eq!(polished.client_type, "vscode"); // 从第一个 block 检测到
@@ -652,7 +565,7 @@ mod tests {
     #[test]
     fn test_polish_session_returns_none_for_missing_file() {
         let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
-        let result = polish_session(Path::new("/nonexistent/file.jsonl"), &provider, "claude_code");
+        let result = polish_session(Path::new("/nonexistent/file.jsonl"), &provider);
         assert!(result.is_none());
     }
 

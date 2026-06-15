@@ -300,6 +300,55 @@ impl ChatProvider for CodexProvider {
         }
         false
     }
+
+    fn clean_display_text(&self, text: &str) -> String {
+        let mut result = text;
+        // Remove <environment_context>...</environment_context>
+        if let Some(end) = result.find("</environment_context>") {
+            result = result[end + "</environment_context>".len()..].trim_start();
+        }
+        // Remove <app-context>...</app-context>
+        if let Some(end) = result.find("</app-context>") {
+            result = result[end + "</app-context>".len()..].trim_start();
+        }
+        // Remove <permissions instructions>...</permissions instructions>
+        if let Some(end) = result.find("</permissions instructions>") {
+            result = result[end + "</permissions instructions>".len()..].trim_start();
+        }
+        // Remove <skills_instructions>...</skills_instructions>
+        if let Some(end) = result.find("</skills_instructions>") {
+            result = result[end + "</skills_instructions>".len()..].trim_start();
+        }
+        // Remove <plugins_instructions>...</plugins_instructions>
+        if let Some(end) = result.find("</plugins_instructions>") {
+            result = result[end + "</plugins_instructions>".len()..].trim_start();
+        }
+        // Remove <collaboration_mode>...</collaboration_mode>
+        if let Some(end) = result.find("</collaboration_mode>") {
+            result = result[end + "</collaboration_mode>".len()..].trim_start();
+        }
+        if result.is_empty() {
+            String::new()
+        } else {
+            result.to_string()
+        }
+    }
+
+    fn detect_client_from_text(&self, text: &str) -> &'static str {
+        if text.contains("<environment_context>") || text.contains("<app-context>") {
+            "desktop"
+        } else {
+            "desktop"
+        }
+    }
+
+    /// Codex nests cwd inside payload.cwd
+    fn extract_cwd(&self, value: &serde_json::Value) -> Option<String> {
+        if let Some(cwd) = value["payload"]["cwd"].as_str() {
+            return Some(cwd.to_string());
+        }
+        None
+    }
 }
 
 /// Helper to get the user's home directory (cross-platform)
@@ -483,7 +532,6 @@ mod tests {
         let polished = crate::services::parser::polish_session(
             &file_path,
             &provider,
-            "codex",
         )
         .expect("polish should succeed for Codex session");
 
