@@ -49,10 +49,33 @@ pub fn parse_session_detail(
         .unwrap_or("unknown")
         .to_string();
 
+    // Compute display title from first user event, using provider's clean_display_text
+    let mut display = String::from("(Empty session)");
+    for event in &events {
+        if let crate::models::EventType::User = event.event_type {
+            for block in &event.content {
+                if let crate::models::ContentBlock::Text { text } = block {
+                    let cleaned = provider.clean_display_text(text);
+                    if !cleaned.is_empty() {
+                        display = cleaned.chars().take(1000).collect();
+                        if cleaned.len() > 1000 {
+                            display.push_str("...");
+                        }
+                        break;
+                    }
+                }
+            }
+            if display != "(Empty session)" {
+                break;
+            }
+        }
+    }
+
     Ok(SessionDetail {
         id,
         file_path: file_path.to_string_lossy().to_string(),
         events,
+        display,
     })
 }
 

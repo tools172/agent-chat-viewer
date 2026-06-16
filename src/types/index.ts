@@ -47,6 +47,8 @@ export interface SessionDetail {
   id: string;
   filePath: string;
   events: ChatEvent[];
+  /** Cleaned first user message (used as tab title) */
+  display: string;
   providerName?: string;
 }
 

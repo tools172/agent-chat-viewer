@@ -92,6 +92,7 @@ describe('sessionStore', () => {
     mockedInvoke.mockResolvedValue({
       id: 'test',
       filePath: '/test.jsonl',
+      display: '(Empty session)',
       events: [],
     });
 
@@ -122,6 +123,7 @@ describe('sessionStore', () => {
     mockedInvoke.mockResolvedValue({
       id: 'test',
       filePath: '/test.jsonl',
+      display: '(Empty session)',
       events: [],
     });
 

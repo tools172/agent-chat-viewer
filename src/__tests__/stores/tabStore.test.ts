@@ -34,6 +34,7 @@ vi.mock('../../stores/settingsStore', () => ({
 const mockSessionDetail = {
   id: 'session-1',
   filePath: '/test/session.jsonl',
+  display: 'Hello world',
   events: [
     {
       uuid: 'evt-1',
@@ -110,6 +111,7 @@ describe('tabStore', () => {
   it('openTab 不带 user 消息时标题为 Untitled', async () => {
     mockedGetConversation.mockResolvedValue({
       ...mockSessionDetail,
+      display: '(Empty session)',
       events: [
         {
           uuid: 'evt-1',
@@ -612,6 +614,7 @@ describe('tabStore', () => {
     mockedGetConversation.mockClear();
     mockedGetConversation.mockResolvedValue({
       ...mockSessionDetail,
+      display: 'Updated content',
       events: [
         {
           uuid: 'evt-new',

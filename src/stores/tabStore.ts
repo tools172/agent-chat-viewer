@@ -18,6 +18,11 @@ let tabCounter = 0;
 
 /** 从 SessionDetail 提取标签页标题 */
 function buildTabTitle(detail: SessionDetail): string {
+  // 优先使用后端清理过的 display 字段
+  if (detail.display && detail.display !== '(Empty session)') {
+    return detail.display.slice(0, 60);
+  }
+  // 兜底：前端从 events 中提取
   const firstUserEvent = detail.events?.find((e) => e.eventType === 'user');
   if (!firstUserEvent) return 'Untitled';
   return extractUserText(firstUserEvent).slice(0, 60) || 'Untitled';

@@ -33,6 +33,8 @@ pub struct SessionDetail {
     pub id: String,
     pub file_path: String,
     pub events: Vec<ChatEvent>,
+    /// Cleaned first user message (used as tab title)
+    pub display: String,
 }
 
 /// Entry in the Claude history.jsonl file

@@ -61,12 +61,16 @@ export const TabItem: React.FC<TabItemProps> = ({
           if (tab.error) {
             return `加载失败: ${tab.error}\n\n${dirInfo}`;
           }
-          const firstUserEvent = tab.sessionDetail?.events?.find(
-            (e) => e.eventType === 'user'
-          );
-          const rawText = firstUserEvent
-            ? extractUserText(firstUserEvent)
-            : '';
+          // 优先使用后端清理过的 display 字段，兜底用前端 extractUserText
+          let rawText = tab.sessionDetail?.display;
+          if (!rawText || rawText === '(Empty session)') {
+            const firstUserEvent = tab.sessionDetail?.events?.find(
+              (e) => e.eventType === 'user'
+            );
+            rawText = firstUserEvent
+              ? extractUserText(firstUserEvent)
+              : '';
+          }
           const truncated =
             rawText.length > HINT_MAX_LEN
               ? rawText.slice(0, HINT_MAX_LEN) + '...'
