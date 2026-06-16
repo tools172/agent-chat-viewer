@@ -126,6 +126,8 @@ export interface AppSettings {
   polishBatchSize?: number;
   /** 启动时恢复上次打开的标签页 */
   restoreTabsOnStartup?: boolean;
+  /** 最大可钉住标签数：1~8，默认 4 */
+  maxPinnedTabs?: number;
 }
 
 export interface ProviderInfo {

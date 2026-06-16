@@ -429,6 +429,29 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               </button>
             </div>
 
+            {/* 最大钉住标签数 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  最大钉住标签数
+                </span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  可同时钉住的标签页上限
+                </p>
+              </div>
+              <select
+                value={settings.maxPinnedTabs ?? 4}
+                onChange={(e) =>
+                  store.updateMaxPinnedTabs(Number(e.target.value))
+                }
+                className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+
             {/* 批次刷新量 */}
             <div className="flex items-center justify-between">
               <div>

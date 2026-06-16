@@ -452,7 +452,10 @@ export const MainLayout: React.FC = () => {
             </div>
 
             {/* 标签栏右键菜单 */}
-            {tabContextMenu && (
+            {tabContextMenu && (() => {
+              const maxPinned = settings.maxPinnedTabs ?? 4;
+              const pinnedCount = tabs.filter((t) => t.pinned).length;
+              return (
               <TabContextMenu
                 x={tabContextMenu.x}
                 y={tabContextMenu.y}
@@ -469,10 +472,13 @@ export const MainLayout: React.FC = () => {
                   tabs.find((t) => t.id === tabContextMenu.tabId)
                     ?.sessionDetail?.id
                 }
+                pinDisabled={pinnedCount >= maxPinned}
+                maxPinnedCount={maxPinned}
                 onAction={handleTabContextAction}
                 onClose={() => setTabContextMenu(null)}
               />
-            )}
+              );
+            })()}
 
             {/* 对话区域右键菜单 */}
             {convContextMenu && activeTab && (() => {

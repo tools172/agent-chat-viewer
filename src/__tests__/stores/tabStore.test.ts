@@ -26,7 +26,18 @@ vi.mock('../../stores/settingsStore', () => ({
         watchDirectories: [],
         providerEnabled: {},
         searchColors: { search: '#fef08a', find: '#fed7aa' },
+        maxPinnedTabs: 4,
       },
+    })),
+  },
+}));
+
+// Mock toastStore
+const mockShowToast = vi.fn();
+vi.mock('../../stores/toastStore', () => ({
+  useToastStore: {
+    getState: vi.fn(() => ({
+      showToast: mockShowToast,
     })),
   },
 }));
@@ -668,5 +679,260 @@ describe('tabStore', () => {
 
     const tab = useTabStore.getState().tabs.find((t) => t.id === tabId);
     expect(tab?.scrollTop).toBe(500);
+  });
+
+  // ============================================================
+  // 钉住行为 (Pinned behavior)
+  // ============================================================
+
+  it('closeOtherTabs 保留钉住标签', async () => {
+    const tabId1 = await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    const tabId2 = await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session3.jsonl',
+    });
+    await useTabStore
+      .getState()
+      .openTab('/test/session3.jsonl', 'claude_code');
+
+    // 钉住 tab2
+    useTabStore.getState().togglePinTab(tabId2);
+
+    // closeOtherTabs(tabId1) → 保留 tab1 + pinned(tab2)，关闭 tab3
+    useTabStore.getState().closeOtherTabs(tabId1);
+
+    const state = useTabStore.getState();
+    expect(state.tabs).toHaveLength(2);
+    expect(state.tabs.map((t) => t.id)).toContain(tabId1);
+    expect(state.tabs.map((t) => t.id)).toContain(tabId2);
+    expect(state.closedTabs).toHaveLength(1);
+    expect(state.closedTabs[0].sessionPath).toBe('/test/session3.jsonl');
+  });
+
+  it('closeTabsToRight 保留右侧的钉住标签', async () => {
+    const tabId1 = await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session3.jsonl',
+    });
+    const tabId3 = await useTabStore
+      .getState()
+      .openTab('/test/session3.jsonl', 'claude_code');
+
+    // tabs: [pinned:tab1, tab2, tab3]
+    // 钉住 tab3（移到钉住区）
+    useTabStore.getState().togglePinTab(tabId1);
+    useTabStore.getState().togglePinTab(tabId3);
+    // tabs: [pinned:tab1, pinned:tab3, tab2]
+
+    // 以 tab1 为锚点关闭右侧 → tab2 被关闭，tab3(pinned) 保留
+    useTabStore.getState().closeTabsToRight(tabId1);
+
+    const state = useTabStore.getState();
+    const ids = state.tabs.map((t) => t.id);
+    expect(ids).toContain(tabId1);
+    expect(ids).toContain(tabId3);
+    expect(ids).not.toContain(
+      state.tabs.find((t) => t.sessionPath === '/test/session2.jsonl')?.id,
+    );
+  });
+
+  it('closeAllTabs 保留钉住标签', async () => {
+    const tabId1 = await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session3.jsonl',
+    });
+    await useTabStore
+      .getState()
+      .openTab('/test/session3.jsonl', 'claude_code');
+
+    // 钉住 tab1 和 tab2
+    useTabStore.getState().togglePinTab(tabId1);
+
+    const tabId2 = useTabStore
+      .getState()
+      .tabs.find((t) => t.sessionPath === '/test/session2.jsonl')!.id;
+    useTabStore.getState().togglePinTab(tabId2);
+
+    // closeAll → 只关闭未钉住的 tab3
+    useTabStore.getState().closeAllTabs();
+
+    const state = useTabStore.getState();
+    expect(state.tabs).toHaveLength(2);
+    expect(state.tabs.every((t) => t.pinned)).toBe(true);
+    expect(state.activeTabId).toBe(state.tabs[0].id);
+    expect(state.closedTabs).toHaveLength(1);
+  });
+
+  it('togglePinTab 钉住后标签移到钉住区（最前面）', async () => {
+    const tabId1 = await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    const tabId2 = await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session3.jsonl',
+    });
+    const tabId3 = await useTabStore
+      .getState()
+      .openTab('/test/session3.jsonl', 'claude_code');
+
+    // tabs: [1, 2, 3] → pin tab3 → [pinned:3, 1, 2]
+    useTabStore.getState().togglePinTab(tabId3);
+
+    const ids = useTabStore.getState().tabs.map((t) => t.id);
+    expect(ids[0]).toBe(tabId3);
+    expect(useTabStore.getState().tabs[0].pinned).toBe(true);
+
+    // pin tab2 → [pinned:3, pinned:2, 1]
+    useTabStore.getState().togglePinTab(tabId2);
+
+    const ids2 = useTabStore.getState().tabs.map((t) => t.id);
+    expect(ids2[0]).toBe(tabId3);
+    expect(ids2[1]).toBe(tabId2);
+    expect(ids2[2]).toBe(tabId1);
+  });
+
+  it('togglePinTab 取消钉住后标签移到普通区起始', async () => {
+    const tabId1 = await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    const tabId2 = await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'claude_code');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session3.jsonl',
+    });
+    const tabId3 = await useTabStore
+      .getState()
+      .openTab('/test/session3.jsonl', 'claude_code');
+
+    // pin tab1 和 tab3 → [pinned:1, pinned:3, tab2]
+    useTabStore.getState().togglePinTab(tabId1);
+    useTabStore.getState().togglePinTab(tabId3);
+
+    // unpin tab3 → [pinned:1, tab3, tab2]
+    useTabStore.getState().togglePinTab(tabId3);
+
+    const ids = useTabStore.getState().tabs.map((t) => t.id);
+    expect(ids[0]).toBe(tabId1); // pinned
+    expect(ids[1]).toBe(tabId3); // unpinned, at regular section start
+    expect(ids[2]).toBe(tabId2); // regular
+    expect(useTabStore.getState().tabs.find((t) => t.id === tabId3)?.pinned).toBe(false);
+  });
+
+  it('togglePinTab 超过上限时拒绝并显示 toast', async () => {
+    // 打开并钉住 4 个标签（maxPinnedTabs=4）
+    for (let i = 0; i < 4; i++) {
+      mockedGetConversation.mockResolvedValue({
+        ...mockSessionDetail,
+        filePath: `/test/pinned${i}.jsonl`,
+      });
+      const id = await useTabStore
+        .getState()
+        .openTab(`/test/pinned${i}.jsonl`, 'claude_code');
+      useTabStore.getState().togglePinTab(id);
+    }
+    expect(useTabStore.getState().tabs.filter((t) => t.pinned)).toHaveLength(4);
+
+    // 打开第 5 个标签
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/extra.jsonl',
+    });
+    const extraId = await useTabStore
+      .getState()
+      .openTab('/test/extra.jsonl', 'claude_code');
+
+    // 尝试钉住第 5 个 → 应该被拒绝
+    mockShowToast.mockClear();
+    useTabStore.getState().togglePinTab(extraId);
+
+    const tab = useTabStore.getState().tabs.find((t) => t.id === extraId);
+    expect(tab?.pinned).toBe(false); // 未钉住
+    expect(mockShowToast).toHaveBeenCalledWith(
+      expect.stringContaining('已达最大钉住数'),
+    );
+  });
+
+  it('openTab 新标签追加到末尾（钉住标签分区显示在最前）', async () => {
+    // 打开并钉住 tab1
+    const tabId1 = await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+    useTabStore.getState().togglePinTab(tabId1);
+
+    // 打开 tab2（普通标签）
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    const tabId2 = await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'claude_code');
+
+    // 打开 tab3（普通标签）→ 应在 tab2 之后（末尾）
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session3.jsonl',
+    });
+    const tabId3 = await useTabStore
+      .getState()
+      .openTab('/test/session3.jsonl', 'claude_code');
+
+    const ids = useTabStore.getState().tabs.map((t) => t.id);
+    // tab1(pinned) 在最前，tab2 和 tab3 按顺序在其后
+    expect(ids[0]).toBe(tabId1);
+    expect(ids[1]).toBe(tabId2);
+    expect(ids[2]).toBe(tabId3);
   });
 });

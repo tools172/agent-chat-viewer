@@ -32,6 +32,10 @@ interface TabContextMenuProps {
   isPinned: boolean;
   sessionPath: string;
   sessionId?: string;
+  /** 钉住是否因达到上限而被禁用 */
+  pinDisabled?: boolean;
+  /** 最大钉住数（用于提示文案） */
+  maxPinnedCount?: number;
   onAction: (action: TabContextAction, tabId: string) => void;
   onClose: () => void;
 }
@@ -42,6 +46,8 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
   tabId,
   isPinned,
   sessionId,
+  pinDisabled,
+  maxPinnedCount,
   onAction,
   onClose,
 }) => {
@@ -101,8 +107,15 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
         重新加载
       </button>
       <button
-        onClick={() => handleAction('togglePin')}
-        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+        onClick={() => {
+          if (pinDisabled && !isPinned) return; // 已达上限，不关闭菜单
+          handleAction('togglePin');
+        }}
+        className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm transition-colors ${
+          pinDisabled && !isPinned
+            ? 'text-gray-400 cursor-not-allowed'
+            : 'text-gray-700 hover:bg-gray-100'
+        }`}
       >
         {isPinned ? (
           <>
@@ -112,7 +125,9 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
         ) : (
           <>
             <Pin className="h-4 w-4 text-gray-400" />
-            钉住
+            {pinDisabled
+              ? `钉住 (已达上限 ${maxPinnedCount ?? 4})`
+              : '钉住'}
           </>
         )}
       </button>

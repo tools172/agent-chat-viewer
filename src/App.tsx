@@ -3,6 +3,7 @@ import { useSettings } from './hooks/useSettings';
 import { useSettingsStore } from './stores/settingsStore';
 import { MainLayout } from './components/layout/MainLayout';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
+import { ToastContainer } from './stores/toastStore';
 import { MessageSquare, RefreshCw } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -70,7 +71,12 @@ const App: React.FC = () => {
     );
   }
 
-  return <MainLayout />;
+  return (
+    <>
+      <MainLayout />
+      <ToastContainer />
+    </>
+  );
 };
 
 export default App;

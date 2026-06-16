@@ -24,6 +24,7 @@ interface SettingsState {
   updatePolishBatchSize: (size: number) => void;
   updateRestoreTabsOnStartup: (restore: boolean) => void;
   updateTheme: (theme: ThemeMode) => void;
+  updateMaxPinnedTabs: (n: number) => void;
   resetSearchColors: () => void;
   resetFilter: () => void;
   clearError: () => void;
@@ -54,6 +55,7 @@ const defaultSettings: AppSettings = {
   polishBatchSize: 5,
   restoreTabsOnStartup: true,
   theme: 'system',
+  maxPinnedTabs: 4,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -73,6 +75,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       // 确保 searchColors 有默认值（兼容旧版本设置文件）
       if (!settings.searchColors) {
         settings.searchColors = { ...defaultSettings.searchColors };
+      }
+      // 确保 maxPinnedTabs 有默认值（兼容旧版本设置文件）
+      if (settings.maxPinnedTabs == null) {
+        settings.maxPinnedTabs = defaultSettings.maxPinnedTabs;
       }
       // 合并默认 providerEnabled（兼容旧版本设置文件缺少新增 agent）
       settings.providerEnabled = {
@@ -210,6 +216,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         theme,
+      },
+    });
+  },
+
+  updateMaxPinnedTabs: (n: number) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        maxPinnedTabs: Math.max(1, Math.min(8, n)),
       },
     });
   },

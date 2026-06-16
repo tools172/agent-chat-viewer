@@ -2,7 +2,14 @@ import { create } from 'zustand';
 import type { TabState, TabSnapshot, FilterConfig, SessionDetail } from '../types';
 import * as tauri from '../utils/tauri';
 import { useSettingsStore } from './settingsStore';
+import { useToastStore } from './toastStore';
 import { extractUserText } from '../utils/filterEvents';
+import {
+  TabPinService,
+  CloseOthersPolicy,
+  CloseToRightPolicy,
+  CloseAllPolicy,
+} from '../utils/tabPinService';
 
 // 后端请求用：始终加载全部内容块，前端侧再做用户过滤
 const FULL_FILTER: FilterConfig = {
@@ -32,6 +39,12 @@ function buildTabTitle(detail: SessionDetail): string {
 function generateTabId(): string {
   tabCounter += 1;
   return `tab_${Date.now()}_${tabCounter}`;
+}
+
+/** 获取钉住服务实例（从设置中读取 maxPinnedTabs） */
+function getPinService(): TabPinService {
+  const maxPinned = useSettingsStore.getState().settings.maxPinnedTabs ?? 4;
+  return new TabPinService(maxPinned);
 }
 
 interface TabStoreState {
@@ -209,54 +222,66 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
 
   closeOtherTabs: (tabId) => {
     const { tabs } = get();
-    const otherTabs = tabs.filter((t) => t.id !== tabId);
-    const snapshots: TabSnapshot[] = otherTabs.map((t) => ({
+    const pinService = getPinService();
+    const { kept, closed } = pinService.applyClosePolicy(
+      tabs,
+      new CloseOthersPolicy(tabId),
+    );
+    const snapshots: TabSnapshot[] = closed.map((t) => ({
       sessionPath: t.sessionPath,
       providerName: t.providerName,
       pinned: t.pinned,
     }));
-    const kept = tabs.find((t) => t.id === tabId);
     set((s) => ({
-      tabs: kept ? [kept] : [],
+      tabs: kept,
       activeTabId: tabId,
       closedTabs: [...snapshots, ...s.closedTabs].slice(0, 20),
-      tabOrder: [tabId],
+      tabOrder: s.tabOrder.filter((tid) => kept.some((t) => t.id === tid)),
     }));
   },
 
   closeTabsToRight: (tabId) => {
-    const { tabs } = get();
-    const idx = tabs.findIndex((t) => t.id === tabId);
-    if (idx === -1) return;
-    const rightTabs = tabs.slice(idx + 1);
-    const snapshots: TabSnapshot[] = rightTabs.map((t) => ({
+    const { tabs, activeTabId } = get();
+    const pinService = getPinService();
+    const { kept, closed } = pinService.applyClosePolicy(
+      tabs,
+      new CloseToRightPolicy(tabId),
+    );
+    const snapshots: TabSnapshot[] = closed.map((t) => ({
       sessionPath: t.sessionPath,
       providerName: t.providerName,
       pinned: t.pinned,
     }));
-    const leftTabs = tabs.slice(0, idx + 1);
+    // 如果当前激活的标签被关闭，切换到保留列表中的第一个
+    let nextActiveId = activeTabId;
+    if (activeTabId && !kept.some((t) => t.id === activeTabId)) {
+      nextActiveId = kept.length > 0 ? kept[0].id : null;
+    }
     set((s) => ({
-      tabs: leftTabs,
-      activeTabId: tabId,
+      tabs: kept,
+      activeTabId: nextActiveId,
       closedTabs: [...snapshots, ...s.closedTabs].slice(0, 20),
-      tabOrder: s.tabOrder.filter((tid) =>
-        leftTabs.some((t) => t.id === tid)
-      ),
+      tabOrder: s.tabOrder.filter((tid) => kept.some((t) => t.id === tid)),
     }));
   },
 
   closeAllTabs: () => {
     const { tabs, closedTabs } = get();
-    const snapshots: TabSnapshot[] = tabs.map((t) => ({
+    const pinService = getPinService();
+    const { kept, closed } = pinService.applyClosePolicy(
+      tabs,
+      new CloseAllPolicy(),
+    );
+    const snapshots: TabSnapshot[] = closed.map((t) => ({
       sessionPath: t.sessionPath,
       providerName: t.providerName,
       pinned: t.pinned,
     }));
     set({
-      tabs: [],
-      activeTabId: null,
+      tabs: kept,
+      activeTabId: kept.length > 0 ? kept[0].id : null,
       closedTabs: [...snapshots, ...closedTabs].slice(0, 20),
-      tabOrder: [],
+      tabOrder: kept.map((t) => t.id),
     });
   },
 
@@ -267,24 +292,58 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
     set({ closedTabs: rest });
     const tabId = await get().openTab(
       snapshot.sessionPath,
-      snapshot.providerName
+      snapshot.providerName,
     );
     if (snapshot.pinned) {
-      set((s) => ({
-        tabs: s.tabs.map((t) =>
-          t.id === tabId ? { ...t, pinned: true } : t
-        ),
-      }));
+      const { tabs } = get();
+      const pinService = getPinService();
+      if (pinService.canPin(pinService.countPinned(tabs))) {
+        // 先标记 pinned，再重排
+        const marked = tabs.map((t) =>
+          t.id === tabId ? { ...t, pinned: true } : t,
+        );
+        const reordered = pinService.reorderOnPin(marked, tabId);
+        set({
+          tabs: reordered,
+          tabOrder: reordered.map((t) => t.id),
+        });
+      }
     }
     return tabId;
   },
 
   togglePinTab: (tabId) => {
-    set((s) => ({
-      tabs: s.tabs.map((t) =>
-        t.id === tabId ? { ...t, pinned: !t.pinned } : t
-      ),
-    }));
+    const { tabs } = get();
+    const tab = tabs.find((t) => t.id === tabId);
+    if (!tab) return;
+
+    const pinService = getPinService();
+
+    if (!tab.pinned) {
+      // 尝试钉住 — 检查是否达到上限
+      const pinnedCount = pinService.countPinned(tabs);
+      if (!pinService.canPin(pinnedCount)) {
+        useToastStore.getState().showToast(
+          `已达最大钉住数 (${pinService.getMaxPinned()})，请在设置中调整`,
+        );
+        return;
+      }
+    }
+
+    // 先切换 pinned 状态
+    const toggled = tabs.map((t) =>
+      t.id === tabId ? { ...t, pinned: !t.pinned } : t,
+    );
+
+    // 再重排位置
+    const reordered = tab.pinned
+      ? pinService.reorderOnUnpin(toggled, tabId)  // 取消钉住
+      : pinService.reorderOnPin(toggled, tabId);    // 钉住
+
+    set({
+      tabs: reordered,
+      tabOrder: reordered.map((t) => t.id),
+    });
   },
 
   moveTab: (fromIndex, toIndex) => {
