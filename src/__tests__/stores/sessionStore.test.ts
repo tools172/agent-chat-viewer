@@ -53,6 +53,7 @@ describe('sessionStore', () => {
         id: 'test',
         filePath: '/test.jsonl',
         events: [],
+        display: '',
       },
       selectedSessionPath: '/test.jsonl',
     });

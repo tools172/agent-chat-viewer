@@ -49,7 +49,7 @@ export const TabItem: React.FC<TabItemProps> = ({
       className={`group flex items-center gap-1.5 px-2.5 py-1.5 text-xs cursor-pointer select-none
         min-w-[100px] max-w-[200px] transition-colors duration-100 border-r border-gray-200
         ${isActive
-          ? 'bg-white text-gray-800 border-b-2 border-b-primary-500'
+          ? 'bg-primary-50 text-gray-800 border-b-2 border-b-primary-500'
           : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
         }
         ${tab.error ? 'text-red-600' : ''}

@@ -82,12 +82,12 @@ const OverflowIndicator: React.FC<{
   const borderClass =
     direction === 'left' ? 'border-r border-gray-200' : 'border-l border-gray-200';
   const marginClass =
-    direction === 'left' ? 'mr-1.5 pr-1.5 pl-1.5' : 'ml-1.5 pl-1.5 pr-1.5';
+    direction === 'left' ? 'mr-1 pr-1 pl-1' : 'ml-1 pl-1 pr-1';
 
   return (
     <div
-      className={`flex-shrink-0 flex items-center gap-1 text-xs bg-gray-50/80 ${borderClass} ${marginClass}
-        ${active ? 'text-primary-600 hover:text-primary-700 cursor-pointer font-bold' : 'text-gray-300'}`}
+      className={`flex-shrink-0 flex items-center gap-0.5 text-xs bg-gray-50/80 cursor-pointer select-none ${borderClass} ${marginClass}
+        ${active ? 'text-primary-600 hover:text-primary-700 hover:bg-gray-100 font-bold' : 'text-gray-300'}`}
       title={title}
       onClick={active ? onClick : undefined}
     >

@@ -141,27 +141,31 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
         <X className="h-4 w-4 text-gray-400" />
         关闭
       </button>
-      <button
-        onClick={() => handleAction('closeOthers')}
-        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-      >
-        <FileText className="h-4 w-4 text-gray-400" />
-        关闭其他
-      </button>
-      <button
-        onClick={() => handleAction('closeToRight')}
-        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-      >
-        <FileText className="h-4 w-4 text-gray-400 rotate-90" />
-        关闭右侧
-      </button>
-      <button
-        onClick={() => handleAction('closeAll')}
-        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-      >
-        <X className="h-4 w-4 text-red-400" />
-        全部关闭
-      </button>
+      {!isPinned && (
+        <>
+          <button
+            onClick={() => handleAction('closeOthers')}
+            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <FileText className="h-4 w-4 text-gray-400" />
+            关闭其他
+          </button>
+          <button
+            onClick={() => handleAction('closeToRight')}
+            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <FileText className="h-4 w-4 text-gray-400 rotate-90" />
+            关闭右侧
+          </button>
+          <button
+            onClick={() => handleAction('closeAll')}
+            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-4 w-4 text-red-400" />
+            全部关闭
+          </button>
+        </>
+      )}
 
       <div className="border-t border-gray-100 my-1" />
 
