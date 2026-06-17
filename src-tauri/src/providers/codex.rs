@@ -12,11 +12,14 @@ use crate::providers::base::{ChatProvider, ParseError};
 ///
 /// Each line is a JSON object with a `type` field:
 /// - `session_meta` — session metadata (id, cwd, timestamp)
-/// - `event_msg` — event messages (task_started, user_message, task_complete)
-/// - `response_item` — actual chat messages with `payload.role`:
-///   - `user` → user input (content type: `input_text`)
-///   - `assistant` → AI response (content type: `output_text`)
-///   - `developer` → system/developer instructions
+/// - `event_msg` — event messages (task_started, user_message, agent_message,
+///   agent_reasoning, task_complete, token_count, turn_aborted)
+/// - `response_item` — actual chat content:
+///   - `message` (role: `user`) → user input (content type: `input_text`)
+///   - `message` (role: `assistant`) → AI response (content type: `output_text`)
+///   - `message` (role: `developer`) → system/developer instructions
+///   - `function_call` → tool call request (parsed as ToolUse)
+///   - `function_call_output` → tool call result (parsed as ToolResult)
 /// - `turn_context` — turn-level context (model, cwd, etc.)
 pub struct CodexProvider {
     base_dir: PathBuf,
@@ -35,15 +38,24 @@ impl CodexProvider {
             ParseError::MissingField("payload".to_string())
         })?;
 
-        // Only handle "message" type response items
         let item_type = payload["type"].as_str().unwrap_or("");
-        if item_type != "message" {
-            return Err(ParseError::UnknownEventType(format!(
-                "response_item type: {}",
-                item_type
-            )));
-        }
 
+        match item_type {
+            "message" => Self::parse_message_response_item(value, payload),
+            "function_call" => Self::parse_function_call(value, payload),
+            "function_call_output" => Self::parse_function_call_output(value, payload),
+            other => Err(ParseError::UnknownEventType(format!(
+                "response_item type: {}",
+                other
+            ))),
+        }
+    }
+
+    /// Parse a "message" type response_item
+    fn parse_message_response_item(
+        value: &serde_json::Value,
+        payload: &serde_json::Value,
+    ) -> Result<ChatEvent, ParseError> {
         let role = payload["role"].as_str().unwrap_or("unknown");
 
         let event_type = match role {
@@ -72,10 +84,7 @@ impl CodexProvider {
                 .collect();
         }
 
-        // Use timestamp from the outer event, fallback to empty
         let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
-
-        // Generate a UUID from the timestamp + role (Codex doesn't have per-event UUIDs)
         let uuid = format!("codex-{}-{}", timestamp.replace([':', '.', '-'], ""), role);
 
         Ok(ChatEvent {
@@ -84,6 +93,78 @@ impl CodexProvider {
             event_type,
             timestamp,
             content,
+            session_id: None,
+        })
+    }
+
+    /// Parse a "function_call" response_item into a ToolUse event
+    fn parse_function_call(
+        value: &serde_json::Value,
+        payload: &serde_json::Value,
+    ) -> Result<ChatEvent, ParseError> {
+        let call_id = payload["call_id"].as_str().unwrap_or("unknown").to_string();
+        let name = payload["name"].as_str().unwrap_or("unknown").to_string();
+        // Codex stores arguments as a JSON string; parse it into a Value,
+        // falling back to a JSON string wrapper if parsing fails.
+        let tool_input: serde_json::Value = payload["arguments"]
+            .as_str()
+            .and_then(|s| serde_json::from_str(s).ok())
+            .unwrap_or_else(|| {
+                serde_json::Value::String(
+                    payload["arguments"].as_str().unwrap_or("").to_string(),
+                )
+            });
+
+        let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
+        let uuid = format!(
+            "codex-tool-{}",
+            timestamp.replace([':', '.', '-'], "")
+        );
+
+        Ok(ChatEvent {
+            uuid,
+            parent_uuid: None,
+            event_type: EventType::Assistant,
+            timestamp,
+            content: vec![ContentBlock::ToolUse {
+                tool_id: call_id,
+                tool_name: name,
+                tool_input,
+            }],
+            session_id: None,
+        })
+    }
+
+    /// Parse a "function_call_output" response_item into a ToolResult event
+    fn parse_function_call_output(
+        value: &serde_json::Value,
+        payload: &serde_json::Value,
+    ) -> Result<ChatEvent, ParseError> {
+        let call_id = payload["call_id"].as_str().unwrap_or("unknown").to_string();
+        let output = payload["output"].as_str().unwrap_or("").to_string();
+
+        // Detect error from output content (Codex shell commands indicate
+        // failure via non-zero exit code or stderr patterns)
+        let is_error = output.contains("Exit code: 1")
+            || output.starts_with("Error:")
+            || output.contains("FullyQualifiedErrorId");
+
+        let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
+        let uuid = format!(
+            "codex-result-{}",
+            timestamp.replace([':', '.', '-'], "")
+        );
+
+        Ok(ChatEvent {
+            uuid,
+            parent_uuid: None,
+            event_type: EventType::User,
+            timestamp,
+            content: vec![ContentBlock::ToolResult {
+                tool_use_id: call_id,
+                content: if output.is_empty() { None } else { Some(output) },
+                is_error,
+            }],
             session_id: None,
         })
     }
@@ -265,7 +346,9 @@ impl ChatProvider for CodexProvider {
                     "user_message" => Self::parse_user_message_event(&value),
                     "agent_message" => Self::parse_agent_message_event(&value),
                     "agent_reasoning" => Self::parse_agent_reasoning_event(&value),
-                    "task_started" | "task_complete" | "token_count" => {
+                    "task_started" | "task_complete" | "token_count"
+                    | "turn_aborted" =>
+                    {
                         Err(ParseError::UnknownEventType(format!(
                             "event_msg: {} (skipped)",
                             payload_type
@@ -358,6 +441,22 @@ impl ChatProvider for CodexProvider {
     fn extract_cwd(&self, value: &serde_json::Value) -> Option<String> {
         if let Some(cwd) = value["payload"]["cwd"].as_str() {
             return Some(cwd.to_string());
+        }
+        None
+    }
+
+    fn extract_raw_user_text(&self, value: &serde_json::Value) -> Option<String> {
+        // response_item user message: payload.content[0].text
+        if let Some(text) = value["payload"]["content"][0]["text"].as_str() {
+            if !text.is_empty() {
+                return Some(text.to_string());
+            }
+        }
+        // event_msg user_message: payload.message
+        if let Some(text) = value["payload"]["message"].as_str() {
+            if !text.is_empty() {
+                return Some(text.to_string());
+            }
         }
         None
     }
@@ -519,6 +618,108 @@ mod tests {
 
         let result = provider.parse_event(line);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_function_call() {
+        let provider = CodexProvider::new();
+        let line = r#"{"timestamp":"2026-06-14T16:19:10.000Z","type":"response_item","payload":{"type":"function_call","name":"shell_command","arguments":"{\"command\":\"cargo build\"}","call_id":"call_00_test123"}}"#;
+
+        let event = provider.parse_event(line).unwrap();
+        assert_eq!(event.event_type, EventType::Assistant);
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::ToolUse {
+                tool_id,
+                tool_name,
+                tool_input,
+            } => {
+                assert_eq!(tool_id, "call_00_test123");
+                assert_eq!(tool_name, "shell_command");
+                assert_eq!(tool_input["command"], "cargo build");
+            }
+            _ => panic!("Expected ToolUse block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_function_call_output() {
+        let provider = CodexProvider::new();
+        let line = r#"{"timestamp":"2026-06-14T16:19:12.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_00_test123","output":"Exit code: 0\nOutput:\nBuild succeeded"}}"#;
+
+        let event = provider.parse_event(line).unwrap();
+        assert_eq!(event.event_type, EventType::User);
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::ToolResult {
+                tool_use_id,
+                content,
+                is_error,
+            } => {
+                assert_eq!(tool_use_id, "call_00_test123");
+                assert_eq!(
+                    content.as_deref(),
+                    Some("Exit code: 0\nOutput:\nBuild succeeded")
+                );
+                assert!(!is_error);
+            }
+            _ => panic!("Expected ToolResult block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_function_call_output_error() {
+        let provider = CodexProvider::new();
+        let line = r#"{"timestamp":"2026-06-14T16:19:12.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_err_1","output":"Exit code: 1\nFullyQualifiedErrorId : CommandNotFound"}}"#;
+
+        let event = provider.parse_event(line).unwrap();
+        assert_eq!(event.event_type, EventType::User);
+        match &event.content[0] {
+            ContentBlock::ToolResult { is_error, .. } => {
+                assert!(is_error);
+            }
+            _ => panic!("Expected ToolResult block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_function_call_output_empty() {
+        let provider = CodexProvider::new();
+        let line = r#"{"timestamp":"2026-06-14T16:19:12.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_empty","output":""}}"#;
+
+        let event = provider.parse_event(line).unwrap();
+        match &event.content[0] {
+            ContentBlock::ToolResult { content, is_error, .. } => {
+                assert!(content.is_none());
+                assert!(!is_error);
+            }
+            _ => panic!("Expected ToolResult block"),
+        }
+    }
+
+    #[test]
+    fn test_skip_turn_aborted_event_msg() {
+        let provider = CodexProvider::new();
+        let line = r#"{"timestamp":"2026-06-14T16:19:12.000Z","type":"event_msg","payload":{"type":"turn_aborted","turn_id":"test-turn"}}"#;
+
+        let result = provider.parse_event(line);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_function_call_with_complex_arguments() {
+        let provider = CodexProvider::new();
+        // update_plan has nested JSON in arguments
+        let line = r#"{"timestamp":"2026-06-14T16:20:00.000Z","type":"response_item","payload":{"type":"function_call","name":"update_plan","arguments":"{\"plan\":[{\"status\":\"in_progress\",\"step\":\"Test\"}],\"explanation\":\"update\"}","call_id":"call_plan_1"}}"#;
+
+        let event = provider.parse_event(line).unwrap();
+        match &event.content[0] {
+            ContentBlock::ToolUse { tool_input, .. } => {
+                assert_eq!(tool_input["plan"][0]["step"], "Test");
+                assert_eq!(tool_input["explanation"], "update");
+            }
+            _ => panic!("Expected ToolUse block"),
+        }
     }
 
     #[test]

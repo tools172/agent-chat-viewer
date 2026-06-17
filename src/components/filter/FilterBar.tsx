@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, EyeOff, Brain, Wrench, FileOutput, Filter, Combine, Search } from 'lucide-react';
+import { Eye, EyeOff, Brain, Wrench, FileOutput, Filter, Combine, Search, Cpu } from 'lucide-react';
 import type { FilterConfig } from '../../types';
 
 interface FilterBarProps {
@@ -10,6 +10,8 @@ interface FilterBarProps {
   /** 查找按钮回调 */
   showFindBar?: boolean;
   onToggleFind?: () => void;
+  /** 当前会话的 provider，用于条件渲染特定过滤按钮 */
+  providerName?: string;
 }
 
 const FilterToggle: React.FC<{
@@ -37,7 +39,7 @@ const FilterToggle: React.FC<{
   </button>
 );
 
-export const FilterBar: React.FC<FilterBarProps> = ({ filter, onChange, stats, showFindBar, onToggleFind }) => {
+export const FilterBar: React.FC<FilterBarProps> = ({ filter, onChange, stats, showFindBar, onToggleFind, providerName }) => {
   return (
     <div className="flex items-center gap-2 overflow-hidden">
       {/* 过滤按钮组 */}
@@ -61,6 +63,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filter, onChange, stats, s
           enabled={filter.showToolResults}
           onChange={(v) => onChange({ showToolResults: v })}
         />
+        {providerName === 'codex' && (
+          <FilterToggle
+            label="开发者消息"
+            icon={<Cpu className="h-3 w-3" />}
+            enabled={filter.showSystemMessages}
+            onChange={(v) => onChange({ showSystemMessages: v })}
+          />
+        )}
         <button
           onClick={() =>
             onChange({ hideEmptyToolResults: !filter.hideEmptyToolResults })

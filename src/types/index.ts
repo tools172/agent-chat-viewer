@@ -66,6 +66,11 @@ export type EventType =
   | 'assistant'
   | 'system'
   | 'attachment'
+  | 'mode'
+  | 'permission_mode'
+  | 'file_history_snapshot'
+  | 'last_prompt'
+  | 'ai_title'
   | 'unknown';
 
 // ===== Content Blocks =====

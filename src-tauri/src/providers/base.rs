@@ -103,6 +103,15 @@ pub trait ChatProvider: Send + Sync {
         ""
     }
 
+    /// Extract the first raw user-facing text from a JSONL line value,
+    /// before any parse-time cleaning strips provider-specific metadata.
+    ///
+    /// This is used for client-type detection (e.g., "vscode" vs "cli" vs "desktop").
+    /// Default: returns `None` (provider doesn't support raw-text extraction).
+    fn extract_raw_user_text(&self, _value: &Value) -> Option<String> {
+        None
+    }
+
     /// Extract the working directory (cwd) from a JSONL line value.
     ///
     /// Default: try top-level `cwd` field, then `payload.cwd` (Codex convention).

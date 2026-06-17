@@ -17,7 +17,7 @@ const FULL_FILTER: FilterConfig = {
   showToolCalls: true,
   showToolResults: true,
   hideEmptyToolResults: false,
-  showSystemMessages: false,
+  showSystemMessages: true,
   showFileSnapshots: false,
 };
 

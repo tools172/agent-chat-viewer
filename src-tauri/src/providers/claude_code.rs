@@ -244,6 +244,22 @@ impl ChatProvider for ClaudeCodeProvider {
             "cli"
         }
     }
+
+    fn extract_raw_user_text(&self, value: &serde_json::Value) -> Option<String> {
+        // Plain user message: message.content as string
+        if let Some(text) = value["message"]["content"].as_str() {
+            if !text.is_empty() {
+                return Some(text.to_string());
+            }
+        }
+        // Structured content: message.content[0].text
+        if let Some(text) = value["message"]["content"][0]["text"].as_str() {
+            if !text.is_empty() {
+                return Some(text.to_string());
+            }
+        }
+        None
+    }
 }
 
 /// Helper to get the user's home directory (cross-platform)

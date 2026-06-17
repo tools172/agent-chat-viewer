@@ -102,6 +102,7 @@ export const TabContent: React.FC<TabContentProps> = React.memo(
           stats={convStats ?? undefined}
           showFindBar={tab.showFindBar}
           onToggleFind={() => onFindBarToggle(tab.id, !tab.showFindBar)}
+          providerName={tab.providerName}
         />
       </div>
 

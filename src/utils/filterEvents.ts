@@ -1,19 +1,43 @@
 import type { ChatEvent, ContentBlock, FilterConfig } from '../types';
 
 /**
- * 前端侧过滤：对已加载的事件应用内容块级别的过滤。
- * 元数据事件（mode/ai_title/queue_operation 等）已由后端过滤，此处只处理
- * thinking / tool_use / tool_result 的显示/隐藏。
+ * 前端侧过滤：对已加载的事件应用事件级别 + 内容块级别的过滤。
  *
  * 与 Rust services::filter::filter_events 逻辑一致。
+ * 后端 FULL_FILTER 加载全部事件（含 System/FileHistorySnapshot），
+ * 前端根据用户切换的过滤配置决定显示/隐藏。
  */
 export function filterEvents(
   events: ChatEvent[],
   config: FilterConfig,
 ): ChatEvent[] {
   return events
+    .filter((event) => shouldShowEvent(event, config))
     .map((event) => filterEventContent(event, config))
     .filter((event) => event.content.length > 0);
+}
+
+/** 与 Rust filter.rs should_show_event 一致 */
+function shouldShowEvent(event: ChatEvent, config: FilterConfig): boolean {
+  switch (event.eventType) {
+    case 'user':
+    case 'assistant':
+      return true; // 始终显示，由 content-block 级别过滤决定可见内容
+    case 'system':
+      return config.showSystemMessages;
+    case 'file_history_snapshot':
+      return config.showFileSnapshots;
+    case 'attachment':
+    case 'unknown':
+      return config.showSystemMessages;
+    case 'mode':
+    case 'permission_mode':
+    case 'last_prompt':
+    case 'ai_title':
+      return false; // 始终隐藏的元数据事件
+    default:
+      return true;
+  }
 }
 
 /**
