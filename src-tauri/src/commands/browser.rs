@@ -180,45 +180,110 @@ fn scan_projects(
                 Some(p) => p,
                 None => continue,
             };
-            if let Ok(entries) = std::fs::read_dir(base_path) {
-                for entry in entries.flatten() {
-                    let entry_path = entry.path();
-                    if entry_path.is_dir() {
-                        let project_name = entry_path
-                            .file_name()
-                            .map(|n| n.to_string_lossy().to_string())
-                            .unwrap_or_default();
-                        let project_key =
-                            format!("{}:{}", provider_name, project_name);
-                        let session_files =
-                            provider.enumerate_session_files(&entry_path);
-                        let session_count = session_files.len() as u32;
-                        let mut last_activity = String::new();
-                        for session_path in &session_files {
-                            if let Ok(metadata) = session_path.metadata() {
-                                if let Ok(modified) = metadata.modified() {
-                                    let dt: chrono::DateTime<chrono::Utc> =
-                                        modified.into();
-                                    let ts = dt.to_rfc3339();
-                                    if ts > last_activity {
-                                        last_activity = ts;
+
+            // Codex 目录结构是 sessions/<年>/<月>/<日>/，不适合按年分组。
+            // 改为读取每个文件第一行的 session_meta，按 payload.cwd 分组。
+            if provider_name == "codex" {
+                // enumerate_session_files 从年份目录开始扫描 2 层深度
+                // （月→日→文件），所以需要先遍历年份目录。
+                let mut session_files = Vec::new();
+                if let Ok(year_entries) = std::fs::read_dir(base_path) {
+                    for year_entry in year_entries.flatten() {
+                        let year_path = year_entry.path();
+                        if year_path.is_dir() {
+                            session_files.extend(
+                                provider.enumerate_session_files(&year_path),
+                            );
+                        }
+                    }
+                }
+
+                let mut cwd_groups: HashMap<String, (u32, String)> =
+                    HashMap::new();
+
+                for file_path in &session_files {
+                    let cwd =
+                        crate::providers::codex::read_session_cwd(file_path)
+                            .unwrap_or_else(|| "(Unknown)".to_string());
+
+                    let mut mtime = String::new();
+                    if let Ok(metadata) = file_path.metadata() {
+                        if let Ok(modified) = metadata.modified() {
+                            let dt: chrono::DateTime<chrono::Utc> =
+                                modified.into();
+                            mtime = dt.to_rfc3339();
+                        }
+                    }
+
+                    let entry = cwd_groups
+                        .entry(cwd.clone())
+                        .or_insert((0, String::new()));
+                    entry.0 += 1;
+                    if mtime > entry.1 {
+                        entry.1 = mtime;
+                    }
+                }
+
+                for (cwd, (count, last_activity)) in cwd_groups {
+                    let project_name = std::path::Path::new(&cwd)
+                        .file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_else(|| cwd.clone());
+                    let project_key = format!("{}:{}", provider_name, cwd);
+                    if count > 0 {
+                        projects.insert(
+                            project_key,
+                            Project {
+                                name: project_name,
+                                path: cwd,
+                                session_count: count,
+                                last_activity,
+                                provider_name: provider_name.clone(),
+                            },
+                        );
+                    }
+                }
+            } else {
+                if let Ok(entries) = std::fs::read_dir(base_path) {
+                    for entry in entries.flatten() {
+                        let entry_path = entry.path();
+                        if entry_path.is_dir() {
+                            let project_name = entry_path
+                                .file_name()
+                                .map(|n| n.to_string_lossy().to_string())
+                                .unwrap_or_default();
+                            let project_key =
+                                format!("{}:{}", provider_name, project_name);
+                            let session_files =
+                                provider.enumerate_session_files(&entry_path);
+                            let session_count = session_files.len() as u32;
+                            let mut last_activity = String::new();
+                            for session_path in &session_files {
+                                if let Ok(metadata) = session_path.metadata() {
+                                    if let Ok(modified) = metadata.modified() {
+                                        let dt: chrono::DateTime<chrono::Utc> =
+                                            modified.into();
+                                        let ts = dt.to_rfc3339();
+                                        if ts > last_activity {
+                                            last_activity = ts;
+                                        }
                                     }
                                 }
                             }
-                        }
-                        if session_count > 0 {
-                            projects.insert(
-                                project_key,
-                                Project {
-                                    name: project_name,
-                                    path: entry_path
-                                        .to_string_lossy()
-                                        .to_string(),
-                                    session_count,
-                                    last_activity,
-                                    provider_name: provider_name.clone(),
-                                },
-                            );
+                            if session_count > 0 {
+                                projects.insert(
+                                    project_key,
+                                    Project {
+                                        name: project_name,
+                                        path: entry_path
+                                            .to_string_lossy()
+                                            .to_string(),
+                                        session_count,
+                                        last_activity,
+                                        provider_name: provider_name.clone(),
+                                    },
+                                );
+                            }
                         }
                     }
                 }
@@ -260,6 +325,47 @@ pub async fn list_sessions(
 
     tauri::async_runtime::spawn_blocking(move || {
         let project_dir = PathBuf::from(&project_path);
+
+        // Codex: project_path 是 cwd，会话文件存储在 ~/.codex/sessions/ 下，
+        // 需要从 sessions 基目录扫描并按 cwd 过滤。
+        if provider_name == "codex" {
+            let project_name = project_dir
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| project_path.clone());
+            // 从 sessions 根目录遍历年份子目录，再用 enumerate_session_files
+            let mut session_files = Vec::new();
+            let base_dir = provider.default_base_dir();
+            if let Ok(year_entries) = std::fs::read_dir(&base_dir) {
+                for year_entry in year_entries.flatten() {
+                    let year_path = year_entry.path();
+                    if year_path.is_dir() {
+                        session_files.extend(
+                            provider.enumerate_session_files(&year_path),
+                        );
+                    }
+                }
+            }
+            let mut sessions: Vec<SessionSummary> = session_files
+                .iter()
+                .filter(|file_path| {
+                    crate::providers::codex::read_session_cwd(file_path)
+                        .as_deref()
+                        == Some(&project_path)
+                })
+                .filter_map(|file_path| {
+                    crate::services::parser::create_skeleton_summary(
+                        file_path,
+                        &project_name,
+                        &project_path,
+                        &provider_name,
+                    )
+                })
+                .collect();
+            sessions.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+            return Ok(sessions);
+        }
+
         if !project_dir.is_dir() {
             return Err(format!("目录不存在: {}", project_path));
         }
@@ -339,28 +445,65 @@ pub async fn list_all_sessions(
                     Some(p) => p.clone(),
                     None => continue,
                 };
-                if let Ok(project_entries) = std::fs::read_dir(base_path) {
-                    for project_entry in project_entries.flatten() {
-                        let project_path = project_entry.path();
-                        if !project_path.is_dir() {
-                            continue;
+
+                // Codex: 从 sessions 基目录扫描，按 cwd 分组
+                if provider_name == "codex" {
+                    let mut session_files = Vec::new();
+                    if let Ok(year_entries) = std::fs::read_dir(base_path) {
+                        for year_entry in year_entries.flatten() {
+                            let year_path = year_entry.path();
+                            if year_path.is_dir() {
+                                session_files.extend(
+                                    provider.enumerate_session_files(&year_path),
+                                );
+                            }
                         }
-                        let project_name = project_path
+                    }
+                    for file_path in &session_files {
+                        let cwd =
+                            crate::providers::codex::read_session_cwd(
+                                file_path,
+                            )
+                            .unwrap_or_else(|| "(Unknown)".to_string());
+                        let project_name = std::path::Path::new(&cwd)
                             .file_name()
                             .map(|n| n.to_string_lossy().to_string())
-                            .unwrap_or_default();
-                        for file_path in
-                            provider.enumerate_session_files(&project_path)
+                            .unwrap_or_else(|| cwd.clone());
+                        if let Some(summary) =
+                            crate::services::parser::create_skeleton_summary(
+                                file_path,
+                                &project_name,
+                                &cwd,
+                                provider_name,
+                            )
                         {
-                            if let Some(summary) =
-                                crate::services::parser::create_skeleton_summary(
-                                    &file_path,
-                                    &project_name,
-                                    &project_path.to_string_lossy(),
-                                    provider_name,
-                                )
+                            all.push(summary);
+                        }
+                    }
+                } else {
+                    if let Ok(project_entries) = std::fs::read_dir(base_path) {
+                        for project_entry in project_entries.flatten() {
+                            let project_path = project_entry.path();
+                            if !project_path.is_dir() {
+                                continue;
+                            }
+                            let project_name = project_path
+                                .file_name()
+                                .map(|n| n.to_string_lossy().to_string())
+                                .unwrap_or_default();
+                            for file_path in
+                                provider.enumerate_session_files(&project_path)
                             {
-                                all.push(summary);
+                                if let Some(summary) =
+                                    crate::services::parser::create_skeleton_summary(
+                                        &file_path,
+                                        &project_name,
+                                        &project_path.to_string_lossy(),
+                                        provider_name,
+                                    )
+                                {
+                                    all.push(summary);
+                                }
                             }
                         }
                     }
@@ -504,36 +647,86 @@ pub async fn search_sessions(
                     Some(p) => p.clone(),
                     None => continue,
                 };
-                if let Ok(project_entries) = std::fs::read_dir(base_path) {
-                    for project_entry in project_entries.flatten() {
-                        let project_path = project_entry.path();
-                        if !project_path.is_dir() {
-                            continue;
+
+                // Codex: 从 sessions 基目录扫描，按 cwd 分组
+                if provider_name == "codex" {
+                    let mut session_files = Vec::new();
+                    if let Ok(year_entries) = std::fs::read_dir(base_path) {
+                        for year_entry in year_entries.flatten() {
+                            let year_path = year_entry.path();
+                            if year_path.is_dir() {
+                                session_files.extend(
+                                    provider.enumerate_session_files(&year_path),
+                                );
+                            }
                         }
-                        let project_name = project_path
-                            .file_name()
-                            .map(|n| n.to_string_lossy().to_string())
-                            .unwrap_or_default();
-                        for file_path in
-                            provider.enumerate_session_files(&project_path)
+                    }
+                    for file_path in &session_files {
+                        if let Ok(content) =
+                            std::fs::read_to_string(&file_path)
                         {
-                            if let Ok(content) =
-                                std::fs::read_to_string(&file_path)
+                            if content
+                                .to_lowercase()
+                                .contains(&query_lower)
                             {
-                                if content
-                                    .to_lowercase()
-                                    .contains(&query_lower)
+                                let cwd =
+                                    crate::providers::codex::read_session_cwd(
+                                        file_path,
+                                    )
+                                    .unwrap_or_else(|| {
+                                        "(Unknown)".to_string()
+                                    });
+                                let project_name =
+                                    std::path::Path::new(&cwd)
+                                        .file_name()
+                                        .map(|n| n.to_string_lossy().to_string())
+                                        .unwrap_or_else(|| cwd.clone());
+                                if let Some(summary) =
+                                    crate::services::parser::create_session_summary(
+                                        &file_path,
+                                        &project_name,
+                                        &cwd,
+                                        &provider,
+                                        true,
+                                    )
                                 {
-                                    if let Some(summary) =
-                                        crate::services::parser::create_session_summary(
-                                            &file_path,
-                                            &project_name,
-                                            &project_path.to_string_lossy(),
-                                            &provider,
-                                            true,
-                                        )
+                                    results.push(summary);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    if let Ok(project_entries) = std::fs::read_dir(base_path) {
+                        for project_entry in project_entries.flatten() {
+                            let project_path = project_entry.path();
+                            if !project_path.is_dir() {
+                                continue;
+                            }
+                            let project_name = project_path
+                                .file_name()
+                                .map(|n| n.to_string_lossy().to_string())
+                                .unwrap_or_default();
+                            for file_path in
+                                provider.enumerate_session_files(&project_path)
+                            {
+                                if let Ok(content) =
+                                    std::fs::read_to_string(&file_path)
+                                {
+                                    if content
+                                        .to_lowercase()
+                                        .contains(&query_lower)
                                     {
-                                        results.push(summary);
+                                        if let Some(summary) =
+                                            crate::services::parser::create_session_summary(
+                                                &file_path,
+                                                &project_name,
+                                                &project_path.to_string_lossy(),
+                                                &provider,
+                                                true,
+                                            )
+                                        {
+                                            results.push(summary);
+                                        }
                                     }
                                 }
                             }

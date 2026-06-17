@@ -462,6 +462,21 @@ impl ChatProvider for CodexProvider {
     }
 }
 
+/// Read the working directory (cwd) from a Codex session file.
+///
+/// Codex JSONL files always start with a `session_meta` line that contains
+/// `payload.cwd`. This function reads only the first line to extract it,
+/// avoiding the cost of reading the entire file.
+pub fn read_session_cwd(file_path: &Path) -> Option<String> {
+    use std::io::{BufRead, BufReader};
+    let file = std::fs::File::open(file_path).ok()?;
+    let mut reader = BufReader::new(file);
+    let mut first_line = String::new();
+    reader.read_line(&mut first_line).ok()?;
+    let value: serde_json::Value = serde_json::from_str(&first_line).ok()?;
+    value["payload"]["cwd"].as_str().map(String::from)
+}
+
 /// Helper to get the user's home directory (cross-platform)
 fn home_dir() -> PathBuf {
     if let Ok(home) = std::env::var("USERPROFILE") {
@@ -813,5 +828,48 @@ mod tests {
             ContentBlock::Text { text } => assert_eq!(text, "Hello"),
             _ => panic!("Expected Text block"),
         }
+    }
+
+    // ===== read_session_cwd tests =====
+
+    #[test]
+    fn test_read_session_cwd_from_session_meta() {
+        use std::io::Write;
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("test.jsonl");
+        let mut f = std::fs::File::create(&file_path).unwrap();
+        writeln!(
+            f,
+            r#"{{"timestamp":"2026-06-16T12:40:00.022Z","type":"session_meta","payload":{{"id":"test-id","cwd":"F:\\for_test\\rust\\tauri\\llm_api_rust_test"}}}}"#
+        )
+        .unwrap();
+
+        let cwd = read_session_cwd(&file_path);
+        assert_eq!(
+            cwd.as_deref(),
+            Some("F:\\for_test\\rust\\tauri\\llm_api_rust_test")
+        );
+    }
+
+    #[test]
+    fn test_read_session_cwd_missing_file() {
+        let result = read_session_cwd(Path::new("/nonexistent/file.jsonl"));
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_read_session_cwd_no_cwd_field() {
+        use std::io::Write;
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("test.jsonl");
+        let mut f = std::fs::File::create(&file_path).unwrap();
+        writeln!(
+            f,
+            r#"{{"timestamp":"2026-06-16T12:40:00.022Z","type":"session_meta","payload":{{"id":"test-id"}}}}"#
+        )
+        .unwrap();
+
+        let cwd = read_session_cwd(&file_path);
+        assert_eq!(cwd, None);
     }
 }
