@@ -544,7 +544,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 className="px-4 py-[7px] text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Save className="h-3.5 w-3.5" />
-                保存设置
+                刷新应用
               </button>
             )}
           </div>

@@ -48,7 +48,7 @@ describe('SettingsPanel', () => {
   it('渲染操作按钮', () => {
     render(<SettingsPanel onClose={vi.fn()} />);
     expect(screen.getByText('恢复默认配色')).toBeInTheDocument();
-    expect(screen.getByText('保存设置')).toBeInTheDocument();
+    expect(screen.getByText('刷新应用')).toBeInTheDocument();
   });
 
   it('点击关闭按钮触发 onClose', () => {
@@ -75,9 +75,9 @@ describe('SettingsPanel', () => {
     expect(mockStore.resetSearchColors).toHaveBeenCalledTimes(1);
   });
 
-  it('保存设置', () => {
+  it('刷新应用', () => {
     render(<SettingsPanel onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText('保存设置'));
+    fireEvent.click(screen.getByText('刷新应用'));
     expect(mockStore.save).toHaveBeenCalledTimes(1);
   });
 });
