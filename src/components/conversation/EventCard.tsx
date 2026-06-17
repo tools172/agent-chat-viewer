@@ -83,6 +83,8 @@ export const EventCard: React.FC<EventCardProps> = React.memo(({
   const [ctxAction, setCtxAction] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const isUser = event.eventType === 'user';
+  const isDeveloper = event.eventType === 'developer';
+  const isSystem = event.eventType === 'system';
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -219,13 +221,15 @@ export const EventCard: React.FC<EventCardProps> = React.memo(({
     >
       {/* Avatar */}
       <div className="flex-shrink-0 mt-0.5">
-        {isUser ? (
-          <div className="h-7 w-7 rounded-full bg-blue-500 flex items-center justify-center">
-            <User className="h-4 w-4 text-white" />
-          </div>
-        ) : (
+        {event.eventType === 'assistant' ? (
           <div className="h-7 w-7 rounded-full bg-gray-700 flex items-center justify-center">
             <Bot className="h-4 w-4 text-white" />
+          </div>
+        ) : (
+          <div className={`h-7 w-7 rounded-full flex items-center justify-center ${
+            isUser ? 'bg-blue-500' : isDeveloper ? 'bg-green-200' : 'bg-teal-200'
+          }`}>
+            <User className="h-4 w-4 text-white" />
           </div>
         )}
       </div>
@@ -235,7 +239,7 @@ export const EventCard: React.FC<EventCardProps> = React.memo(({
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs font-medium text-gray-500">
-            {isUser ? '用户' : '助手'}
+            {isUser ? '用户' : isDeveloper ? '开发者' : isSystem ? '系统' : '助手'}
           </span>
           <Clock className="h-3 w-3 text-gray-400" />
           <span className="text-xs text-gray-400">

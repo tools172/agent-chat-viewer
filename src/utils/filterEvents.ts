@@ -23,6 +23,7 @@ function shouldShowEvent(event: ChatEvent, config: FilterConfig): boolean {
     case 'user':
     case 'assistant':
       return true; // 始终显示，由 content-block 级别过滤决定可见内容
+    case 'developer':
     case 'system':
       return config.showSystemMessages;
     case 'file_history_snapshot':
@@ -41,29 +42,30 @@ function shouldShowEvent(event: ChatEvent, config: FilterConfig): boolean {
 }
 
 /**
- * 合并连发：折叠同一角色（user / assistant）的连续事件，每组只保留最后一条。
- * 系统消息等其他事件类型不会被折叠，只透传。
+ * 合并连发：折叠同一角色的连续事件，每组只保留最后一条。
+ *
+ * 可折叠角色：user / assistant / developer / system
+ * 其他事件类型（attachment、unknown 等）不参与折叠，直接透传。
  *
  * 应在 content-block 过滤之后调用，此时已移除空事件。
  */
 export function collapseConsecutiveEvents(events: ChatEvent[]): ChatEvent[] {
   if (events.length === 0) return [];
 
+  const collapsible = new Set(['user', 'assistant', 'developer', 'system']);
   const result: ChatEvent[] = [];
   let i = 0;
 
   while (i < events.length) {
-    const current = events[i];
-    const role = current.eventType;
+    const role = events[i].eventType;
 
-    // 只折叠 user 和 assistant 的连续消息
-    if (role !== 'user' && role !== 'assistant') {
-      result.push(current);
+    if (!collapsible.has(role)) {
+      result.push(events[i]);
       i++;
       continue;
     }
 
-    // 找到该角色连续分组的末尾
+    // 找到同一角色连续分组的末尾
     let j = i;
     while (j + 1 < events.length && events[j + 1].eventType === role) {
       j++;

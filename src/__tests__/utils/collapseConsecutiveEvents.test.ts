@@ -87,7 +87,7 @@ describe('collapseConsecutiveEvents', () => {
     expect(result[3].content[0]).toMatchObject({ text: 'a4' });
   });
 
-  it('系统消息不被折叠', () => {
+  it('系统消息参与折叠', () => {
     const events = [
       makeEvent('system', 'sys1'),
       makeEvent('system', 'sys2'),
@@ -95,10 +95,9 @@ describe('collapseConsecutiveEvents', () => {
       makeEvent('user', 'world'),
     ];
     const result = collapseConsecutiveEvents(events);
-    expect(result).toHaveLength(3);
-    expect(result[0].content[0]).toMatchObject({ text: 'sys1' });
-    expect(result[1].content[0]).toMatchObject({ text: 'sys2' });
-    expect(result[2].content[0]).toMatchObject({ text: 'world' });
+    expect(result).toHaveLength(2);
+    expect(result[0].content[0]).toMatchObject({ text: 'sys2' });
+    expect(result[1].content[0]).toMatchObject({ text: 'world' });
   });
 
   it('系统消息打断折叠链', () => {

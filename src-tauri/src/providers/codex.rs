@@ -61,7 +61,7 @@ impl CodexProvider {
         let event_type = match role {
             "user" => EventType::User,
             "assistant" => EventType::Assistant,
-            "developer" => EventType::System,
+            "developer" => EventType::Developer,
             other => EventType::Unknown(other.to_string()),
         };
 
@@ -536,7 +536,7 @@ mod tests {
         let line = r#"{"timestamp":"2026-06-14T16:19:09.180Z","type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"System instructions here"}]}}"#;
 
         let event = provider.parse_event(line).unwrap();
-        assert_eq!(event.event_type, EventType::System);
+        assert_eq!(event.event_type, EventType::Developer);
     }
 
     #[test]

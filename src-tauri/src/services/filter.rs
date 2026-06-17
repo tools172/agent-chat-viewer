@@ -22,7 +22,7 @@ fn should_show_event(event: &ChatEvent, config: &FilterConfig) -> bool {
                 .collect();
             !visible_blocks.is_empty()
         }
-        EventType::System => config.show_system_messages,
+        EventType::Developer | EventType::System => config.show_system_messages,
         EventType::FileHistorySnapshot => config.show_file_snapshots,
         EventType::Mode
         | EventType::PermissionMode

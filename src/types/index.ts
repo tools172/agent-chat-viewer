@@ -64,6 +64,7 @@ export interface ChatEvent {
 export type EventType =
   | 'user'
   | 'assistant'
+  | 'developer'
   | 'system'
   | 'attachment'
   | 'mode'

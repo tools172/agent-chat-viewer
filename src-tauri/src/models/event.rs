@@ -19,6 +19,7 @@ pub struct ChatEvent {
 pub enum EventType {
     User,
     Assistant,
+    Developer,
     System,
     Attachment,
     Mode,
@@ -34,6 +35,7 @@ impl std::fmt::Display for EventType {
         match self {
             EventType::User => write!(f, "user"),
             EventType::Assistant => write!(f, "assistant"),
+            EventType::Developer => write!(f, "developer"),
             EventType::System => write!(f, "system"),
             EventType::Attachment => write!(f, "attachment"),
             EventType::Mode => write!(f, "mode"),

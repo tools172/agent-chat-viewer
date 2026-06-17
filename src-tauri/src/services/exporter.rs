@@ -50,6 +50,12 @@ pub fn export_to_markdown(events: &[ChatEvent], title: &str, project: &str) -> S
                     render_block_to_markdown(block, &mut md);
                 }
             }
+            EventType::Developer => {
+                md.push_str("## 💻 Developer\n\n");
+                for block in &event.content {
+                    render_block_to_markdown(block, &mut md);
+                }
+            }
             _ => {
                 // Skip system/metadata events
             }
