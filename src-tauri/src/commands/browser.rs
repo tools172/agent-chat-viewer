@@ -183,7 +183,7 @@ fn scan_projects(
 
             // Codex 目录结构是 sessions/<年>/<月>/<日>/，不适合按年分组。
             // 改为读取每个文件第一行的 session_meta，按 payload.cwd 分组。
-            if provider_name == "codex" {
+            if provider.use_cwd_grouping() {
                 // enumerate_session_files 从年份目录开始扫描 2 层深度
                 // （月→日→文件），所以需要先遍历年份目录。
                 let mut session_files = Vec::new();
@@ -203,7 +203,7 @@ fn scan_projects(
 
                 for file_path in &session_files {
                     let cwd =
-                        crate::providers::codex::read_session_cwd(file_path)
+                        provider.read_session_cwd_from_file(file_path)
                             .unwrap_or_else(|| "(Unknown)".to_string());
 
                     let mut mtime = String::new();
@@ -328,7 +328,7 @@ pub async fn list_sessions(
 
         // Codex: project_path 是 cwd，会话文件存储在 ~/.codex/sessions/ 下，
         // 需要从 sessions 基目录扫描并按 cwd 过滤。
-        if provider_name == "codex" {
+        if provider.use_cwd_grouping() {
             let project_name = project_dir
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
@@ -349,7 +349,7 @@ pub async fn list_sessions(
             let mut sessions: Vec<SessionSummary> = session_files
                 .iter()
                 .filter(|file_path| {
-                    crate::providers::codex::read_session_cwd(file_path)
+                    provider.read_session_cwd_from_file(file_path)
                         .as_deref()
                         == Some(&project_path)
                 })
@@ -447,7 +447,7 @@ pub async fn list_all_sessions(
                 };
 
                 // Codex: 从 sessions 基目录扫描，按 cwd 分组
-                if provider_name == "codex" {
+                if provider.use_cwd_grouping() {
                     let mut session_files = Vec::new();
                     if let Ok(year_entries) = std::fs::read_dir(base_path) {
                         for year_entry in year_entries.flatten() {
@@ -461,7 +461,7 @@ pub async fn list_all_sessions(
                     }
                     for file_path in &session_files {
                         let cwd =
-                            crate::providers::codex::read_session_cwd(
+                            provider.read_session_cwd_from_file(
                                 file_path,
                             )
                             .unwrap_or_else(|| "(Unknown)".to_string());
@@ -649,7 +649,7 @@ pub async fn search_sessions(
                 };
 
                 // Codex: 从 sessions 基目录扫描，按 cwd 分组
-                if provider_name == "codex" {
+                if provider.use_cwd_grouping() {
                     let mut session_files = Vec::new();
                     if let Ok(year_entries) = std::fs::read_dir(base_path) {
                         for year_entry in year_entries.flatten() {
@@ -670,7 +670,7 @@ pub async fn search_sessions(
                                 .contains(&query_lower)
                             {
                                 let cwd =
-                                    crate::providers::codex::read_session_cwd(
+                                    provider.read_session_cwd_from_file(
                                         file_path,
                                     )
                                     .unwrap_or_else(|| {

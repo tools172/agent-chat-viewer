@@ -125,4 +125,25 @@ pub trait ChatProvider: Send + Sync {
         }
         None
     }
+
+    /// Whether this provider groups sessions by working directory (cwd)
+    /// rather than by filesystem subdirectory structure.
+    ///
+    /// When true, callers should discover all session files from the base
+    /// directory, extract cwd via `read_session_cwd_from_file`, and group
+    /// by cwd instead of by subdirectory name.
+    ///
+    /// Default: `false` (use subdirectory-based grouping).
+    fn use_cwd_grouping(&self) -> bool {
+        false
+    }
+
+    /// Read the working directory from a session file without parsing the
+    /// entire file. Used during scanning/discovery to group sessions by cwd.
+    ///
+    /// Default: returns `None` (provider does not support file-level cwd
+    /// extraction).
+    fn read_session_cwd_from_file(&self, _file_path: &Path) -> Option<String> {
+        None
+    }
 }

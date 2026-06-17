@@ -445,6 +445,20 @@ impl ChatProvider for CodexProvider {
         None
     }
 
+    fn use_cwd_grouping(&self) -> bool {
+        true
+    }
+
+    fn read_session_cwd_from_file(&self, file_path: &Path) -> Option<String> {
+        use std::io::{BufRead, BufReader};
+        let file = std::fs::File::open(file_path).ok()?;
+        let mut reader = BufReader::new(file);
+        let mut first_line = String::new();
+        reader.read_line(&mut first_line).ok()?;
+        let value: serde_json::Value = serde_json::from_str(&first_line).ok()?;
+        value["payload"]["cwd"].as_str().map(String::from)
+    }
+
     fn extract_raw_user_text(&self, value: &serde_json::Value) -> Option<String> {
         // response_item user message: payload.content[0].text
         if let Some(text) = value["payload"]["content"][0]["text"].as_str() {
@@ -460,21 +474,6 @@ impl ChatProvider for CodexProvider {
         }
         None
     }
-}
-
-/// Read the working directory (cwd) from a Codex session file.
-///
-/// Codex JSONL files always start with a `session_meta` line that contains
-/// `payload.cwd`. This function reads only the first line to extract it,
-/// avoiding the cost of reading the entire file.
-pub fn read_session_cwd(file_path: &Path) -> Option<String> {
-    use std::io::{BufRead, BufReader};
-    let file = std::fs::File::open(file_path).ok()?;
-    let mut reader = BufReader::new(file);
-    let mut first_line = String::new();
-    reader.read_line(&mut first_line).ok()?;
-    let value: serde_json::Value = serde_json::from_str(&first_line).ok()?;
-    value["payload"]["cwd"].as_str().map(String::from)
 }
 
 /// Helper to get the user's home directory (cross-platform)
@@ -844,7 +843,8 @@ mod tests {
         )
         .unwrap();
 
-        let cwd = read_session_cwd(&file_path);
+        let provider = CodexProvider::new();
+        let cwd = provider.read_session_cwd_from_file(&file_path);
         assert_eq!(
             cwd.as_deref(),
             Some("F:\\for_test\\rust\\tauri\\llm_api_rust_test")
@@ -853,7 +853,8 @@ mod tests {
 
     #[test]
     fn test_read_session_cwd_missing_file() {
-        let result = read_session_cwd(Path::new("/nonexistent/file.jsonl"));
+        let provider = CodexProvider::new();
+        let result = provider.read_session_cwd_from_file(Path::new("/nonexistent/file.jsonl"));
         assert!(result.is_none());
     }
 
@@ -869,7 +870,8 @@ mod tests {
         )
         .unwrap();
 
-        let cwd = read_session_cwd(&file_path);
+        let provider = CodexProvider::new();
+        let cwd = provider.read_session_cwd_from_file(&file_path);
         assert_eq!(cwd, None);
     }
 }
