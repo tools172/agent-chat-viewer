@@ -93,10 +93,10 @@ describe('TurnNavigator', () => {
 
     render(<TurnNavigator events={events} containerRef={containerRef} />);
 
-    // 3 turns should render
+    // 3 turns should render (overflow indicator may also show counts)
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('4')).not.toBeInTheDocument();
   });
 

@@ -87,7 +87,14 @@ function shouldShowBlock(block: ContentBlock, config: FilterConfig): boolean {
 
 // ===== 用户消息文本提取 =====
 
-/** 系统注解标签，这些块应跳过，取后面的真实用户输入 */
+/**
+ * 系统注解标签模式：匹配纯 XML 标签块（如 <ide_opened_file>...</ide_opened_file>）。
+ *
+ * 这是前端安全网 —— 主要清理已在 Rust 后端各 provider 的 parse 阶段完成。
+ * 此模式仅处理以下边缘情况：
+ * - Claude Code: 独立 content block 形式的纯注解块（parse 阶段会因全空被过滤）
+ * - 任何未被后端清理的 XML 格式系统提示
+ */
 const SYSTEM_ANNOTATION_PATTERN = /^<[a-z][a-z0-9_-]*>[\s\S]*<\/[a-z][a-z0-9_-]*>$/;
 
 /** 判断一个 text block 是否为系统注解（如 <ide_opened_file>、<system-reminder> 等） */
@@ -97,8 +104,10 @@ function isSystemAnnotation(text: string): boolean {
 
 /**
  * 从 ChatEvent 的 content 中提取"真实"用户消息文本。
- * 跳过系统注解块（如 <ide_opened_file>），取第一个非系统 text block。
- * 如果全是系统注解，则返回第一个 text block。
+ *
+ * 主要清理在 Rust 后端完成（各 provider 的 parse 阶段），此处作为安全网：
+ * - 跳过纯 XML 系统注解块，取第一个真实用户 text block
+ * - 如果所有 text block 都是系统注解，回退到第一个 block
  */
 export function extractUserText(
   event: import('../types').ChatEvent

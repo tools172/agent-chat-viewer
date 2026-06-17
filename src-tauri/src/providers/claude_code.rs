@@ -60,7 +60,24 @@ impl ClaudeCodeProvider {
         let session_id = value["sessionId"].as_str().map(|s| s.to_string());
 
         // Parse content blocks from the message
-        let content = Self::parse_content(value);
+        let mut content = Self::parse_content(value);
+
+        // For User events, clean provider-specific metadata from text blocks
+        if event_type == EventType::User {
+            content = content
+                .into_iter()
+                .filter_map(|block| {
+                    if let ContentBlock::Text { text } = &block {
+                        let cleaned = clean_claude_code_user_text(text);
+                        if cleaned.is_empty() {
+                            return None; // pure annotation block → discard
+                        }
+                        return Some(ContentBlock::Text { text: cleaned });
+                    }
+                    Some(block)
+                })
+                .collect();
+        }
 
         Ok(ChatEvent {
             uuid,
@@ -145,6 +162,36 @@ impl ClaudeCodeProvider {
     }
 }
 
+/// Clean Claude Code user message text by removing XML metadata tags.
+///
+/// Claude Code prepends context tags before the actual user input:
+/// - `<ide_selection>...</ide_selection>` — IDE text selection
+/// - `<ide_opened_file>...</ide_opened_file>` — files opened in IDE
+/// - `<local-command-caveat>...</local-command-caveat>` — local command notice
+/// - `<command-name>...</command-name>` — command name
+/// - `<command-message>...</command-message>` — command message
+/// - `<command-args>...</command-args>` — command arguments
+///
+/// Tags are stripped iteratively (a single message may have multiple prepended tags).
+fn clean_claude_code_user_text(text: &str) -> String {
+    let mut result = text;
+    loop {
+        let mut changed = false;
+        for tag in &["</ide_selection>", "</ide_opened_file>",
+                      "</local-command-caveat>", "</command-name>",
+                      "</command-message>", "</command-args>"] {
+            if let Some(end) = result.find(tag) {
+                result = result[end + tag.len()..].trim_start();
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    result.to_string()
+}
+
 impl ChatProvider for ClaudeCodeProvider {
     fn name(&self) -> &'static str {
         "claude_code"
@@ -187,22 +234,7 @@ impl ChatProvider for ClaudeCodeProvider {
     }
 
     fn clean_display_text(&self, text: &str) -> String {
-        let mut result = text;
-        loop {
-            let mut changed = false;
-            for tag in &["</ide_selection>", "</ide_opened_file>",
-                          "</local-command-caveat>", "</command-name>",
-                          "</command-message>", "</command-args>"] {
-                if let Some(end) = result.find(tag) {
-                    result = result[end + tag.len()..].trim_start();
-                    changed = true;
-                }
-            }
-            if !changed {
-                break;
-            }
-        }
-        result.to_string()
+        clean_claude_code_user_text(text)
     }
 
     fn detect_client_from_text(&self, text: &str) -> &'static str {
@@ -331,5 +363,70 @@ mod tests {
     fn test_detect_by_content_empty() {
         let provider = ClaudeCodeProvider::new();
         assert!(!provider.detect_by_content(""));
+    }
+
+    // ===== clean_claude_code_user_text tests =====
+
+    #[test]
+    fn test_clean_ide_selection() {
+        let input = "<ide_selection>The user selected lines 13 to 13 from file.ts:\nTomlConfig\n\nThis may or may not be related to the current task.</ide_selection>\n现在我在config.toml文件中增加local_frontend_res = 1";
+        let result = clean_claude_code_user_text(input);
+        assert_eq!(result, "现在我在config.toml文件中增加local_frontend_res = 1");
+    }
+
+    #[test]
+    fn test_clean_ide_opened_file() {
+        let input = "<ide_opened_file>The user opened the file f:\\work_project\\config.toml in the IDE. This may or may not be related to the current task.</ide_opened_file>\nconfig.toml这个文件的内容符合标准格式吗？";
+        let result = clean_claude_code_user_text(input);
+        assert_eq!(result, "config.toml这个文件的内容符合标准格式吗？");
+    }
+
+    #[test]
+    fn test_clean_mixed_tags() {
+        let input = "<ide_opened_file>opened file</ide_opened_file>\n<ide_selection>selected lines</ide_selection>\n实际的问题";
+        let result = clean_claude_code_user_text(input);
+        assert_eq!(result, "实际的问题");
+    }
+
+    #[test]
+    fn test_clean_pure_annotation_block() {
+        let input = "<ide_opened_file>opened config.toml</ide_opened_file>";
+        let result = clean_claude_code_user_text(input);
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_clean_plain_text_passthrough() {
+        let input = "Hello, Claude";
+        let result = clean_claude_code_user_text(input);
+        assert_eq!(result, "Hello, Claude");
+    }
+
+    #[test]
+    fn test_parse_user_message_with_ide_metadata() {
+        let provider = ClaudeCodeProvider::new();
+        let line = r#"{"parentUuid":null,"isSidechain":false,"promptId":"test","type":"user","message":{"role":"user","content":"<ide_opened_file>opened config.toml</ide_opened_file>\n检查这个文件"},"uuid":"u1","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#;
+        let event = provider.parse_event(line).unwrap();
+        assert_eq!(event.event_type, EventType::User);
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::Text { text } => assert_eq!(text, "检查这个文件"),
+            _ => panic!("Expected Text block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_user_message_with_structured_content_cleaned() {
+        // Structured content array with separate annotation block + real message
+        let provider = ClaudeCodeProvider::new();
+        let line = r#"{"parentUuid":null,"isSidechain":false,"type":"user","message":{"role":"user","content":[{"type":"text","text":"<ide_selection>some code</ide_selection>"},{"type":"text","text":"帮我改这段代码"}]},"uuid":"u2","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#;
+        let event = provider.parse_event(line).unwrap();
+        assert_eq!(event.event_type, EventType::User);
+        // Pure annotation block should be filtered out
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::Text { text } => assert_eq!(text, "帮我改这段代码"),
+            _ => panic!("Expected Text block"),
+        }
     }
 }

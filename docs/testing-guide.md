@@ -6,9 +6,9 @@
 
 | 层级 | 框架 | 测试文件 | 测试数 |
 |---|---|---|---|
-| 前端测试 | Vitest + @testing-library/react | 19 | 208 |
-| Rust 单元测试 | cargo test | 8 | 68 |
-| Rust 集成测试 | cargo test | 1 | 28 |
+| 前端测试 | Vitest + @testing-library/react | 24 | 295 |
+| Rust 单元测试 | cargo test --lib | 17 | 110 |
+| Rust 集成测试 | cargo test --test integration_test | 1 | 28 |
 
 ## 快速命令
 
@@ -31,9 +31,11 @@ cargo test --test integration_test  # 仅集成测试
 
 ```
 src/__tests__/
-├── components/                  # 组件测试（8 个文件）
+├── components/                  # 组件测试（9 个文件）
 │   ├── FilterBar.test.tsx       # 过滤栏按钮渲染与交互
 │   ├── SettingsPanel.test.tsx   # 设置面板功能
+│   ├── TabBar.test.tsx          # 标签栏渲染与交互
+│   ├── TabItem.test.tsx         # 标签项渲染
 │   ├── TurnNavigator.test.tsx   # 轮次导航、滚动定位
 │   ├── EventCard.test.tsx       # 事件卡片、高亮渲染
 │   ├── SessionItem.test.tsx     # 会话列表项
@@ -116,11 +118,13 @@ src-tauri/
 │   ├── services/
 │   │   ├── filter.rs            # FilterConfig 测试（8 个单元测试）
 │   │   ├── settings.rs          # 设置加载/保存测试
-│   │   ├── parser.rs            # 会话解析测试
+│   │   ├── parser.rs            # 会话解析 + polish + 文本清理测试
 │   │   └── exporter.rs          # 导出测试
-│   ├── providers/
-│   │   ├── claude_code.rs       # Claude Code 解析 + 内容检测测试
-│   │   └── openclaw.rs          # OpenClaw 解析 + 内容检测测试
+│   ├── providers/               # ─── OCP 核心：各 provider 独立测试
+│   │   ├── base.rs              # ChatProvider trait 定义（含默认实现）
+│   │   ├── claude_code.rs       # Claude Code 解析 + clean 函数测试（13 个）
+│   │   ├── openclaw.rs          # OpenClaw 解析 + clean 函数测试（18 个）
+│   │   └── codex.rs             # Codex 解析 + clean 函数测试（17 个）
 │   ├── commands/
 │   │   └── browser.rs           # 递归扫描 + 内容检测测试（8 个）
 │   └── utils/
@@ -150,6 +154,39 @@ src-tauri/
 - 测试完整的解析 → 过滤 → 导出流程
 - 包含向后兼容性测试（旧版配置反序列化）
 
+### 文本清理测试（OCP 验证）
+
+每个 provider 都有独立的 `clean_*_user_text` 函数和相关测试，
+验证文本清理逻辑在 **parse 阶段**和 **display 阶段**均正确运行：
+
+```
+OpenClaw:  clean_openclaw_user_text (6 个测试)
+  ├── test_clean_ui_metadata_prefix        # UI 端 "Sender metadata" 前缀
+  ├── test_clean_subagent_task              # Subagent task 格式
+  ├── test_clean_timestamp_only             # 仅时间戳前缀
+  ├── test_clean_plain_text_passthrough     # 纯文本透传
+  ├── test_parse_user_message               # parse 阶段基础
+  └── test_parse_user_message_with_ui_metadata  # parse 阶段带 UI metadata
+
+Claude Code: clean_claude_code_user_text (7 个测试)
+  ├── test_clean_ide_selection              # IDE 选择区
+  ├── test_clean_ide_opened_file            # IDE 打开文件
+  ├── test_clean_mixed_tags                 # 混合标签
+  ├── test_clean_pure_annotation_block      # 纯注解块（清理后为空）
+  ├── test_clean_plain_text_passthrough     # 纯文本透传
+  ├── test_parse_user_message_with_ide_metadata    # parse 阶段清理
+  └── test_parse_user_message_with_structured_content_cleaned  # 多 block + 空块过滤
+
+Codex:  clean_codex_user_text (7 个测试)
+  ├── test_clean_environment_context_preserves_user_message  # 环境上下文 + 用户消息
+  ├── test_clean_environment_context_only    # 纯环境上下文（→空）
+  ├── test_clean_mixed_codex_tags            # 混合 Codex 标签
+  ├── test_clean_permissions_instructions    # 权限说明
+  ├── test_clean_plain_text_passthrough      # 纯文本透传
+  ├── test_parse_user_response_item_with_environment_context  # response_item 清理
+  └── test_parse_user_message_event_cleaned  # event_msg 清理
+```
+
 ### 编写新 Rust 测试
 
 ```rust
@@ -175,6 +212,18 @@ mod tests {
 | 数据模型变更 | 必须有向后兼容测试（反序列化旧格式） |
 | UI 按钮 | 渲染 + 状态样式 + 点击回调 |
 | 边界条件 | 空输入、单条、大量数据、非法输入 |
+| 新 provider | 必须实现 `ChatProvider` trait 全部方法 + 独立的 `clean_*_user_text` 测试 + parse 阶段清理测试 |
+
+## 设计原则验证
+
+测试结构遵循 OCP（开闭原则）和 DIP（依赖倒置原则）：
+
+- **OCP**: 新增 provider 只需添加新的 `*_provider.rs` 文件和其中内嵌的测试模块，
+  无需修改 `parser.rs` 核心逻辑或其他 provider 的测试
+- **DIP**: `polish_session` 和 `parse_session_detail` 依赖 `ChatProvider` trait，
+  不依赖具体 provider 类型；测试通过 trait 对象验证行为
+- **文本清理一致性**: 每个 provider 的 `clean_display_text` 委托给同名的
+  独立 `clean_*_user_text` 函数，parse 阶段和 display 阶段使用同一逻辑
 
 ## CI 集成
 

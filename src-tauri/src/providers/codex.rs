@@ -53,7 +53,24 @@ impl CodexProvider {
             other => EventType::Unknown(other.to_string()),
         };
 
-        let content = Self::parse_content(payload);
+        let mut content = Self::parse_content(payload);
+
+        // For User events, clean provider-specific XML metadata from text blocks
+        if event_type == EventType::User {
+            content = content
+                .into_iter()
+                .filter_map(|block| {
+                    if let ContentBlock::Text { text } = &block {
+                        let cleaned = clean_codex_user_text(text);
+                        if cleaned.is_empty() {
+                            return None;
+                        }
+                        return Some(ContentBlock::Text { text: cleaned });
+                    }
+                    Some(block)
+                })
+                .collect();
+        }
 
         // Use timestamp from the outer event, fallback to empty
         let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
@@ -106,10 +123,9 @@ impl CodexProvider {
             ParseError::MissingField("payload".to_string())
         })?;
 
-        let message = payload["message"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let message = clean_codex_user_text(
+            payload["message"].as_str().unwrap_or("")
+        );
 
         let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
         let uuid = format!(
@@ -194,6 +210,31 @@ impl CodexProvider {
             }],
             session_id: None,
         })
+    }
+}
+
+/// Clean Codex user message text by removing XML metadata tags.
+///
+/// Codex prepends context tags before the actual user input:
+/// - `<environment_context>...</environment_context>` — shell, cwd, platform info
+/// - `<app-context>...</app-context>` — application context
+/// - `<permissions instructions>...</permissions instructions>` — tool permissions
+/// - `<skills_instructions>...</skills_instructions>` — skill instructions
+/// - `<plugins_instructions>...</plugins_instructions>` — plugin instructions
+/// - `<collaboration_mode>...</collaboration_mode>` — collaboration mode config
+fn clean_codex_user_text(text: &str) -> String {
+    let mut result = text;
+    for tag in &["</environment_context>", "</app-context>",
+                  "</permissions instructions>", "</skills_instructions>",
+                  "</plugins_instructions>", "</collaboration_mode>"] {
+        if let Some(end) = result.find(tag) {
+            result = result[end + tag.len()..].trim_start();
+        }
+    }
+    if result.is_empty() {
+        String::new()
+    } else {
+        result.to_string()
     }
 }
 
@@ -302,36 +343,7 @@ impl ChatProvider for CodexProvider {
     }
 
     fn clean_display_text(&self, text: &str) -> String {
-        let mut result = text;
-        // Remove <environment_context>...</environment_context>
-        if let Some(end) = result.find("</environment_context>") {
-            result = result[end + "</environment_context>".len()..].trim_start();
-        }
-        // Remove <app-context>...</app-context>
-        if let Some(end) = result.find("</app-context>") {
-            result = result[end + "</app-context>".len()..].trim_start();
-        }
-        // Remove <permissions instructions>...</permissions instructions>
-        if let Some(end) = result.find("</permissions instructions>") {
-            result = result[end + "</permissions instructions>".len()..].trim_start();
-        }
-        // Remove <skills_instructions>...</skills_instructions>
-        if let Some(end) = result.find("</skills_instructions>") {
-            result = result[end + "</skills_instructions>".len()..].trim_start();
-        }
-        // Remove <plugins_instructions>...</plugins_instructions>
-        if let Some(end) = result.find("</plugins_instructions>") {
-            result = result[end + "</plugins_instructions>".len()..].trim_start();
-        }
-        // Remove <collaboration_mode>...</collaboration_mode>
-        if let Some(end) = result.find("</collaboration_mode>") {
-            result = result[end + "</collaboration_mode>".len()..].trim_start();
-        }
-        if result.is_empty() {
-            String::new()
-        } else {
-            result.to_string()
-        }
+        clean_codex_user_text(text)
     }
 
     fn detect_client_from_text(&self, text: &str) -> &'static str {
@@ -538,5 +550,67 @@ mod tests {
         assert_eq!(polished.display, "你好，请帮我写代码");
         assert_eq!(polished.message_count, 2); // 1 user + 1 assistant
         assert!(!polished.timestamp.is_empty());
+    }
+
+    // ===== clean_codex_user_text tests =====
+
+    #[test]
+    fn test_clean_environment_context_preserves_user_message() {
+        let input = "<environment_context>\n  <cwd>/test</cwd>\n  <shell>powershell</shell>\n</environment_context>\n今天几号了？";
+        let result = clean_codex_user_text(input);
+        assert_eq!(result, "今天几号了？");
+    }
+
+    #[test]
+    fn test_clean_environment_context_only() {
+        let input = "<environment_context>\n  <cwd>/test</cwd>\n  <shell>powershell</shell>\n</environment_context>";
+        let result = clean_codex_user_text(input);
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_clean_mixed_codex_tags() {
+        let input = "<environment_context>\n  <cwd>/test</cwd>\n</environment_context>\n<app-context>Codex Desktop</app-context>\n请帮我写代码";
+        let result = clean_codex_user_text(input);
+        assert_eq!(result, "请帮我写代码");
+    }
+
+    #[test]
+    fn test_clean_permissions_instructions() {
+        let input = "<permissions instructions>You have full access.</permissions instructions>\nRun the tests";
+        let result = clean_codex_user_text(input);
+        assert_eq!(result, "Run the tests");
+    }
+
+    #[test]
+    fn test_clean_plain_text_passthrough() {
+        let input = "Hello, who are you?";
+        let result = clean_codex_user_text(input);
+        assert_eq!(result, "Hello, who are you?");
+    }
+
+    #[test]
+    fn test_parse_user_response_item_with_environment_context() {
+        let provider = CodexProvider::new();
+        let line = r#"{"timestamp":"2026-06-14T16:19:09.180Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<environment_context>\n  <cwd>/test</cwd>\n</environment_context>\n今天几号了？"}]}}"#;
+        let event = provider.parse_event(line).unwrap();
+        assert_eq!(event.event_type, EventType::User);
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::Text { text } => assert_eq!(text, "今天几号了？"),
+            _ => panic!("Expected Text block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_user_message_event_cleaned() {
+        let provider = CodexProvider::new();
+        let line = r#"{"timestamp":"2026-06-14T16:19:09.195Z","type":"event_msg","payload":{"type":"user_message","client_id":"test-client","message":"<app-context>desktop</app-context>\nHello","images":[],"local_images":[],"text_elements":[]}}"#;
+        let event = provider.parse_event(line).unwrap();
+        assert_eq!(event.event_type, EventType::User);
+        match &event.content[0] {
+            ContentBlock::Text { text } => assert_eq!(text, "Hello"),
+            _ => panic!("Expected Text block"),
+        }
     }
 }

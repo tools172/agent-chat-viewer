@@ -254,6 +254,39 @@ pub struct SessionPolish {
     pub client_type: String,
 }
 
+/// Extract the first user-facing text from a raw JSONL value, for client-type
+/// detection before parse-time cleaning strips provider metadata.
+///
+/// Tries common structural patterns across providers without coupling to any
+/// specific provider type (this is a best-effort heuristic, not a contract).
+fn extract_raw_user_text(value: &serde_json::Value) -> Option<String> {
+    // Pattern 1: value["message"]["content"] as string (Claude Code plain user)
+    if let Some(text) = value["message"]["content"].as_str() {
+        if !text.is_empty() {
+            return Some(text.to_string());
+        }
+    }
+    // Pattern 2: value["message"]["content"][0]["text"] (Claude Code structured, OpenClaw)
+    if let Some(text) = value["message"]["content"][0]["text"].as_str() {
+        if !text.is_empty() {
+            return Some(text.to_string());
+        }
+    }
+    // Pattern 3: value["payload"]["content"][0]["text"] (Codex response_item)
+    if let Some(text) = value["payload"]["content"][0]["text"].as_str() {
+        if !text.is_empty() {
+            return Some(text.to_string());
+        }
+    }
+    // Pattern 4: value["payload"]["message"] (Codex event_msg user_message)
+    if let Some(text) = value["payload"]["message"].as_str() {
+        if !text.is_empty() {
+            return Some(text.to_string());
+        }
+    }
+    None
+}
+
 /// 对单个会话文件执行内容解析，返回 polish 结果。
 pub fn polish_session(
     file_path: &Path,
@@ -292,14 +325,19 @@ pub fn polish_session(
             }
             if display == "(Empty session)" {
                 if let crate::models::EventType::User = event.event_type {
+                    // Detect client type from raw JSON text (before parse-time cleaning)
+                    if !client_detected {
+                        if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                            if let Some(raw_text) = extract_raw_user_text(&value) {
+                                client_type = provider.detect_client_from_text(&raw_text).to_string();
+                                client_detected = true;
+                            }
+                        }
+                    }
                     for block in &event.content {
                         if let crate::models::ContentBlock::Text { text } = block {
                             if first_raw.is_empty() {
                                 first_raw = text.clone();
-                            }
-                            if !client_detected {
-                                client_type = provider.detect_client_from_text(text).to_string();
-                                client_detected = true;
                             }
                             let cleaned = provider.clean_display_text(text);
                             if cleaned.is_empty() {

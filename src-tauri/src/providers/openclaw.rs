@@ -92,7 +92,7 @@ impl OpenClawProvider {
         }
     }
 
-    /// Parse user message content blocks: text only
+    /// Parse user message content blocks: text only (metadata prefix cleaned)
     fn parse_user_content(
         content_arr: Option<&Vec<serde_json::Value>>,
         _extra: Option<&serde_json::Value>,
@@ -104,7 +104,7 @@ impl OpenClawProvider {
                 if block_type == "text" {
                     if let Some(text) = item["text"].as_str() {
                         blocks.push(ContentBlock::Text {
-                            text: text.to_string(),
+                            text: clean_openclaw_user_text(text),
                         });
                     }
                 }
@@ -234,6 +234,44 @@ fn home_dir() -> PathBuf {
     PathBuf::from(".")
 }
 
+/// Clean OpenClaw user message text by removing metadata prefixes.
+///
+/// Handles three formats:
+/// 1. UI messages: `"Sender (untrusted metadata):" + JSON block + timestamp line`
+/// 2. Subagent: `"[Subagent Task]: actual task"`
+/// 3. Timestamp-only: `"[Tue ... GMT+8] message"`
+fn clean_openclaw_user_text(text: &str) -> String {
+    // 1) "Sender (untrusted metadata):" + JSON block + timestamp line
+    if text.contains("Sender (untrusted metadata):") {
+        if let Some(ts_line) = text.rfind("\n[") {
+            let after = &text[ts_line + 1..];
+            if let Some(ts_end) = after.find("] ") {
+                let result = after[ts_end + 2..].trim().to_string();
+                if !result.is_empty() {
+                    return result;
+                }
+            }
+        }
+    }
+    // 2) Subagent format: "[Subagent Task]: actual task"
+    if let Some(idx) = text.find("[Subagent Task]:") {
+        let after = text[idx + "[Subagent Task]:".len()..].trim().to_string();
+        if !after.is_empty() {
+            return after;
+        }
+    }
+    // 3) Fallback: timestamp-only line "[Tue ... GMT+8] message"
+    if let Some(stripped) = text.strip_prefix(|c: char| c == '[') {
+        if let Some(idx) = stripped.find("] ") {
+            let after = stripped[idx + 2..].trim().to_string();
+            if !after.is_empty() {
+                return after;
+            }
+        }
+    }
+    text.to_string()
+}
+
 impl ChatProvider for OpenClawProvider {
     fn name(&self) -> &'static str {
         "openclaw"
@@ -334,35 +372,7 @@ impl ChatProvider for OpenClawProvider {
     }
 
     fn clean_display_text(&self, text: &str) -> String {
-        // 1) "Sender (untrusted metadata):" + JSON block + timestamp line
-        if text.contains("Sender (untrusted metadata):") {
-            if let Some(ts_line) = text.rfind("\n[") {
-                let after = &text[ts_line + 1..];
-                if let Some(ts_end) = after.find("] ") {
-                    let result = after[ts_end + 2..].trim().to_string();
-                    if !result.is_empty() {
-                        return result;
-                    }
-                }
-            }
-        }
-        // 2) Subagent format: "[Subagent Task]: actual task"
-        if let Some(idx) = text.find("[Subagent Task]:") {
-            let after = text[idx + "[Subagent Task]:".len()..].trim().to_string();
-            if !after.is_empty() {
-                return after;
-            }
-        }
-        // 3) Fallback: timestamp-only line "[Tue ... GMT+8] message"
-        if let Some(stripped) = text.strip_prefix(|c: char| c == '[') {
-            if let Some(idx) = stripped.find("] ") {
-                let after = stripped[idx + 2..].trim().to_string();
-                if !after.is_empty() {
-                    return after;
-                }
-            }
-        }
-        text.to_string()
+        clean_openclaw_user_text(text)
     }
 
     fn detect_client_from_text(&self, text: &str) -> &'static str {
@@ -580,5 +590,48 @@ mod tests {
             provider.extract_session_id(path),
             Some("abc-123".to_string())
         );
+    }
+
+    // ===== clean_openclaw_user_text tests =====
+
+    #[test]
+    fn test_clean_ui_metadata_prefix() {
+        let input = "Sender (untrusted metadata):\n```json\n{\n  \"label\": \"openclaw-control-ui\",\n  \"id\": \"openclaw-control-ui\"\n}\n```\n\n[Mon 2026-06-15 18:33 GMT+8] 请帮我查找文献";
+        let result = clean_openclaw_user_text(input);
+        assert_eq!(result, "请帮我查找文献");
+    }
+
+    #[test]
+    fn test_clean_subagent_task() {
+        let input = "[Subagent Task]: read and summarize the file";
+        let result = clean_openclaw_user_text(input);
+        assert_eq!(result, "read and summarize the file");
+    }
+
+    #[test]
+    fn test_clean_timestamp_only() {
+        let input = "[Tue 2026-06-15 18:33 GMT+8] Hello world";
+        let result = clean_openclaw_user_text(input);
+        assert_eq!(result, "Hello world");
+    }
+
+    #[test]
+    fn test_clean_plain_text_passthrough() {
+        let input = "Hello, Claude";
+        let result = clean_openclaw_user_text(input);
+        assert_eq!(result, "Hello, Claude");
+    }
+
+    #[test]
+    fn test_parse_user_message_with_ui_metadata() {
+        let line = r#"{"type":"message","id":"u1","parentId":"c1","timestamp":"2026-06-09T10:00:03Z","message":{"role":"user","content":[{"type":"text","text":"Sender (untrusted metadata):\n```json\n{\n  \"label\": \"openclaw-control-ui\",\n  \"id\": \"openclaw-control-ui\"\n}\n```\n\n[Mon 2026-06-15 18:33 GMT+8] 请从知网查找50篇文献"}]}}"#;
+        let event = parse(line);
+        assert_eq!(event.uuid, "u1");
+        assert!(matches!(event.event_type, EventType::User));
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::Text { text } => assert_eq!(text, "请从知网查找50篇文献"),
+            _ => panic!("Expected Text block"),
+        }
     }
 }
