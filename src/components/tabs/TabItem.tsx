@@ -1,7 +1,7 @@
 import React from 'react';
 import { Loader2, Pin } from 'lucide-react';
 import type { TabState } from '../../types';
-import { getProviderColor } from '../../utils/providers';
+import { getProviderDotColor } from '../../utils/providers';
 import { extractUserText } from '../../utils/filterEvents';
 
 interface TabItemProps {
@@ -46,11 +46,11 @@ export const TabItem: React.FC<TabItemProps> = ({
       onMouseDown={handleMouseDown}
       onClick={() => onActivate(tab.id)}
       onContextMenu={(e) => onContextMenu(e, tab.id)}
-      className={`group flex items-center gap-1.5 px-2.5 py-1.5 text-xs cursor-pointer select-none
-        min-w-[100px] max-w-[200px] transition-colors duration-100 border-r border-gray-200
+      className={`group flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 text-xs cursor-pointer select-none
+        min-w-[100px] max-w-[200px] transition-all duration-100 border-r border-gray-300
         ${isActive
-          ? 'bg-primary-50 text-gray-800 border-b-2 border-b-primary-500'
-          : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+          ? 'bg-white text-gray-800 shadow-sm border-b-2 border-b-primary-500 rounded-t-md'
+          : 'bg-gray-200 text-gray-500 hover:bg-gray-300 border-b border-b-gray-300'
         }
         ${tab.error ? 'text-red-600' : ''}
       `}
@@ -81,7 +81,7 @@ export const TabItem: React.FC<TabItemProps> = ({
     >
       {/* 提供商标识色点 */}
       <span
-        className={`flex-shrink-0 w-2 h-2 rounded-full ${getProviderColor(tab.providerName)}`}
+        className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${getProviderDotColor(tab.providerName)}`}
       />
 
       {/* Pin 图标 */}

@@ -89,8 +89,8 @@ describe('TabItem', () => {
         onDrop={vi.fn()}
       />
     );
-    // 色点是 span.w-2.h-2.rounded-full
-    const dots = container.querySelectorAll('span.w-2.h-2.rounded-full');
+    // 色点是 span.w-2\\.5.h-2\\.5.rounded-full
+    const dots = container.querySelectorAll('span.w-2\\.5.h-2\\.5.rounded-full');
     expect(dots.length).toBe(1);
   });
 
