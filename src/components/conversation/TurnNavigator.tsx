@@ -147,7 +147,10 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
         }
         if (best) {
           const idx = turnIndexByUuid.get(best.uuid);
-          if (idx !== undefined) setActiveIndex(idx);
+          if (idx !== undefined) {
+            setActiveIndex(idx);
+            scrollListTo(idx);
+          }
         }
       },
       { root: containerRef.current, threshold: [0, 0.25, 0.5, 0.75] }
@@ -197,20 +200,9 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
   }, [containerRef]);
 
   const scrollListTo = useCallback((index: number) => {
-    // 导航列表自身滚动到对应项
-    const list = listRef.current;
-    if (!list) return;
-    const btn = list.querySelector(`[data-turn-index="${index}"]`);
-    if (btn) {
-      const listTop = list.scrollTop;
-      const listBottom = listTop + list.clientHeight;
-      const btnTop = (btn as HTMLElement).offsetTop;
-      const btnBottom = btnTop + (btn as HTMLElement).offsetHeight;
-      if (btnTop < listTop || btnBottom > listBottom) {
-        // 将选中项滚动到列表中间
-        list.scrollTo({ top: btnTop - list.clientHeight / 2 + (btn as HTMLElement).offsetHeight / 2 });
-      }
-    }
+    // 导航列表自身滚动到对应项（最小滚动，刚好露出完整项）
+    const btn = listRef.current?.querySelector(`[data-turn-index="${index}"]`);
+    (btn as HTMLElement)?.scrollIntoView({ block: 'nearest' });
   }, []);
 
   const scrollToTurn = useCallback((uuid: string) => {
