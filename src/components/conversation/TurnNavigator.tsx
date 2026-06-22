@@ -316,7 +316,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
             key={turn.uuid}
             data-turn-index={turn.index}
             onClick={() => scrollToTurn(turn.uuid)}
-            className={`w-full text-left px-2 py-1 text-xs transition-colors border-l-2 ${
+            className={`w-full text-left pl-3 pr-2 py-1 text-xs transition-colors border-l-2 ml-1 ${
               activeIndex === turn.index
                 ? 'border-primary-500 bg-primary-50 text-primary-700'
                 : 'border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
