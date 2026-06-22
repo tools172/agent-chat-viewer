@@ -37,7 +37,7 @@ describe('sessionListStore', () => {
       viewSortConfigs: {},
       allSessions: [],
       projects: [],
-      projectSessions: [],
+      projectSessionsCache: {},
       searchResults: [],
       projectFilter: null,
       searchQuery: '',
@@ -117,7 +117,7 @@ describe('sessionListStore', () => {
       await useSessionListStore.getState().refresh(mockSettings);
 
       expect(mockedListSessions).toHaveBeenCalledWith('/p', 'claude_code');
-      expect(useSessionListStore.getState().projectSessions).toHaveLength(2);
+      expect(useSessionListStore.getState().projectSessionsCache['/p']).toHaveLength(2);
     });
 
     it('projectFilter 对应工作目录不存在时不应崩溃', async () => {

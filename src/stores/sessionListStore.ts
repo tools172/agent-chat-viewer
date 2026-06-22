@@ -17,7 +17,8 @@ interface SessionListState {
   // 数据
   allSessions: SessionSummary[];
   projects: import('../types').Project[];
-  projectSessions: import('../types').SessionSummary[];
+  /** 按项目路径缓存的会话列表，每个展开的文件夹独立存储 */
+  projectSessionsCache: Record<string, import('../types').SessionSummary[]>;
   searchResults: SessionSummary[];
 
   // 过滤
@@ -51,7 +52,7 @@ interface SessionListState {
   ) => Promise<void>;
   refresh: (settings: AppSettings) => Promise<void>;
   polishAllSessions: (sessions: SessionSummary[]) => Promise<void>;
-  polishProjectSessions: (sessions: SessionSummary[]) => Promise<void>;
+  polishProjectSessions: (projectPath: string, sessions: SessionSummary[]) => Promise<void>;
   polishSearchResults: (sessions: SessionSummary[]) => Promise<void>;
   setSearchQuery: (query: string) => void;
   clearError: () => void;
@@ -64,7 +65,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
 
   allSessions: [],
   projects: [],
-  projectSessions: [],
+  projectSessionsCache: {},
   searchResults: [],
 
   projectFilter: null,
@@ -142,26 +143,34 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     }
   },
 
-  // 选中工作目录，加载会话
+  // 选中工作目录，加载会话（缓存到 projectSessionsCache[projectPath]）
   selectProject: async (projectPath, provider) => {
+    // 如果已缓存，直接切换 projectFilter，不重复加载
+    const cached = get().projectSessionsCache[projectPath];
+    if (cached) {
+      set({ projectFilter: projectPath, isLoadingProject: false, error: null });
+      return;
+    }
     set({
       isLoadingProject: true,
       projectFilter: projectPath,
-      projectSessions: [],  // 清空旧数据，避免展开时闪现上一个项目的内容
       error: null,
     });
     try {
       const sessions = await tauri.listSessions(projectPath, provider);
-      set({ projectSessions: sessions, isLoadingProject: false });
+      set((state) => ({
+        projectSessionsCache: { ...state.projectSessionsCache, [projectPath]: sessions },
+        isLoadingProject: false,
+      }));
       // 渐进 polish
-      get().polishProjectSessions(sessions);
+      get().polishProjectSessions(projectPath, sessions);
     } catch (err) {
       set({ error: String(err), isLoadingProject: false });
     }
   },
 
   /** 后台 polish 项目会话，分批更新使内容更快出现 */
-  polishProjectSessions: async (sessions: SessionSummary[]) => {
+  polishProjectSessions: async (projectPath: string, sessions: SessionSummary[]) => {
     if (sessions.length === 0) return;
     const BATCH = useSettingsStore.getState().settings.polishBatchSize ?? 5;
     const pairs: [string, string][] = sessions.map((s) => [s.filePath, s.providerName]);
@@ -170,12 +179,19 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
       try {
         const polished = await tauri.polishSessions(batch);
         const map = new Map(polished.map((p) => [p.filePath, p]));
-        set((state) => ({
-          projectSessions: state.projectSessions.map((s) => {
-            const p = map.get(s.filePath);
-            return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
-          }),
-        }));
+        set((state) => {
+          const entries = state.projectSessionsCache[projectPath];
+          if (!entries) return {};
+          return {
+            projectSessionsCache: {
+              ...state.projectSessionsCache,
+              [projectPath]: entries.map((s) => {
+                const p = map.get(s.filePath);
+                return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
+              }),
+            },
+          };
+        });
       } catch {
         // polish 失败不影响已加载数据
       }
@@ -229,6 +245,8 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
       get().loadProjects(settings),
       get().loadAllSessions(settings),
     ]);
+    // 清空项目会话缓存，强制重新加载
+    set({ projectSessionsCache: {} });
     // 根据视图/状态重载特定数据
     if (viewMode === 'search' && searchQuery.trim()) {
       await get().search(searchQuery, settings);

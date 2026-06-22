@@ -40,7 +40,10 @@ describe('ProjectList', () => {
 
   const defaultProps = {
     projects: mockProjects,
-    sessions: mockSessions,
+    sessionsCache: {
+      '/data/project-a': [mockSessions[0], mockSessions[1]],
+      '/data/project-b': [mockSessions[2]],
+    },
     sortConfig: [{ field: 'created' as const, direction: 'desc' as const }],
     selectedProjectPath: null,
     selectedSessionPath: null,
@@ -86,7 +89,7 @@ describe('ProjectList', () => {
     ];
 
     render(
-      <ProjectList {...defaultProps} sessions={[]} allSessions={allSessions} />
+      <ProjectList {...defaultProps} sessionsCache={{}} allSessions={allSessions} />
     );
 
     // 右键点击文件夹
@@ -108,7 +111,7 @@ describe('ProjectList', () => {
     ];
 
     render(
-      <ProjectList {...defaultProps} sessions={[]} allSessions={allSessions} />
+      <ProjectList {...defaultProps} sessionsCache={{}} allSessions={allSessions} />
     );
 
     const projectBtn = screen.getByText('project-b').closest('button')!;
@@ -123,7 +126,7 @@ describe('ProjectList', () => {
 
   it('右键菜单：打开工作目录 无 allSessions 时回退到 project.path', async () => {
     render(
-      <ProjectList {...defaultProps} sessions={[]} />
+      <ProjectList {...defaultProps} sessionsCache={{}} />
     );
 
     const projectBtn = screen.getByText('project-a').closest('button')!;
@@ -216,7 +219,7 @@ describe('ProjectList', () => {
       <ProjectList
         {...defaultProps}
         projects={shuffledProjects}
-        sessions={[]}
+        sessionsCache={{}}
         sortConfig={[{ field: 'path', direction: 'asc' }]}
       />
     );
@@ -228,7 +231,7 @@ describe('ProjectList', () => {
       <ProjectList
         {...defaultProps}
         projects={shuffledProjects}
-        sessions={[]}
+        sessionsCache={{}}
         sortConfig={[{ field: 'path', direction: 'desc' }]}
       />
     );
@@ -240,7 +243,7 @@ describe('ProjectList', () => {
       <ProjectList
         {...defaultProps}
         projects={shuffledProjects}
-        sessions={[]}
+        sessionsCache={{}}
         sortConfig={[{ field: 'name', direction: 'asc' }]}
       />
     );
@@ -252,7 +255,7 @@ describe('ProjectList', () => {
       <ProjectList
         {...defaultProps}
         projects={shuffledProjects}
-        sessions={[]}
+        sessionsCache={{}}
         sortConfig={[{ field: 'messageCount', direction: 'desc' }]}
       />
     );
@@ -265,7 +268,7 @@ describe('ProjectList', () => {
       <ProjectList
         {...defaultProps}
         projects={shuffledProjects}
-        sessions={[]}
+        sessionsCache={{}}
         sortConfig={[{ field: 'created', direction: 'asc' }]}
       />
     );
@@ -278,7 +281,7 @@ describe('ProjectList', () => {
       <ProjectList
         {...defaultProps}
         projects={shuffledProjects}
-        sessions={[]}
+        sessionsCache={{}}
         sortConfig={[{ field: 'agent', direction: 'asc' }]}
       />
     );
@@ -297,7 +300,7 @@ describe('ProjectList', () => {
       <ProjectList
         {...defaultProps}
         projects={shuffledProjects}
-        sessions={[]}
+        sessionsCache={{}}
         sortConfig={[]}
       />
     );
@@ -310,7 +313,7 @@ describe('ProjectList', () => {
       <ProjectList
         {...defaultProps}
         projects={shuffledProjects}
-        sessions={[]}
+        sessionsCache={{}}
         sortConfig={[
           { field: 'agent', direction: 'asc' },
           { field: 'path', direction: 'asc' },

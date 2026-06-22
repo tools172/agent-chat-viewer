@@ -40,7 +40,7 @@ interface SessionNavigatorProps {
   sortConfig: SortConfig;
   projects: Project[];
   allSessions: SessionSummary[];
-  projectSessions: SessionSummary[];
+  projectSessionsCache: Record<string, SessionSummary[]>;
   searchQuery: string;
   searchResults: SessionSummary[];
   highlightEnabled: boolean;
@@ -70,7 +70,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   sortConfig,
   projects,
   allSessions,
-  projectSessions,
+  projectSessionsCache,
   searchQuery,
   searchResults,
   highlightEnabled,
@@ -159,7 +159,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
       <LoadingBar
         visible={
           (isLoadingAll && allSessions.length > 0) ||
-          (isLoadingProject && projectSessions.length > 0) ||
+          (isLoadingProject && (projectFilter ? (projectSessionsCache[projectFilter]?.length ?? 0) > 0 : false)) ||
           (isSearching && searchResults.length > 0)
         }
       />
@@ -241,7 +241,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
           ) : (
             <ProjectList
               projects={projects}
-              sessions={projectSessions}
+              sessionsCache={projectSessionsCache}
               allSessions={allSessions}
               sortConfig={sortConfig}
               selectedProjectPath={selectedProjectPath}
@@ -260,7 +260,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
           ) : (
             <TimelineView
               sessions={
-                projectFilter ? projectSessions : allSessions
+                projectFilter ? (projectSessionsCache[projectFilter] ?? []) : allSessions
               }
               sortConfig={sortConfig}
               selectedSessionPath={selectedSessionPath}

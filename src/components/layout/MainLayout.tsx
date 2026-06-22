@@ -81,7 +81,10 @@ export const MainLayout: React.FC = () => {
       }
     };
     const keyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setConvContextMenu(null);
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setConvContextMenu(null);
+      }
     };
     document.addEventListener('mousedown', clickHandler);
     document.addEventListener('keydown', keyHandler);
@@ -305,7 +308,7 @@ export const MainLayout: React.FC = () => {
     for (const s of [
       ...list.allSessions,
       ...list.searchResults,
-      ...list.projectSessions,
+      ...Object.values(list.projectSessionsCache).flat(),
     ]) {
       const normalized = s.filePath.replace(/\\/g, '/');
       if (!seen.has(normalized)) {
@@ -314,7 +317,7 @@ export const MainLayout: React.FC = () => {
       }
     }
     return merged;
-  }, [list.allSessions, list.searchResults, list.projectSessions]);
+  }, [list.allSessions, list.searchResults, list.projectSessionsCache]);
 
   // 获取当前会话的工作目录（用于右键菜单等）
   const currentProjectPath = useMemo(() => {
@@ -395,7 +398,7 @@ export const MainLayout: React.FC = () => {
         sortConfig={list.sortConfig}
         projects={list.projects}
         allSessions={list.allSessions}
-        projectSessions={list.projectSessions}
+        projectSessionsCache={list.projectSessionsCache}
         searchQuery={localSearchQuery}
         searchResults={list.searchResults}
         highlightEnabled={list.highlightEnabled}
@@ -620,6 +623,7 @@ export const MainLayout: React.FC = () => {
       {list.isLoadingAll && list.allSessions.length === 0 && (
         <LoadingOverlay />
       )}
+
     </div>
   );
 };

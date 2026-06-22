@@ -8,7 +8,8 @@ import * as tauri from '../../utils/tauri';
 
 interface ProjectListProps {
   projects: Project[];
-  sessions: SessionSummary[];
+  /** 按项目路径缓存的会话列表 */
+  sessionsCache: Record<string, SessionSummary[]>;
   allSessions?: SessionSummary[];
   sortConfig: SortConfig;
   selectedProjectPath: string | null;
@@ -21,7 +22,7 @@ interface ProjectListProps {
 
 export const ProjectList: React.FC<ProjectListProps> = ({
   projects,
-  sessions,
+  sessionsCache,
   allSessions,
   sortConfig,
   selectedProjectPath,
@@ -157,12 +158,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     return map;
   }, [projects, allSessions]);
 
-  // 对文件夹内的会话排序
-  const sortedSessions = useMemo(
-    () => multiSort(sessions, sortConfig),
-    [sessions, sortConfig]
-  );
-
   return (
     <div className="py-1">
       {sortedProjects.map((project) => {
@@ -197,16 +192,21 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               </span>
             </button>
 
-            {isExpanded && (
+            {isExpanded && (() => {
+              const projectSessions = sessionsCache[project.path];
+              const sortedProjectSessions = projectSessions
+                ? multiSort(projectSessions, sortConfig)
+                : [];
+              return (
               <div className="ml-4 border-l-2 border-gray-100 pl-1">
-                {isLoadingProject ? (
+                {isLoadingProject && !projectSessions ? (
                   <LoadingSkeleton rows={3} variant="list" />
-                ) : sortedSessions.length === 0 ? (
+                ) : sortedProjectSessions.length === 0 ? (
                   <p className="px-3 py-2 text-xs text-gray-400">
                     暂无会话
                   </p>
                 ) : (
-                  sortedSessions.map((session) => (
+                  sortedProjectSessions.map((session) => (
                     <SessionItem
                       key={session.id}
                       session={session}
@@ -219,7 +219,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   ))
                 )}
               </div>
-            )}
+              );
+            })()}
           </div>
         );
       })}
