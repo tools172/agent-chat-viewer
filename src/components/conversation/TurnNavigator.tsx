@@ -302,13 +302,13 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
       </div>
 
       {/* 轮次列表 */}
-      <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-y-auto py-1">
+      <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-y-auto py-1 pl-[5px]">
         {turns.map((turn) => (
           <button
             key={turn.uuid}
             data-turn-index={turn.index}
             onClick={() => scrollToTurn(turn.uuid)}
-            className={`w-full text-left pl-3 pr-2 py-1 text-xs transition-colors border-l-2 ml-1 ${
+            className={`w-full text-left pl-[7px] pr-2 py-1 text-xs transition-colors border-l-2 ${
               activeIndex === turn.index
                 ? 'border-primary-500 bg-primary-50 text-primary-700'
                 : 'border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
