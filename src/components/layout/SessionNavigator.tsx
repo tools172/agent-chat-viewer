@@ -219,10 +219,14 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
         <SortBar config={sortConfig} onChange={onSortChange} />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {viewMode === 'flat' && (
-          isLoadingAll && allSessions.length === 0 ? (
+      {/* Content — 每个视图独立滚动容器，切换时保留各自的滚动位置 */}
+      <div className="flex-1 relative">
+        {/* 全部会话 */}
+        <div
+          className="absolute inset-0 overflow-y-auto"
+          style={{ display: viewMode === 'flat' ? undefined : 'none' }}
+        >
+          {isLoadingAll && allSessions.length === 0 ? (
             <LoadingSkeleton rows={8} variant="list" />
           ) : (
             <FlatSessionList
@@ -232,11 +236,15 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               onSelectSession={onSelectSession}
               onOpenInNewTab={onOpenInNewTab}
             />
-          )
-        )}
+          )}
+        </div>
 
-        {viewMode === 'by-project' && (
-          isLoadingAll && projects.length === 0 ? (
+        {/* 文件夹 */}
+        <div
+          className="absolute inset-0 overflow-y-auto"
+          style={{ display: viewMode === 'by-project' ? undefined : 'none' }}
+        >
+          {isLoadingAll && projects.length === 0 ? (
             <LoadingSkeleton rows={6} variant="list" />
           ) : (
             <ProjectList
@@ -251,11 +259,15 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               onOpenInNewTab={onOpenInNewTab}
               isLoadingProject={isLoadingProject}
             />
-          )
-        )}
+          )}
+        </div>
 
-        {viewMode === 'by-time' && (
-          isLoadingAll && allSessions.length === 0 ? (
+        {/* 时间线 */}
+        <div
+          className="absolute inset-0 overflow-y-auto"
+          style={{ display: viewMode === 'by-time' ? undefined : 'none' }}
+        >
+          {isLoadingAll && allSessions.length === 0 ? (
             <LoadingSkeleton rows={8} variant="list" />
           ) : (
             <TimelineView
@@ -276,15 +288,20 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
                 projectFilter ? onClearProjectFilter : undefined
               }
             />
-          )
-        )}
+          )}
+        </div>
 
-        {viewMode === 'search' && (
+        {/* 搜索 */}
+        <div
+          className="absolute inset-0 overflow-y-auto"
+          style={{ display: viewMode === 'search' ? undefined : 'none' }}
+        >
           <SearchPanel
             query={searchQuery}
             results={searchResults}
             isLoading={isSearching}
             highlightEnabled={highlightEnabled}
+            visible={viewMode === 'search'}
             onQueryChange={onSearchQueryChange}
             onSearch={onSearch}
             onSelectSession={onSelectSession}
@@ -292,7 +309,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
             onToggleHighlight={onToggleHighlight}
             selectedSessionPath={selectedSessionPath}
           />
-        )}
+        </div>
       </div>
 
       {/* Footer */}

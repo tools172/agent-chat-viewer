@@ -9,6 +9,8 @@ interface SearchPanelProps {
   results: SessionSummary[];
   isLoading: boolean;
   highlightEnabled: boolean;
+  /** 当前视图是否可见，用于控制自动聚焦 */
+  visible?: boolean;
   onQueryChange: (query: string) => void;
   onSearch: (query: string) => void;
   onSelectSession: (path: string, providerName: string, cwd?: string) => void;
@@ -22,6 +24,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   results,
   isLoading,
   highlightEnabled,
+  visible = true,
   onQueryChange,
   onSearch,
   onSelectSession,
@@ -33,8 +36,10 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (visible) {
+      inputRef.current?.focus();
+    }
+  }, [visible]);
 
   const handleChange = useCallback(
     (value: string) => {
