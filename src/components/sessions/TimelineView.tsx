@@ -119,20 +119,29 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     <div className="flex flex-col h-full">
       {/* 过滤上下文指示条 */}
       <div className="px-3 py-1.5 border-b border-gray-100 bg-gray-50/50">
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
-          <Filter className="h-3 w-3" />
-          <span>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 min-w-0">
+          <Filter className="h-3 w-3 flex-shrink-0" />
+          <span className="min-w-0 truncate">
             范围: {filterContext === 'all' ? '全部工作目录' : (filterContextLabel ?? filterContext)}
           </span>
-          {/* 一键折叠/展开 */}
+          {/* 清除过滤 — 紧邻范围文本 */}
+          {filterContext !== 'all' && onClearFilter && (
+            <button
+              onClick={onClearFilter}
+              className="whitespace-nowrap text-primary-600 hover:text-primary-700"
+            >
+              清除过滤
+            </button>
+          )}
+          {/* 折叠/展开 — 推到最右侧 */}
           {groups.length > 0 && (
             <button
               onClick={toggleAll}
-              className={`flex items-center gap-1 px-1.5 py-0.5 text-[11px] rounded-full border transition-colors ${
+              className={`flex items-center gap-1 px-1.5 py-0.5 text-[11px] rounded-full border transition-colors whitespace-nowrap ml-auto ${
                 allCollapsed
                   ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300'
                   : 'border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:border-gray-300'
-              } ${filterContext === 'all' ? 'ml-auto' : 'ml-1'}`}
+              }`}
               title={allCollapsed ? '点击展开全部' : '点击折叠全部'}
             >
               {allCollapsed ? (
@@ -141,14 +150,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                 <ChevronsUpDown className="h-3 w-3" />
               )}
               {allCollapsed ? '展开' : '折叠'}
-            </button>
-          )}
-          {filterContext !== 'all' && onClearFilter && (
-            <button
-              onClick={onClearFilter}
-              className="ml-auto text-primary-600 hover:text-primary-700"
-            >
-              清除过滤
             </button>
           )}
         </div>
