@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Filter } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Filter, Clock } from 'lucide-react';
 import type { SessionSummary, SortConfig } from '../../types';
 import { multiSort } from '../../utils/sort';
 import { SessionItem } from './SessionItem';
@@ -157,23 +157,24 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       {/* 时间分组列表 */}
       <div className="flex-1 overflow-y-auto py-1">
         {groups.map((group) => (
-          <div key={group.label}>
+          <div key={group.label} className="mb-2">
             <button
               onClick={() => toggleGroup(group.label)}
-              className="flex items-center gap-1.5 w-full px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors sticky top-0 bg-white z-10"
             >
               {collapsedGroups.has(group.label) ? (
-                <ChevronRight className="h-3 w-3" />
+                <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
               ) : (
-                <ChevronDown className="h-3 w-3" />
+                <ChevronDown className="h-3.5 w-3.5 flex-shrink-0" />
               )}
+              <Clock className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
               <span>{group.label}</span>
-              <span className="text-gray-400 ml-auto">
+              <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full ml-auto">
                 {group.sessions.length}
               </span>
             </button>
             {!collapsedGroups.has(group.label) && (
-              <div className="px-1.5">
+              <div className="ml-4 border-l-2 border-gray-200 pl-1">
                 {group.sessions.map((session) => (
                   <SessionItem
                     key={session.id}
