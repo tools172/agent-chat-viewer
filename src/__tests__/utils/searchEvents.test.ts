@@ -156,10 +156,34 @@ describe('searchEvents', () => {
     expect(matchesUpper.length).toBe(matchesLower.length);
   });
 
-  it('每个事件最多匹配一次', () => {
-    // u1 只有一处"登录"，即使同一个事件中多次出现也只算一次
-    const matches = searchEvents(events, '登录');
-    const u1Matches = matches.filter((m) => m.eventIdx === 0);
-    expect(u1Matches.length).toBe(1);
+  it('同一事件中多次出现应分别计数', () => {
+    // u1 text: "登录请帮我写一个登录 登录工具" — "登录" 出现 3 次
+    const evts: ChatEvent[] = [
+      makeEvent('u1', 'user', [
+        { blockType: 'text', text: '登录请帮我写一个登录 登录工具' },
+      ]),
+    ];
+    const matches = searchEvents(evts, '登录');
+    expect(matches.length).toBe(3);
+    expect(matches.every((m) => m.eventIdx === 0)).toBe(true);
+    expect(matches[0].occurrenceIdx).toBe(0);
+    expect(matches[1].occurrenceIdx).toBe(1);
+    expect(matches[2].occurrenceIdx).toBe(2);
+  });
+
+  it('同一事件多个块中分别出现应分别计数', () => {
+    // assistant 中有两个 text 块，各自包含 "函数"
+    const evts: ChatEvent[] = [
+      makeEvent('u1', 'assistant', [
+        { blockType: 'text', text: '创建了登录函数' },
+        { blockType: 'text', text: '还有函数需要帮助吗？' },
+      ]),
+    ];
+    const matches = searchEvents(evts, '函数');
+    expect(matches.length).toBe(2);
+    expect(matches[0].blockIdx).toBe(0);
+    expect(matches[0].occurrenceIdx).toBe(0);
+    expect(matches[1].blockIdx).toBe(1);
+    expect(matches[1].occurrenceIdx).toBe(0);
   });
 });

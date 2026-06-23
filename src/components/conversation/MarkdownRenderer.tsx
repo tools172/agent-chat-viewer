@@ -1,14 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
 import { open } from '@tauri-apps/plugin-shell';
 import { Link, Copy } from 'lucide-react';
 
 interface MarkdownRendererProps {
   content: string;
-  /** 允许 <mark> 等 HTML 标签（用于搜索高亮） */
-  allowHtml?: boolean;
 }
 
 /** 检测字符串是否为合法 URL */
@@ -23,7 +20,6 @@ function isValidUrl(str: string): boolean {
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({
   content,
-  allowHtml,
 }) => {
   const [linkMenu, setLinkMenu] = useState<{ x: number; y: number; url: string } | null>(null);
   const [toast, setToast] = useState(false);
@@ -106,7 +102,6 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({
     <div className="markdown-body">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={allowHtml ? [rehypeRaw] : []}
         components={components}
       >
         {content}
@@ -138,4 +133,4 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({
       )}
     </div>
   );
-}, (prev, next) => prev.content === next.content && prev.allowHtml === next.allowHtml);
+}, (prev, next) => prev.content === next.content);

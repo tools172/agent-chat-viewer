@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, ChevronUp, ChevronDown, X } from 'lucide-react';
 import type { ChatEvent } from '../../types';
-import { searchEvents } from '../../utils/searchEvents';
+import { searchEvents, type EventMatch } from '../../utils/searchEvents';
 
 interface ConversationFindBarProps {
   events: ChatEvent[];
   visible: boolean;
   onClose: () => void;
   onQueryChange: (query: string) => void;
+  /** 当前匹配项变化时回调，用于定位和高亮当前激活匹配 */
+  onCurrentMatchChange?: (match: EventMatch | null) => void;
 }
 
 export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
@@ -15,6 +17,7 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
   visible,
   onClose,
   onQueryChange,
+  onCurrentMatchChange,
 }) => {
   const [query, setQuery] = useState('');
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -52,17 +55,33 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
     setCurrentIdx(matches.length > 0 ? 0 : -1);
   }, [matches.length]);
 
+  // 通知父组件当前匹配项变化
+  useEffect(() => {
+    onCurrentMatchChange?.(matches[currentIdx] ?? null);
+  }, [matches, currentIdx, onCurrentMatchChange]);
+
   // 滚动到指定匹配
   const scrollTo = (idx: number) => {
     const match = matches[idx];
     if (!match) return;
     const uuid = events[match.eventIdx]?.uuid;
     if (!uuid) return;
-    const el = document.querySelector(`[data-event-uuid="${uuid}"]`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ring-2', 'ring-orange-400');
-      setTimeout(() => el.classList.remove('ring-2', 'ring-orange-400'), 2000);
+
+    // 优先精确定位到 find <mark> 元素（处理代码块内匹配被裁切的情况）
+    const markEl = document.querySelector(
+      `[data-event-uuid="${uuid}"] [data-find-block="${match.blockIdx}"][data-find-occurrence="${match.occurrenceIdx}"]`
+    );
+    const target = markEl ?? document.querySelector(`[data-event-uuid="${uuid}"]`);
+
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // 事件卡片加闪烁环
+    const eventEl = document.querySelector(`[data-event-uuid="${uuid}"]`);
+    if (eventEl) {
+      eventEl.classList.add('ring-2', 'ring-orange-400');
+      setTimeout(() => eventEl.classList.remove('ring-2', 'ring-orange-400'), 2000);
     }
   };
 

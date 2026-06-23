@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { User, Bot, Clock, Copy, Check, FileJson, FileText } from 'lucide-react';
 import type { ChatEvent, ContentBlock } from '../../types';
 import { ThinkingBlock } from './ThinkingBlock';
 import { ToolCallBlock } from './ToolCallBlock';
 import { ToolResultBlock } from './ToolResultBlock';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { highlightTextInDOM } from '../../utils/highlightDom';
 
 interface EventCardProps {
   event: ChatEvent;
@@ -19,6 +20,10 @@ interface EventCardProps {
   findHighlight?: string;
   /** 配色 */
   searchColors: { search: string; find: string };
+  /** 当前激活的查找匹配所在块（仅本事件含激活匹配时才传入） */
+  activeFindBlockIdx?: number;
+  /** 当前激活的查找匹配在该块内的序号（0 起始） */
+  activeFindOccurrenceIdx?: number;
 }
 
 /**
@@ -40,30 +45,55 @@ function formatTime(isoString: string): string {
   }
 }
 
-/** 文本高亮：搜索标签用黄色，查找用橙色。使用内联样式确保在 Tauri webview 中一定可见 */
-function applyHighlights(
-  text: string,
-  searchTerm: string | undefined,
-  findTerm: string | undefined,
-  colors: { search: string; find: string }
-): string {
-  let result = text;
-  if (searchTerm) {
-    const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    result = result.replace(
-      new RegExp(`(${escaped})`, 'gi'),
-      `<mark style="background-color:${colors.search};border-radius:3px;padding:0 2px">$1</mark>`
+/**
+ * 包裹 MarkdownRenderer，在 React 渲染完成后通过 useLayoutEffect 遍历 DOM
+ * 文本节点创建 <mark> 高亮。此方案不依赖预注入 HTML，因此 Markdown 代码块
+ *（```code``` 和 `inline code`）内的关键词也能正确高亮。
+ */
+const HighlightedMarkdown: React.FC<{
+  content: string;
+  searchHighlight?: string;
+  findHighlight?: string;
+  searchColors: { search: string; find: string };
+  activeFindOccurrence?: number;
+  blockIdx?: number;
+}> = React.memo(({ content, searchHighlight, findHighlight, searchColors, activeFindOccurrence, blockIdx }) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+
+    // 先清理上一次的 <mark>，展开为纯文本。这样无论是切换导航位置
+    // 还是关闭查找栏，都能确保从干净的 DOM 状态重新应用高亮。
+    const oldMarks = ref.current.querySelectorAll('mark');
+    if (oldMarks.length > 0) {
+      oldMarks.forEach((m) => {
+        const parent = m.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(m.textContent || ''), m);
+        }
+      });
+      ref.current.normalize(); // 合并相邻文本节点
+    }
+
+    if (!searchHighlight && !findHighlight) return;
+
+    highlightTextInDOM(
+      ref.current,
+      searchHighlight,
+      findHighlight,
+      searchColors,
+      activeFindOccurrence,
+      blockIdx,
     );
-  }
-  if (findTerm) {
-    const escaped = findTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    result = result.replace(
-      new RegExp(`(${escaped})`, 'gi'),
-      `<mark style="background-color:${colors.find};border-radius:3px;padding:0 2px">$1</mark>`
-    );
-  }
-  return result;
-}
+  });
+
+  return (
+    <div ref={ref} className="mb-1">
+      <MarkdownRenderer content={content} />
+    </div>
+  );
+});
 
 export const EventCard: React.FC<EventCardProps> = React.memo(({
   event,
@@ -77,6 +107,8 @@ export const EventCard: React.FC<EventCardProps> = React.memo(({
   searchHighlight,
   findHighlight,
   searchColors,
+  activeFindBlockIdx,
+  activeFindOccurrenceIdx,
 }) => {
   const [copied, setCopied] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -148,17 +180,17 @@ export const EventCard: React.FC<EventCardProps> = React.memo(({
     switch (block.blockType) {
       case 'text':
         return (
-          <div key={key} className="mb-1">
-            <MarkdownRenderer
-              content={applyHighlights(
-                block.text,
-                searchHighlight,
-                findHighlight,
-                searchColors
-              )}
-              allowHtml={!!(searchHighlight || findHighlight)}
-            />
-          </div>
+          <HighlightedMarkdown
+            key={key}
+            content={block.text}
+            searchHighlight={searchHighlight}
+            findHighlight={findHighlight}
+            searchColors={searchColors}
+            blockIdx={index}
+            activeFindOccurrence={
+              index === activeFindBlockIdx ? activeFindOccurrenceIdx : undefined
+            }
+          />
         );
 
       case 'thinking':
@@ -308,7 +340,9 @@ export const EventCard: React.FC<EventCardProps> = React.memo(({
     prev.expandedThinking === next.expandedThinking &&
     prev.expandedToolCalls === next.expandedToolCalls &&
     prev.expandedToolResults === next.expandedToolResults &&
-    prev.searchColors === next.searchColors
+    prev.searchColors === next.searchColors &&
+    prev.activeFindBlockIdx === next.activeFindBlockIdx &&
+    prev.activeFindOccurrenceIdx === next.activeFindOccurrenceIdx
     // toggle/blockKey 都是稳定引用，无需比较
   );
 });

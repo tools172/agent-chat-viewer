@@ -2,6 +2,9 @@ import type { ChatEvent, ContentBlock } from '../types';
 
 export interface EventMatch {
   eventIdx: number;
+  blockIdx: number;
+  /** 该块内第几个匹配（0 起始），用于定位当前激活的高亮 */
+  occurrenceIdx: number;
 }
 
 /**
@@ -28,7 +31,16 @@ export function blockToSearchText(block: ContentBlock): string {
 }
 
 /**
- * 在事件列表中搜索匹配项（按事件粒度，每个事件最多匹配一次）。
+ * 构建搜索用正则的标志位。
+ * 查询词含非 ASCII 字符时不加 `i`，防止 JS 引擎 Unicode case-folding bug
+ *（例如 `/的/i` 错误匹配 ASCII `d`）。
+ */
+export function regexFlags(query: string): string {
+  return /[^\x00-\x7F]/.test(query) ? 'g' : 'gi';
+}
+
+/**
+ * 在事件列表中搜索匹配项（按关键词出现次数计数）。
  * 纯函数，方便单元测试。
  */
 export function searchEvents(
@@ -37,18 +49,19 @@ export function searchEvents(
 ): EventMatch[] {
   if (!query.trim()) return [];
 
-  const lower = query.toLowerCase();
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, regexFlags(query));
   const result: EventMatch[] = [];
-  const seen = new Set<number>();
 
   for (let ei = 0; ei < events.length; ei++) {
     const event = events[ei];
-    for (const block of event.content) {
-      const text = blockToSearchText(block);
-      if (text.toLowerCase().includes(lower) && !seen.has(ei)) {
-        result.push({ eventIdx: ei });
-        seen.add(ei);
-        break;
+    for (let bi = 0; bi < event.content.length; bi++) {
+      const text = blockToSearchText(event.content[bi]);
+      const occurrences = text.match(regex);
+      if (occurrences) {
+        for (let mi = 0; mi < occurrences.length; mi++) {
+          result.push({ eventIdx: ei, blockIdx: bi, occurrenceIdx: mi });
+        }
       }
     }
   }

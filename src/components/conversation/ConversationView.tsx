@@ -1,6 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import { MessageSquare } from 'lucide-react';
 import type { ChatEvent } from '../../types';
+import type { EventMatch } from '../../utils/searchEvents';
 import { useConversation } from '../../hooks/useConversation';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { EventCard } from './EventCard';
@@ -68,6 +69,7 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
 
   const searchColors = useSettingsStore((s) => s.settings.searchColors);
   const [findQuery, setFindQuery] = React.useState('');
+  const [activeFindMatch, setActiveFindMatch] = React.useState<EventMatch | null>(null);
   const showFindBar = externalShowFindBar ?? false;
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
@@ -144,6 +146,7 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
         visible={showFindBar}
         onClose={() => onToggleFind?.()}
         onQueryChange={setFindQuery}
+        onCurrentMatchChange={setActiveFindMatch}
       />
 
       {/* Event list */}
@@ -153,22 +156,27 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
         className="flex-1 overflow-y-auto relative"
       >
         <div ref={topRef} />
-        {events.map((event) => (
-          <EventCard
-            key={event.uuid}
-            event={event}
-            expandedThinking={expandedThinking}
-            expandedToolCalls={expandedToolCalls}
-            expandedToolResults={expandedToolResults}
-            onToggleThinking={toggleThinking}
-            onToggleToolCall={toggleToolCall}
-            onToggleToolResult={toggleToolResult}
-            blockKey={blockKey}
-            searchHighlight={searchHighlight}
-            findHighlight={findQuery || undefined}
-            searchColors={searchColors}
-          />
-        ))}
+        {events.map((event, ei) => {
+          const isActiveEvent = activeFindMatch?.eventIdx === ei;
+          return (
+            <EventCard
+              key={event.uuid}
+              event={event}
+              expandedThinking={expandedThinking}
+              expandedToolCalls={expandedToolCalls}
+              expandedToolResults={expandedToolResults}
+              onToggleThinking={toggleThinking}
+              onToggleToolCall={toggleToolCall}
+              onToggleToolResult={toggleToolResult}
+              blockKey={blockKey}
+              searchHighlight={searchHighlight}
+              findHighlight={findQuery || undefined}
+              searchColors={searchColors}
+              activeFindBlockIdx={isActiveEvent ? activeFindMatch.blockIdx : undefined}
+              activeFindOccurrenceIdx={isActiveEvent ? activeFindMatch.occurrenceIdx : undefined}
+            />
+          );
+        })}
         <div ref={bottomRef} data-bottom-sentinel="" />
 
         {/* 浮动滚动按钮 */}
