@@ -139,6 +139,29 @@ export const TabBar: React.FC<TabBarProps> = ({
   // === 拖拽状态 ===
   const dragIndexRef = useRef<number | null>(null);
   const dragSectionRef = useRef<'pinned' | 'regular' | null>(null);
+  const dragCancelledRef = useRef(false);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dragOverSection, setDragOverSection] = useState<'pinned' | 'regular' | null>(null);
+  const [dragOverSide, setDragOverSide] = useState<'left' | 'right'>('right');
+
+  const resetDragState = useCallback(() => {
+    dragIndexRef.current = null;
+    dragSectionRef.current = null;
+    dragCancelledRef.current = false;
+    setDragOverIndex(null);
+    setDragOverSection(null);
+  }, []);
+
+  // Escape 取消拖拽
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && dragIndexRef.current !== null) {
+        dragCancelledRef.current = true;
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   // 激活标签时滚动到视野内
   // 仅响应 activeTabId 变化，不依赖 tabs — 避免内容加载过程中 tabs 引用变化导致重复 smooth 滚动
@@ -167,6 +190,9 @@ export const TabBar: React.FC<TabBarProps> = ({
       (_e: React.DragEvent, index: number) => {
         dragIndexRef.current = index;
         dragSectionRef.current = section;
+        dragCancelledRef.current = false;
+        setDragOverIndex(null);
+        setDragOverSection(null);
         if (_e.dataTransfer) {
           _e.dataTransfer.effectAllowed = 'move';
           _e.dataTransfer.setData('text/plain', String(index));
@@ -177,32 +203,58 @@ export const TabBar: React.FC<TabBarProps> = ({
 
   const handleDragOver = useCallback(
     (section: 'pinned' | 'regular') =>
-      (e: React.DragEvent) => {
-        if (dragSectionRef.current === section) {
-          e.preventDefault();
-          if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-        } else {
-          // 跨区拖拽 — 禁止
+      (e: React.DragEvent, index: number) => {
+        if (dragSectionRef.current !== section) {
           if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+          return;
         }
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        // 跟踪插入位置
+        const el = e.currentTarget as HTMLElement;
+        const rect = el.getBoundingClientRect();
+        setDragOverIndex(index);
+        setDragOverSection(section);
+        setDragOverSide(e.clientX - rect.left < rect.width / 2 ? 'left' : 'right');
       },
     [],
   );
+
+  const handleDragEnd = useCallback(() => {
+    resetDragState();
+  }, [resetDragState]);
 
   const handleDrop = useCallback(
     (section: 'pinned' | 'regular', sectionStart: number) =>
       (e: React.DragEvent, toIndex: number) => {
         e.preventDefault();
         if (dragSectionRef.current !== section) return;
+        if (dragCancelledRef.current) {
+          resetDragState();
+          return;
+        }
         const fromIndex = dragIndexRef.current;
         if (fromIndex !== null && fromIndex !== toIndex) {
-          onMoveTab(sectionStart + fromIndex, sectionStart + toIndex);
+          // 计算目标索引（考虑 splice-remove 偏移）
+          let targetGlobal: number;
+          if (dragOverSide === 'right') {
+            targetGlobal = fromIndex < toIndex ? toIndex : toIndex + 1;
+          } else {
+            targetGlobal = fromIndex < toIndex ? toIndex - 1 : toIndex;
+          }
+          onMoveTab(sectionStart + fromIndex, sectionStart + targetGlobal);
         }
-        dragIndexRef.current = null;
-        dragSectionRef.current = null;
+        resetDragState();
       },
-    [onMoveTab],
+    [onMoveTab, dragOverSide, resetDragState],
   );
+
+  // 容器级 dragover — 允许 drop 在标签间隙
+  const handleContainerDragOver = useCallback((e: React.DragEvent) => {
+    if (dragIndexRef.current !== null) {
+      e.preventDefault();
+    }
+  }, []);
 
   // === 滚轮事件 ===
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -291,28 +343,34 @@ export const TabBar: React.FC<TabBarProps> = ({
           <div
             ref={pinnedScrollRef}
             onWheel={handleWheel}
+            onDragOver={handleContainerDragOver}
+            onDragEnd={handleDragEnd}
             className="flex items-stretch min-w-0 overflow-x-auto"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {pinnedTabs.map((tab, i) => (
-              <div
-                key={tab.id}
-                data-tab-item
-                data-tab-id={tab.id}
-                className="flex-shrink-0"
-              >
-                <TabItem
-                  tab={tab}
-                  isActive={tab.id === activeTabId}
-                  index={i}
-                  onActivate={handleActivate}
-                  onClose={onCloseTab}
-                  onContextMenu={onOpenContextMenu}
-                  onDragStart={handleDragStart('pinned')}
-                  onDragOver={handleDragOver('pinned')}
-                  onDrop={handleDrop('pinned', pinnedStart)}
-                />
-              </div>
+              <React.Fragment key={tab.id}>
+                {dragOverIndex === i && dragOverSection === 'pinned' && dragOverSide === 'left' && (
+                  <div className="flex-shrink-0 w-0.5 bg-primary-500 rounded" style={{ height: 36 }} />
+                )}
+                <div data-tab-item data-tab-id={tab.id} className="flex-shrink-0">
+                  <TabItem
+                    tab={tab}
+                    isActive={tab.id === activeTabId}
+                    isDragging={dragIndexRef.current === i && dragSectionRef.current === 'pinned'}
+                    index={i}
+                    onActivate={handleActivate}
+                    onClose={onCloseTab}
+                    onContextMenu={onOpenContextMenu}
+                    onDragStart={handleDragStart('pinned')}
+                    onDragOver={handleDragOver('pinned')}
+                    onDrop={handleDrop('pinned', pinnedStart)}
+                  />
+                </div>
+                {dragOverIndex === i && dragOverSection === 'pinned' && dragOverSide === 'right' && (
+                  <div className="flex-shrink-0 w-0.5 bg-primary-500 rounded" style={{ height: 36 }} />
+                )}
+              </React.Fragment>
             ))}
           </div>
 
@@ -348,28 +406,34 @@ export const TabBar: React.FC<TabBarProps> = ({
       <div
         ref={regularScrollRef}
         onWheel={handleWheel}
+        onDragOver={handleContainerDragOver}
+        onDragEnd={handleDragEnd}
         className="flex items-stretch flex-1 min-w-0 overflow-x-auto"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {regularTabs.map((tab, i) => (
-          <div
-            key={tab.id}
-            data-tab-item
-            data-tab-id={tab.id}
-            className="flex-shrink-0"
-          >
-            <TabItem
-              tab={tab}
-              isActive={tab.id === activeTabId}
-              index={i}
-              onActivate={handleActivate}
-              onClose={onCloseTab}
-              onContextMenu={onOpenContextMenu}
-              onDragStart={handleDragStart('regular')}
-              onDragOver={handleDragOver('regular')}
-              onDrop={handleDrop('regular', regularStart)}
-            />
-          </div>
+          <React.Fragment key={tab.id}>
+            {dragOverIndex === i && dragOverSection === 'regular' && dragOverSide === 'left' && (
+              <div className="flex-shrink-0 w-0.5 bg-primary-500 rounded" style={{ height: 36 }} />
+            )}
+            <div data-tab-item data-tab-id={tab.id} className="flex-shrink-0">
+              <TabItem
+                tab={tab}
+                isActive={tab.id === activeTabId}
+                isDragging={dragIndexRef.current === i && dragSectionRef.current === 'regular'}
+                index={i}
+                onActivate={handleActivate}
+                onClose={onCloseTab}
+                onContextMenu={onOpenContextMenu}
+                onDragStart={handleDragStart('regular')}
+                onDragOver={handleDragOver('regular')}
+                onDrop={handleDrop('regular', regularStart)}
+              />
+            </div>
+            {dragOverIndex === i && dragOverSection === 'regular' && dragOverSide === 'right' && (
+              <div className="flex-shrink-0 w-0.5 bg-primary-500 rounded" style={{ height: 36 }} />
+            )}
+          </React.Fragment>
         ))}
       </div>
 
