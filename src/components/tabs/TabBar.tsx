@@ -81,28 +81,36 @@ const OverflowIndicator: React.FC<{
   const active = count > 0;
   const borderClass =
     direction === 'left' ? 'border-r border-gray-200' : 'border-l border-gray-200';
-  const marginClass =
-    direction === 'left' ? 'mr-1 pr-1 pl-1' : 'ml-1 pl-1 pr-1';
+  // 非对称：外侧留白，数字贴近图标
+  // 左侧 [3<]：pl-1 把数字往右(图标方向)推，pr-0 图标紧贴边框
+  // 右侧 [>3]：pr-1 把数字往左(图标方向)推，pl-0 图标紧贴边框
+  const padClass =
+    direction === 'left' ? 'pl-1 pr-0' : 'pl-0 pr-1';
 
   return (
     <div
-      className={`flex-shrink-0 flex items-center gap-0.5 text-xs bg-gray-50/80 cursor-pointer select-none ${borderClass} ${marginClass}
+      className={`flex-shrink-0 flex items-center text-xs bg-gray-50/80 cursor-pointer select-none ${borderClass} ${padClass}
         ${active ? 'text-primary-600 hover:text-primary-700 hover:bg-gray-100 font-bold' : 'text-gray-300'}`}
       title={title}
       onClick={active ? onClick : undefined}
     >
       {direction === 'left' ? (
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="15,18 9,12 15,6" />
-        </svg>
+        <>
+          <span className="tabular-nums min-w-[0.5em] text-right">{count}</span>
+          <svg width="14" height="20" viewBox="0 0 24 24" fill="none" className="-ml-0.5"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
+        </>
       ) : (
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="9,18 15,12 9,6" />
-        </svg>
+        <>
+          <svg width="14" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9,18 15,12 9,6" />
+          </svg>
+          <span className="tabular-nums min-w-[0.5em] text-left -ml-0.5">{count}</span>
+        </>
       )}
-      <span className="tabular-nums">{count}</span>
     </div>
   );
 };
