@@ -197,7 +197,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
             <h1 className="font-semibold text-sm text-gray-800">
               聊天记录浏览器
             </h1>
-            <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full font-mono">
+            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full font-mono">
               v{version}
             </span>
           </div>
