@@ -6,8 +6,8 @@
 
 | 层级 | 框架 | 测试文件 | 测试数 |
 |---|---|---|---|
-| 前端测试 | Vitest + @testing-library/react | 24 | 295 |
-| Rust 单元测试 | cargo test --lib | 17 | 110 |
+| 前端测试 | Vitest + @testing-library/react | 24 | 317 |
+| Rust 单元测试 | cargo test --lib | 17 | 119 |
 | Rust 集成测试 | cargo test --test integration_test | 1 | 28 |
 
 ## 快速命令
@@ -31,7 +31,7 @@ cargo test --test integration_test  # 仅集成测试
 
 ```
 src/__tests__/
-├── components/                  # 组件测试（9 个文件）
+├── components/                  # 组件测试（10 个文件）
 │   ├── FilterBar.test.tsx       # 过滤栏按钮渲染与交互
 │   ├── SettingsPanel.test.tsx   # 设置面板功能
 │   ├── TabBar.test.tsx          # 标签栏渲染与交互
@@ -43,7 +43,7 @@ src/__tests__/
 │   ├── MarkdownRenderer.test.tsx # Markdown 渲染
 │   └── EmptyState.test.tsx      # 空状态组件
 │
-├── utils/                       # 工具函数测试（8 个文件）
+├── utils/                       # 工具函数测试（10 个文件）
 │   ├── filterEvents.test.ts     # 前端内容块过滤
 │   ├── collapseConsecutiveEvents.test.ts  # 合并连发（16 个用例）
 │   ├── filterAndCollapse.integration.test.ts  # 过滤+折叠集成（10 个用例）
@@ -51,12 +51,15 @@ src/__tests__/
 │   ├── searchEvents.integration.test.ts  # 搜索集成测试
 │   ├── highlight.test.ts        # 文本高亮
 │   ├── highlight.integration.test.ts  # 高亮集成测试
-│   └── sort.test.ts             # 多级排序
+│   ├── sort.test.ts             # 多级排序（36 个用例）
+│   ├── tabPinService.test.ts    # 标签钉住服务（12 个用例）
+│   └── tabScroll.test.ts        # 标签滚动定位（20 个用例）
 │
-└── stores/                      # 状态管理测试（3 个文件）
+└── stores/                      # 状态管理测试（4 个文件）
     ├── settingsStore.test.ts    # 设置存储
     ├── sessionStore.test.ts     # 会话存储
-    └── sessionListStore.test.ts # 会话列表存储
+    ├── sessionListStore.test.ts # 会话列表存储
+    └── tabStore.test.ts         # 标签页状态管理（60 个用例）
 ```
 
 ### 测试类型说明
