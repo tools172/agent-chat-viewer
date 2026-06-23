@@ -124,6 +124,10 @@ export interface AppSettings {
   searchColors: SearchColors;
   /** 主题模式：light | dark | eyecare | system，默认 system */
   theme?: ThemeMode;
+  /** 左侧导航面板是否折叠 */
+  navCollapsed?: boolean;
+  /** 是否自动保存手动拖拽的侧边栏和轮次导航宽度，默认 true */
+  autoSavePanelWidths?: boolean;
   /** 左侧侧边栏默认宽度（px），200-600，默认 320 */
   sidebarWidth?: number;
   /** 右侧轮次导航默认宽度（px），160-400，默认 256 */

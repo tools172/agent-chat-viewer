@@ -396,6 +396,39 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               </div>
             </div>
 
+            {/* 自动保存拖拽宽度 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  记住面板宽度
+                </span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  拖拽侧边栏和轮次导航后自动保存宽度
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  store.updateAutoSavePanelWidths(
+                    !(settings.autoSavePanelWidths ?? true)
+                  )
+                }
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  (settings.autoSavePanelWidths ?? true)
+                    ? 'bg-primary-600'
+                    : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform ${
+                    (settings.autoSavePanelWidths ?? true)
+                      ? 'translate-x-[18px]'
+                      : 'translate-x-[3px]'
+                  }`}
+                  style={{ backgroundColor: '#fff' }}
+                />
+              </button>
+            </div>
+
             {/* 启动恢复标签页 */}
             <div className="flex items-center justify-between">
               <div>
@@ -520,13 +553,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
         <div className="pl-4 pr-[13px] py-4 border-t bg-gray-50 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex gap-1">
-              <button
-                onClick={store.resetFilter}
-                className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                重置过滤器
-              </button>
               <button
                 onClick={handleOpenSettingsFile}
                 className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap"

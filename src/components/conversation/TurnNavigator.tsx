@@ -42,6 +42,8 @@ interface TurnNavigatorProps {
   containerRef: { current: HTMLDivElement | null };
   /** 导航面板默认宽度（px），来自设置 */
   defaultWidth?: number;
+  /** 拖拽结束后回调，用于持久化宽度 */
+  onWidthChange?: (width: number) => void;
 }
 
 function extractTurns(events: ChatEvent[]): Turn[] {
@@ -78,7 +80,7 @@ const MIN_WIDTH = 160;
 const DEFAULT_WIDTH = 256;
 const MAX_WIDTH = 400;
 
-export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerRef, defaultWidth = DEFAULT_WIDTH }) => {
+export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerRef, defaultWidth = DEFAULT_WIDTH, onWidthChange }) => {
   const turns = useMemo(() => extractTurns(events), [events]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -179,9 +181,11 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
       setWidth(next);
     };
     const onUp = () => {
+      if (!draggingRef.current) return;
       draggingRef.current = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      onWidthChange?.(width);
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -189,7 +193,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     };
-  }, []);
+  }, [width, onWidthChange]);
 
   // ---- 滚动（导航列表自身 + 聊天内容） ----
   const scrollChatTo = useCallback((uuid: string) => {

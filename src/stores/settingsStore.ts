@@ -19,6 +19,8 @@ interface SettingsState {
   toggleWatchDirectory: (path: string) => void;
   toggleProvider: (name: string, enabled: boolean) => void;
   updateSearchColors: (colors: Partial<import('../types').SearchColors>) => void;
+  updateNavCollapsed: (collapsed: boolean) => void;
+  updateAutoSavePanelWidths: (autoSave: boolean) => void;
   updateSidebarWidth: (width: number) => void;
   updateNavigatorWidth: (width: number) => void;
   updatePolishBatchSize: (size: number) => void;
@@ -50,6 +52,8 @@ const defaultSettings: AppSettings = {
     search: '#fef08a',
     find: '#fed7aa',
   },
+  navCollapsed: false,
+  autoSavePanelWidths: true,
   sidebarWidth: 320,
   navigatorWidth: 256,
   polishBatchSize: 5,
@@ -166,6 +170,26 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         searchColors: { ...settings.searchColors, ...colors },
+      },
+    });
+  },
+
+  updateNavCollapsed: (collapsed) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        navCollapsed: collapsed,
+      },
+    });
+  },
+
+  updateAutoSavePanelWidths: (autoSave) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        autoSavePanelWidths: autoSave,
       },
     });
   },

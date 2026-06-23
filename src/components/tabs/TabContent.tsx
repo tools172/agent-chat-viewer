@@ -26,6 +26,8 @@ export const TabContent: React.FC<TabContentProps> = React.memo(
     onFindBarToggle,
   }) => {
   const navigatorWidth = useSettingsStore((s) => s.settings.navigatorWidth ?? 256);
+  const autoSavePanelWidths = useSettingsStore((s) => s.settings.autoSavePanelWidths);
+  const updateNavigatorWidth = useSettingsStore((s) => s.updateNavigatorWidth);
   const scrollHostRef = useRef<HTMLDivElement | null>(null);
   const [convStats, setConvStats] = React.useState<{
     totalEvents: number;
@@ -121,6 +123,11 @@ export const TabContent: React.FC<TabContentProps> = React.memo(
           events={filteredEvents}
           containerRef={scrollHostRef}
           defaultWidth={navigatorWidth}
+          onWidthChange={(w) => {
+            if (autoSavePanelWidths ?? true) {
+              updateNavigatorWidth(w);
+            }
+          }}
         />
       </div>
     </div>

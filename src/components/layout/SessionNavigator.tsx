@@ -7,6 +7,8 @@ import {
   MessageSquare,
   Database,
   RefreshCw,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import type { ViewMode, Project, SessionSummary, SortConfig } from '../../types';
 import { FlatSessionList } from '../sessions/FlatSessionList';
@@ -95,6 +97,9 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   onRefresh,
 }) => {
   const store = useSettingsStore();
+  const navCollapsed = useSettingsStore((s) => s.settings.navCollapsed);
+  const autoSavePanelWidths = useSettingsStore((s) => s.settings.autoSavePanelWidths);
+  const updateNavCollapsed = useSettingsStore((s) => s.updateNavCollapsed);
   const totalSessions =
     allSessions.length > 0
       ? allSessions.length
@@ -134,7 +139,9 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
       draggingRef.current = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
-      store.updateSidebarWidth(width);
+      if (autoSavePanelWidths ?? true) {
+        store.updateSidebarWidth(width);
+      }
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -142,7 +149,25 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     };
-  }, [width, store]);
+  }, [width, store, autoSavePanelWidths]);
+
+  // ---- 折叠状态：只显示展开按钮 ----
+  if (navCollapsed) {
+    return (
+      <div
+        className="flex-shrink-0 border-r border-gray-200 bg-gray-50/30 flex flex-col items-center py-2 gap-2"
+        onContextMenu={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => updateNavCollapsed(false)}
+          className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-gray-600"
+          title="展开导航面板"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -193,6 +218,13 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               title="设置"
             >
               ⚙️
+            </button>
+            <button
+              onClick={() => updateNavCollapsed(true)}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
+              title="折叠导航"
+            >
+              <PanelLeftClose className="h-4 w-4" />
             </button>
           </div>
         </div>
