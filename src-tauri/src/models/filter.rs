@@ -69,6 +69,20 @@ fn default_enabled() -> bool {
     true
 }
 
+/// A saved tab entry for session restore
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TabSnapshotEntry {
+    pub session_path: String,
+    pub provider_name: String,
+    #[serde(default)]
+    pub pinned: bool,
+    #[serde(default)]
+    pub working_dir: Option<String>,
+    #[serde(default)]
+    pub title: String,
+}
+
 /// Application settings persisted to disk
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -90,6 +104,21 @@ pub struct AppSettings {
     /// 主题模式：light | dark | eyecare | system，默认 system
     #[serde(default = "default_theme")]
     pub theme: String,
+    /// 渐进 polish 每批文件数，默认 5
+    #[serde(default = "default_polish_batch_size")]
+    pub polish_batch_size: u32,
+    /// 启动时恢复上次打开的标签页
+    #[serde(default = "default_restore_tabs")]
+    pub restore_tabs_on_startup: bool,
+    /// 最大可钉住标签数，默认 4
+    #[serde(default = "default_max_pinned_tabs")]
+    pub max_pinned_tabs: u32,
+    /// 保存的标签页快照
+    #[serde(default)]
+    pub tab_snapshots: Vec<TabSnapshotEntry>,
+    /// 上次活跃的标签页索引
+    #[serde(default)]
+    pub active_tab_index: usize,
 }
 
 fn default_theme() -> String {
@@ -102,6 +131,18 @@ fn default_sidebar_width() -> u32 {
 
 fn default_navigator_width() -> u32 {
     256
+}
+
+fn default_polish_batch_size() -> u32 {
+    5
+}
+
+fn default_restore_tabs() -> bool {
+    true
+}
+
+fn default_max_pinned_tabs() -> u32 {
+    4
 }
 
 impl Default for AppSettings {
@@ -119,6 +160,11 @@ impl Default for AppSettings {
             sidebar_width: 320,
             navigator_width: 256,
             theme: "system".to_string(),
+            polish_batch_size: 5,
+            restore_tabs_on_startup: true,
+            max_pinned_tabs: 4,
+            tab_snapshots: Vec::new(),
+            active_tab_index: 0,
         }
     }
 }

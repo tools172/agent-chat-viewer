@@ -134,6 +134,10 @@ export interface AppSettings {
   restoreTabsOnStartup?: boolean;
   /** 最大可钉住标签数：1~8，默认 4 */
   maxPinnedTabs?: number;
+  /** 保存的标签页快照（用于启动恢复） */
+  tabSnapshots?: TabSnapshot[];
+  /** 上次活跃的标签页索引 */
+  activeTabIndex?: number;
 }
 
 export interface ProviderInfo {
@@ -204,4 +208,8 @@ export interface TabSnapshot {
   sessionPath: string;
   providerName: string;
   pinned: boolean;
+  /** 工作目录（cwd），用于 hint 显示 */
+  workingDir?: string;
+  /** 标签页标题（用于恢复时显示骨架） */
+  title?: string;
 }

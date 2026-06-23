@@ -141,19 +141,16 @@ export const TabBar: React.FC<TabBarProps> = ({
   const dragSectionRef = useRef<'pinned' | 'regular' | null>(null);
 
   // 激活标签时滚动到视野内
+  // 仅响应 activeTabId 变化，不依赖 tabs — 避免内容加载过程中 tabs 引用变化导致重复 smooth 滚动
   useEffect(() => {
     if (!activeTabId) return;
-    const activeTab = tabs.find((t) => t.id === activeTabId);
-    if (!activeTab) return;
-
-    const scrollRef = activeTab.pinned ? pinnedScrollRef : regularScrollRef;
+    const el = pinnedScrollRef.current || regularScrollRef.current;
+    if (!el) return;
     const raf = requestAnimationFrame(() => {
-      const el = scrollRef.current;
-      if (!el) return;
       const activeItem = el.querySelector<HTMLElement>(
         `[data-tab-id="${activeTabId}"]`,
       );
-      if (activeItem) {
+      if (activeItem && typeof activeItem.scrollIntoView === 'function') {
         activeItem.scrollIntoView({
           block: 'nearest',
           inline: 'nearest',
@@ -162,7 +159,7 @@ export const TabBar: React.FC<TabBarProps> = ({
       }
     });
     return () => cancelAnimationFrame(raf);
-  }, [activeTabId, tabs]);
+  }, [activeTabId]);
 
   // === 拖拽事件处理 ===
   const handleDragStart = useCallback(

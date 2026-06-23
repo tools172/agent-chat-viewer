@@ -3,9 +3,11 @@ import { useTabStore } from '../../stores/tabStore';
 
 // Mock tauri utils
 const mockedGetConversation = vi.fn();
+const mockedSaveSettings = vi.fn();
 
 vi.mock('../../utils/tauri', () => ({
   getConversation: (...args: unknown[]) => mockedGetConversation(...args),
+  saveSettings: (...args: unknown[]) => mockedSaveSettings(...args),
 }));
 
 // Mock settingsStore — openTab reads defaultFilter from it
@@ -18,17 +20,25 @@ const mockDefaultFilter = {
   showFileSnapshots: false,
 };
 
+let mockSettingsState = {
+  settings: {
+    defaultFilter: mockDefaultFilter,
+    watchDirectories: [],
+    providerEnabled: {},
+    searchColors: { search: '#fef08a', find: '#fed7aa' },
+    maxPinnedTabs: 4,
+    restoreTabsOnStartup: true,
+    tabSnapshots: [] as import('../../types').TabSnapshot[],
+    activeTabIndex: 0,
+  },
+};
+
 vi.mock('../../stores/settingsStore', () => ({
   useSettingsStore: {
-    getState: vi.fn(() => ({
-      settings: {
-        defaultFilter: mockDefaultFilter,
-        watchDirectories: [],
-        providerEnabled: {},
-        searchColors: { search: '#fef08a', find: '#fed7aa' },
-        maxPinnedTabs: 4,
-      },
-    })),
+    getState: vi.fn(() => mockSettingsState),
+    setState: vi.fn((partial: Partial<typeof mockSettingsState>) => {
+      Object.assign(mockSettingsState, partial);
+    }),
   },
 }));
 
@@ -68,6 +78,19 @@ describe('tabStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedGetConversation.mockResolvedValue(mockSessionDetail);
+    mockedSaveSettings.mockResolvedValue(undefined);
+    mockSettingsState = {
+      settings: {
+        defaultFilter: mockDefaultFilter,
+        watchDirectories: [],
+        providerEnabled: {},
+        searchColors: { search: '#fef08a', find: '#fed7aa' },
+        maxPinnedTabs: 4,
+        restoreTabsOnStartup: true,
+        tabSnapshots: [],
+        activeTabIndex: 0,
+      },
+    };
     useTabStore.setState({
       tabs: [],
       activeTabId: null,
@@ -934,5 +957,478 @@ describe('tabStore', () => {
     expect(ids[0]).toBe(tabId1);
     expect(ids[1]).toBe(tabId2);
     expect(ids[2]).toBe(tabId3);
+  });
+
+  // ============================================================
+  // saveTabState / saveTabStateImmediate
+  // ============================================================
+
+  it('saveTabStateImmediate 将当前标签页序列化并保存到 settings', async () => {
+    const tabId1 = await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code', true, '/work/dir');
+
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'codex');
+
+    // 钉住第二个标签
+    useTabStore.getState().togglePinTab(tabId1);
+
+    mockedSaveSettings.mockClear();
+
+    useTabStore.getState().saveTabStateImmediate();
+
+    expect(mockedSaveSettings).toHaveBeenCalledTimes(1);
+    const savedSettings = mockedSaveSettings.mock.calls[0][0];
+    expect(savedSettings.tabSnapshots).toHaveLength(2);
+    // 快照应按显示顺序
+    expect(savedSettings.tabSnapshots[0].sessionPath).toBe('/test/session1.jsonl');
+    expect(savedSettings.tabSnapshots[0].pinned).toBe(true);
+    expect(savedSettings.tabSnapshots[0].workingDir).toBe('/work/dir');
+    expect(savedSettings.tabSnapshots[0].title).toBe('Hello world');
+    expect(savedSettings.tabSnapshots[1].sessionPath).toBe('/test/session2.jsonl');
+    expect(savedSettings.tabSnapshots[1].providerName).toBe('codex');
+    // activeTabIndex 指向当前活跃标签（tab2 是活跃的，在 tabs[1]）
+    expect(savedSettings.activeTabIndex).toBe(1);
+  });
+
+  it('saveTabStateImmediate 无标签时保存空快照', () => {
+    useTabStore.getState().saveTabStateImmediate();
+
+    expect(mockedSaveSettings).toHaveBeenCalledTimes(1);
+    const savedSettings = mockedSaveSettings.mock.calls[0][0];
+    expect(savedSettings.tabSnapshots).toEqual([]);
+    expect(savedSettings.activeTabIndex).toBe(0);
+  });
+
+  it('saveTabState 使用 debounce', async () => {
+    vi.useFakeTimers();
+    await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+
+    mockedSaveSettings.mockClear();
+    useTabStore.getState().saveTabState();
+
+    // 不应立即保存
+    expect(mockedSaveSettings).not.toHaveBeenCalled();
+
+    // 300ms 后触发
+    vi.advanceTimersByTime(300);
+    expect(mockedSaveSettings).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
+
+  it('saveTabState 在 debounce 期间多次调用只保存最后一次', async () => {
+    vi.useFakeTimers();
+    await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+
+    mockedSaveSettings.mockClear();
+
+    // 模拟快速连续操作
+    useTabStore.getState().saveTabState();
+    useTabStore.getState().saveTabState();
+    useTabStore.getState().saveTabState();
+
+    vi.advanceTimersByTime(300);
+
+    // 只保存一次
+    expect(mockedSaveSettings).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
+
+  // ============================================================
+  // loadTabContent（延迟加载）
+  // ============================================================
+
+  it('loadTabContent 加载占位标签页的会话内容', async () => {
+    // 先创建占位标签页（模拟 restoreTabs 创建的骨架）
+    const tabId = 'tab_test_1';
+    useTabStore.setState({
+      tabs: [
+        {
+          id: tabId,
+          sessionPath: '/test/session.jsonl',
+          providerName: 'claude_code',
+          sessionDetail: null,
+          isLoading: false,
+          error: null,
+          filter: { ...mockDefaultFilter },
+          showFindBar: false,
+          searchHighlight: undefined,
+          scrollTop: 0,
+          expandedThinking: [],
+          expandedToolCalls: [],
+          expandedToolResults: [],
+          title: 'Placeholder title',
+          pinned: false,
+          workingDir: '/work/dir',
+        },
+      ],
+      activeTabId: tabId,
+    });
+
+    await useTabStore.getState().loadTabContent(tabId);
+
+    const tab = useTabStore.getState().tabs.find((t) => t.id === tabId);
+    expect(tab?.sessionDetail).not.toBeNull();
+    expect(tab?.sessionDetail?.events).toHaveLength(2);
+    expect(tab?.title).toBe('Hello world'); // 加载后更新标题
+    expect(tab?.isLoading).toBe(false);
+    expect(mockedGetConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it('loadTabContent 已加载的标签页不重复加载', async () => {
+    const tabId = await useTabStore
+      .getState()
+      .openTab('/test/session.jsonl', 'claude_code');
+
+    mockedGetConversation.mockClear();
+    await useTabStore.getState().loadTabContent(tabId);
+
+    // 已有 sessionDetail，不应调用
+    expect(mockedGetConversation).not.toHaveBeenCalled();
+  });
+
+  it('loadTabContent 正在加载的标签页不重复加载', async () => {
+    useTabStore.setState({
+      tabs: [
+        {
+          id: 'loading_tab',
+          sessionPath: '/test/session.jsonl',
+          providerName: 'claude_code',
+          sessionDetail: null,
+          isLoading: true, // 正在加载中
+          error: null,
+          filter: { ...mockDefaultFilter },
+          showFindBar: false,
+          searchHighlight: undefined,
+          scrollTop: 0,
+          expandedThinking: [],
+          expandedToolCalls: [],
+          expandedToolResults: [],
+          title: 'Loading...',
+          pinned: false,
+        },
+      ],
+    });
+
+    mockedGetConversation.mockClear();
+    await useTabStore.getState().loadTabContent('loading_tab');
+
+    expect(mockedGetConversation).not.toHaveBeenCalled();
+  });
+
+  it('loadTabContent 加载失败设置 error', async () => {
+    const tabId = 'error_tab';
+    useTabStore.setState({
+      tabs: [
+        {
+          id: tabId,
+          sessionPath: '/test/missing.jsonl',
+          providerName: 'claude_code',
+          sessionDetail: null,
+          isLoading: false,
+          error: null,
+          filter: { ...mockDefaultFilter },
+          showFindBar: false,
+          searchHighlight: undefined,
+          scrollTop: 0,
+          expandedThinking: [],
+          expandedToolCalls: [],
+          expandedToolResults: [],
+          title: 'Should fail',
+          pinned: false,
+        },
+      ],
+    });
+
+    mockedGetConversation.mockRejectedValue('File deleted');
+    await useTabStore.getState().loadTabContent(tabId);
+
+    const tab = useTabStore.getState().tabs.find((t) => t.id === tabId);
+    expect(tab?.error).toBe('File deleted');
+    expect(tab?.isLoading).toBe(false);
+    expect(tab?.sessionDetail).toBeNull();
+  });
+
+  // ============================================================
+  // restoreTabs
+  // ============================================================
+
+  it('restoreTabs 从快照恢复占位标签页', async () => {
+    mockSettingsState.settings.tabSnapshots = [
+      { sessionPath: '/test/session1.jsonl', providerName: 'claude_code', pinned: false, title: 'Tab One' },
+      { sessionPath: '/test/session2.jsonl', providerName: 'codex', pinned: false, title: 'Tab Two' },
+    ];
+    mockSettingsState.settings.activeTabIndex = 0;
+
+    mockedGetConversation.mockClear();
+    const tabIds = await useTabStore.getState().restoreTabs();
+
+    const state = useTabStore.getState();
+    expect(state.tabs).toHaveLength(2);
+    expect(tabIds).toHaveLength(2);
+
+    // 占位标签页：第二个未加载内容（isLoading=false）
+    expect(state.tabs[1].sessionDetail).toBeNull();
+    expect(state.tabs[1].isLoading).toBe(false);
+    expect(state.tabs[1].title).toBe('Tab Two');
+    // 活跃标签页（第一个）：正在加载中
+    expect(state.tabs[0].sessionDetail).toBeNull(); // 尚未完成加载
+    expect(state.tabs[0].isLoading).toBe(true);     // 触发了 loadTabContent
+    expect(state.tabs[0].title).toBe('Tab One');
+
+    // 只有活跃标签页加载了内容
+    expect(mockedGetConversation).toHaveBeenCalledTimes(1);
+    expect(mockedGetConversation).toHaveBeenCalledWith(
+      '/test/session1.jsonl',
+      expect.anything(),
+      'claude_code',
+    );
+  });
+
+  it('restoreTabs 钉住标签排在最前面', async () => {
+    mockSettingsState.settings.tabSnapshots = [
+      { sessionPath: '/test/reg1.jsonl', providerName: 'claude_code', pinned: false, title: 'Reg1' },
+      { sessionPath: '/test/pin1.jsonl', providerName: 'codex', pinned: true, title: 'Pin1' },
+      { sessionPath: '/test/reg2.jsonl', providerName: 'claude_code', pinned: false, title: 'Reg2' },
+      { sessionPath: '/test/pin2.jsonl', providerName: 'codex', pinned: true, title: 'Pin2' },
+    ];
+    mockSettingsState.settings.activeTabIndex = 0;
+
+    const tabIds = await useTabStore.getState().restoreTabs();
+    expect(tabIds).toHaveLength(4);
+
+    const state = useTabStore.getState();
+    // 钉住标签在前，保持各自相对顺序
+    expect(state.tabs[0].title).toBe('Pin1');
+    expect(state.tabs[0].pinned).toBe(true);
+    expect(state.tabs[1].title).toBe('Pin2');
+    expect(state.tabs[1].pinned).toBe(true);
+    expect(state.tabs[2].title).toBe('Reg1');
+    expect(state.tabs[2].pinned).toBe(false);
+    expect(state.tabs[3].title).toBe('Reg2');
+    expect(state.tabs[3].pinned).toBe(false);
+  });
+
+  it('restoreTabs 仅加载 activeTabIndex 指向的活跃标签页', async () => {
+    mockSettingsState.settings.tabSnapshots = [
+      { sessionPath: '/test/session1.jsonl', providerName: 'claude_code', pinned: false, title: 'A' },
+      { sessionPath: '/test/session2.jsonl', providerName: 'claude_code', pinned: false, title: 'B' },
+      { sessionPath: '/test/session3.jsonl', providerName: 'codex', pinned: false, title: 'C' },
+    ];
+    mockSettingsState.settings.activeTabIndex = 2; // 第三个是活跃的
+
+    mockedGetConversation.mockClear();
+    await useTabStore.getState().restoreTabs();
+
+    const state = useTabStore.getState();
+    // activeTabId 应指向第三个标签页（索引 2 = session3）
+    const activeTab = state.tabs.find((t) => t.id === state.activeTabId);
+    expect(activeTab?.sessionPath).toBe('/test/session3.jsonl');
+
+    // 只加载了活跃标签页
+    expect(mockedGetConversation).toHaveBeenCalledTimes(1);
+    expect(mockedGetConversation).toHaveBeenCalledWith(
+      '/test/session3.jsonl',
+      expect.anything(),
+      'codex',
+    );
+  });
+
+  it('restoreTabs 空快照返回空数组', async () => {
+    mockSettingsState.settings.tabSnapshots = [];
+    const tabIds = await useTabStore.getState().restoreTabs();
+
+    expect(tabIds).toEqual([]);
+    expect(useTabStore.getState().tabs).toHaveLength(0);
+  });
+
+  it('restoreTabs undefined 快照返回空数组', async () => {
+    mockSettingsState.settings.tabSnapshots = undefined as unknown as [];
+    const tabIds = await useTabStore.getState().restoreTabs();
+
+    expect(tabIds).toEqual([]);
+  });
+
+  it('restoreTabs 保留 workingDir 信息', async () => {
+    mockSettingsState.settings.tabSnapshots = [
+      { sessionPath: '/test/session1.jsonl', providerName: 'claude_code', pinned: false, title: 'A', workingDir: '/custom/workdir' },
+    ];
+    mockSettingsState.settings.activeTabIndex = 0;
+
+    await useTabStore.getState().restoreTabs();
+
+    const tab = useTabStore.getState().tabs[0];
+    expect(tab.workingDir).toBe('/custom/workdir');
+  });
+
+  it('restoreTabs title 为空时使用文件名兜底', async () => {
+    mockSettingsState.settings.tabSnapshots = [
+      { sessionPath: '/test/mytitle.jsonl', providerName: 'claude_code', pinned: false, title: '' },
+    ];
+    mockSettingsState.settings.activeTabIndex = 0;
+
+    await useTabStore.getState().restoreTabs();
+
+    expect(useTabStore.getState().tabs[0].title).toBe('mytitle.jsonl');
+  });
+
+  it('restoreTabs 活跃标签页的 activeIndex 考虑钉住重排', async () => {
+    // 原始快照：reg1(pin=false), reg2(pin=false), pin1(pin=true)
+    // activeIndex=2 指向 pin1
+    // 重排后 → pin1(0), reg1(1), reg2(2)
+    // activeTabId 应对应 pin1 (重排后 index 0)
+    mockSettingsState.settings.tabSnapshots = [
+      { sessionPath: '/test/reg1.jsonl', providerName: 'claude_code', pinned: false, title: 'Reg1' },
+      { sessionPath: '/test/reg2.jsonl', providerName: 'claude_code', pinned: false, title: 'Reg2' },
+      { sessionPath: '/test/pin1.jsonl', providerName: 'codex', pinned: true, title: 'Pin1' },
+    ];
+    mockSettingsState.settings.activeTabIndex = 2;
+
+    await useTabStore.getState().restoreTabs();
+
+    const state = useTabStore.getState();
+    const activeTab = state.tabs.find((t) => t.id === state.activeTabId);
+    expect(activeTab?.sessionPath).toBe('/test/pin1.jsonl');
+    // 活跃标签页的内容应被加载
+    expect(mockedGetConversation).toHaveBeenCalledWith(
+      '/test/pin1.jsonl',
+      expect.anything(),
+      'codex',
+    );
+  });
+
+  // ============================================================
+  // activateTab 触发延迟加载
+  // ============================================================
+
+  it('activateTab 对占位标签页触发 loadTabContent', async () => {
+    const tabId = 'placeholder_tab';
+    useTabStore.setState({
+      tabs: [
+        {
+          id: tabId,
+          sessionPath: '/test/lazy.jsonl',
+          providerName: 'claude_code',
+          sessionDetail: null,
+          isLoading: false,
+          error: null,
+          filter: { ...mockDefaultFilter },
+          showFindBar: false,
+          searchHighlight: undefined,
+          scrollTop: 0,
+          expandedThinking: [],
+          expandedToolCalls: [],
+          expandedToolResults: [],
+          title: 'Lazy tab',
+          pinned: false,
+        },
+      ],
+      activeTabId: null,
+    });
+
+    mockedGetConversation.mockClear();
+    useTabStore.getState().activateTab(tabId);
+
+    // activateTab 是同步操作，loadTabContent 是异步的
+    // 等待异步加载完成
+    await vi.waitFor(() => {
+      expect(mockedGetConversation).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('activateTab 已加载的标签页不触发重复加载', async () => {
+    const tabId1 = await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+
+    // 创建第二个标签并激活
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'claude_code');
+
+    // 切换回 tab1（已加载内容）
+    mockedGetConversation.mockClear();
+    useTabStore.getState().activateTab(tabId1);
+
+    // 不应触发 loadTabContent（tab1 已有内容）
+    // 等待一小段时间确认没有异步加载
+    await new Promise((r) => setTimeout(r, 50));
+    // 没有新的 getConversation 调用
+    expect(mockedGetConversation).not.toHaveBeenCalled();
+  });
+
+  // ============================================================
+  // 关闭操作自动保存
+  // ============================================================
+
+  it('closeTab 后触发 saveTabState', async () => {
+    const tabId = await useTabStore
+      .getState()
+      .openTab('/test/session.jsonl', 'claude_code');
+
+    mockedSaveSettings.mockClear();
+    useTabStore.getState().closeTab(tabId);
+
+    // Debounce — 等待 350ms
+    await new Promise((r) => setTimeout(r, 350));
+    expect(mockedSaveSettings).toHaveBeenCalled();
+  });
+
+  it('openTab 加载完成后触发 saveTabState', async () => {
+    mockedSaveSettings.mockClear();
+    await useTabStore
+      .getState()
+      .openTab('/test/session.jsonl', 'claude_code');
+
+    // Debounce
+    await new Promise((r) => setTimeout(r, 350));
+    expect(mockedSaveSettings).toHaveBeenCalled();
+  });
+
+  it('togglePinTab 后触发 saveTabState', async () => {
+    const tabId = await useTabStore
+      .getState()
+      .openTab('/test/session.jsonl', 'claude_code');
+
+    mockedSaveSettings.mockClear();
+    useTabStore.getState().togglePinTab(tabId);
+
+    await new Promise((r) => setTimeout(r, 350));
+    expect(mockedSaveSettings).toHaveBeenCalled();
+  });
+
+  it('moveTab 后触发 saveTabState', async () => {
+    await useTabStore
+      .getState()
+      .openTab('/test/session1.jsonl', 'claude_code');
+    mockedGetConversation.mockResolvedValue({
+      ...mockSessionDetail,
+      filePath: '/test/session2.jsonl',
+    });
+    await useTabStore
+      .getState()
+      .openTab('/test/session2.jsonl', 'claude_code');
+
+    mockedSaveSettings.mockClear();
+    useTabStore.getState().moveTab(0, 1);
+
+    await new Promise((r) => setTimeout(r, 350));
+    expect(mockedSaveSettings).toHaveBeenCalled();
   });
 });

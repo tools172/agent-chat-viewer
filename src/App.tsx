@@ -1,6 +1,7 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { useSettings } from './hooks/useSettings';
 import { useSettingsStore } from './stores/settingsStore';
+import { useTabStore } from './stores/tabStore';
 import { MainLayout } from './components/layout/MainLayout';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { ToastContainer } from './stores/toastStore';
@@ -32,6 +33,20 @@ const App: React.FC = () => {
       return () => mq.removeEventListener('change', handler);
     }
   }, [settings.theme, applyTheme]);
+
+  const hasRestored = useRef(false);
+
+  // 启动时恢复标签页
+  useEffect(() => {
+    if (isLoaded && !hasRestored.current) {
+      hasRestored.current = true;
+      const { restoreTabsOnStartup, tabSnapshots } =
+        useSettingsStore.getState().settings;
+      if (restoreTabsOnStartup && tabSnapshots && tabSnapshots.length > 0) {
+        useTabStore.getState().restoreTabs();
+      }
+    }
+  }, [isLoaded]);
 
   // 启动加载中（设置未就绪）
   if (!isLoaded && isLoading) {

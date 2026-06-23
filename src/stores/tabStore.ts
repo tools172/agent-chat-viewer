@@ -23,6 +23,43 @@ const FULL_FILTER: FilterConfig = {
 
 let tabCounter = 0;
 
+// ===== 标签页状态持久化 =====
+
+let saveTabTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 执行实际的标签页状态保存 */
+function persistTabState() {
+  const { tabs, activeTabId } = useTabStore.getState();
+  const settingsState = useSettingsStore.getState();
+  const settings = settingsState.settings;
+
+  const activeIndex = tabs.findIndex((t) => t.id === activeTabId);
+  const snapshots: TabSnapshot[] = tabs.map((t) => ({
+    sessionPath: t.sessionPath,
+    providerName: t.providerName,
+    pinned: t.pinned,
+    workingDir: t.workingDir,
+    title: t.title,
+  }));
+
+  const updated: typeof settings = {
+    ...settings,
+    tabSnapshots: snapshots,
+    activeTabIndex: activeIndex >= 0 ? activeIndex : 0,
+  };
+
+  useSettingsStore.setState({ settings: updated });
+  tauri.saveSettings(updated).catch((err) =>
+    console.error('Failed to save tab state:', err),
+  );
+}
+
+/** 触发标签页状态保存（300ms debounce） */
+function triggerSaveTabState() {
+  if (saveTabTimer) clearTimeout(saveTabTimer);
+  saveTabTimer = setTimeout(persistTabState, 300);
+}
+
 /** 从 SessionDetail 提取标签页标题 */
 function buildTabTitle(detail: SessionDetail): string {
   // 优先使用后端清理过的 display 字段
@@ -92,6 +129,14 @@ interface TabStoreState {
   ) => void;
   /** 刷新标签页（重新加载会话内容） */
   refreshTab: (tabId: string) => Promise<void>;
+  /** 保存当前标签页状态到设置（debounce 300ms） */
+  saveTabState: () => void;
+  /** 立即保存标签页状态（用于窗口关闭） */
+  saveTabStateImmediate: () => void;
+  /** 延迟加载占位标签页的会话内容 */
+  loadTabContent: (tabId: string) => Promise<void>;
+  /** 从快照恢复标签页（启动时调用），返回恢复的 tab ID 列表 */
+  restoreTabs: () => Promise<string[]>;
 }
 
 export const useTabStore = create<TabStoreState>((set, get) => ({
@@ -161,6 +206,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
             : t
         ),
       }));
+      triggerSaveTabState();
     } catch (err) {
       set((s) => ({
         tabs: s.tabs.map((t) =>
@@ -184,6 +230,8 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       sessionPath: tab.sessionPath,
       providerName: tab.providerName,
       pinned: tab.pinned,
+      workingDir: tab.workingDir,
+      title: tab.title,
     };
 
     const remainingTabs = tabs.filter((t) => t.id !== tabId);
@@ -210,14 +258,21 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       closedTabs: [snapshot, ...s.closedTabs].slice(0, 20),
       tabOrder: s.tabOrder.filter((tid) => tid !== tabId),
     }));
+    triggerSaveTabState();
   },
 
   activateTab: (tabId) => {
+    const tab = get().tabs.find((t) => t.id === tabId);
     set((s) => ({
       activeTabId: tabId,
       // 将该 tab 移到 tabOrder 最前面
       tabOrder: [tabId, ...s.tabOrder.filter((tid) => tid !== tabId)],
     }));
+    // 延迟加载占位标签页的会话内容
+    if (tab && tab.sessionDetail === null && !tab.isLoading) {
+      get().loadTabContent(tabId);
+    }
+    triggerSaveTabState();
   },
 
   closeOtherTabs: (tabId) => {
@@ -231,6 +286,8 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       sessionPath: t.sessionPath,
       providerName: t.providerName,
       pinned: t.pinned,
+      workingDir: t.workingDir,
+      title: t.title,
     }));
     set((s) => ({
       tabs: kept,
@@ -238,6 +295,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       closedTabs: [...snapshots, ...s.closedTabs].slice(0, 20),
       tabOrder: s.tabOrder.filter((tid) => kept.some((t) => t.id === tid)),
     }));
+    triggerSaveTabState();
   },
 
   closeTabsToRight: (tabId) => {
@@ -251,6 +309,8 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       sessionPath: t.sessionPath,
       providerName: t.providerName,
       pinned: t.pinned,
+      workingDir: t.workingDir,
+      title: t.title,
     }));
     // 如果当前激活的标签被关闭，切换到保留列表中的第一个
     let nextActiveId = activeTabId;
@@ -263,6 +323,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       closedTabs: [...snapshots, ...s.closedTabs].slice(0, 20),
       tabOrder: s.tabOrder.filter((tid) => kept.some((t) => t.id === tid)),
     }));
+    triggerSaveTabState();
   },
 
   closeAllTabs: () => {
@@ -276,6 +337,8 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       sessionPath: t.sessionPath,
       providerName: t.providerName,
       pinned: t.pinned,
+      workingDir: t.workingDir,
+      title: t.title,
     }));
     set({
       tabs: kept,
@@ -283,6 +346,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       closedTabs: [...snapshots, ...closedTabs].slice(0, 20),
       tabOrder: kept.map((t) => t.id),
     });
+    triggerSaveTabState();
   },
 
   reopenClosedTab: async () => {
@@ -293,6 +357,8 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
     const tabId = await get().openTab(
       snapshot.sessionPath,
       snapshot.providerName,
+      true,
+      snapshot.workingDir,
     );
     if (snapshot.pinned) {
       const { tabs } = get();
@@ -344,6 +410,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       tabs: reordered,
       tabOrder: reordered.map((t) => t.id),
     });
+    triggerSaveTabState();
   },
 
   moveTab: (fromIndex, toIndex) => {
@@ -353,6 +420,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       tabs.splice(toIndex, 0, moved);
       return { tabs };
     });
+    triggerSaveTabState();
   },
 
   updateTabFilter: (tabId, filter) => {
@@ -447,5 +515,139 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
         ),
       }));
     }
+  },
+
+  saveTabState: () => {
+    triggerSaveTabState();
+  },
+
+  saveTabStateImmediate: () => {
+    if (saveTabTimer) {
+      clearTimeout(saveTabTimer);
+      saveTabTimer = null;
+    }
+    persistTabState();
+  },
+
+  loadTabContent: async (tabId) => {
+    const { tabs } = get();
+    const tab = tabs.find((t) => t.id === tabId);
+    if (!tab || tab.sessionDetail !== null || tab.isLoading) return;
+
+    set((s) => ({
+      tabs: s.tabs.map((t) =>
+        t.id === tabId ? { ...t, isLoading: true, error: null } : t,
+      ),
+    }));
+
+    try {
+      const detail = await tauri.getConversation(
+        tab.sessionPath,
+        FULL_FILTER,
+        tab.providerName,
+      );
+      const title = buildTabTitle(detail);
+      set((s) => ({
+        tabs: s.tabs.map((t) =>
+          t.id === tabId
+            ? {
+                ...t,
+                sessionDetail: { ...detail, providerName: tab.providerName },
+                title,
+                isLoading: false,
+                error: null,
+              }
+            : t,
+        ),
+      }));
+    } catch (err) {
+      set((s) => ({
+        tabs: s.tabs.map((t) =>
+          t.id === tabId
+            ? { ...t, isLoading: false, error: String(err) }
+            : t,
+        ),
+      }));
+    }
+  },
+
+  restoreTabs: async () => {
+    const { tabSnapshots } = useSettingsStore.getState().settings;
+    if (!tabSnapshots || tabSnapshots.length === 0) return [];
+
+    const userDefaultFilter =
+      useSettingsStore.getState().settings.defaultFilter;
+
+    // 分离钉住和普通标签页，保持各自相对顺序
+    const pinnedSnaps = tabSnapshots.filter((s) => s.pinned);
+    const regularSnaps = tabSnapshots.filter((s) => !s.pinned);
+
+    // 先钉住，后普通
+    const orderedSnaps = [...pinnedSnaps, ...regularSnaps];
+
+    const tabIds: string[] = [];
+    const newTabs: TabState[] = [];
+
+    for (const snap of orderedSnaps) {
+      const id = generateTabId();
+      tabIds.push(id);
+      newTabs.push({
+        id,
+        sessionPath: snap.sessionPath,
+        providerName: snap.providerName,
+        sessionDetail: null,
+        isLoading: false, // 占位状态，不加载内容
+        error: null,
+        filter: { ...userDefaultFilter },
+        showFindBar: false,
+        searchHighlight: undefined,
+        scrollTop: 0,
+        expandedThinking: [],
+        expandedToolCalls: [],
+        expandedToolResults: [],
+        title:
+          snap.title ||
+          snap.sessionPath.split('/').pop() ||
+          'Untitled',
+        pinned: snap.pinned,
+        workingDir: snap.workingDir,
+      });
+    }
+
+    // 映射活跃标签页索引（考虑重排后的顺序）
+    const activeIndex = tabSnapshots.length > 0
+      ? Math.min(
+          useSettingsStore.getState().settings.activeTabIndex ?? 0,
+          tabSnapshots.length - 1,
+        )
+      : 0;
+
+    // 找到原始快照中 activeIndex 对应的 sessionPath
+    const activeSnapshot = tabSnapshots[activeIndex];
+    // 在重排后的 orderedSnaps 中找到对应的 tabId
+    const activeTabId = activeSnapshot
+      ? (() => {
+          const idx = orderedSnaps.findIndex(
+            (s) => s.sessionPath === activeSnapshot.sessionPath,
+          );
+          return idx >= 0 ? tabIds[idx] : tabIds[0];
+        })()
+      : tabIds[0];
+
+    set({
+      tabs: newTabs,
+      activeTabId: activeTabId ?? null,
+      closedTabs: [],
+      tabOrder: activeTabId
+        ? [activeTabId, ...tabIds.filter((tid) => tid !== activeTabId)]
+        : tabIds,
+    });
+
+    // 仅加载活跃标签页的内容
+    if (activeTabId) {
+      get().loadTabContent(activeTabId);
+    }
+
+    return tabIds;
   },
 }));
