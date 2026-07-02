@@ -50,7 +50,7 @@ export const TabItem: React.FC<TabItemProps> = ({
       onContextMenu={(e) => onContextMenu(e, tab.id)}
       className={`group flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 text-xs cursor-pointer select-none
         min-w-[100px] max-w-[200px] transition-all duration-100 border-r border-gray-300
-        ${isDragging ? 'opacity-60' : ''}
+        ${isDragging ? 'opacity-40 scale-95 border-l-2 border-l-primary-500' : ''}
         ${isActive
           ? 'bg-white text-gray-800 shadow-sm border-b-2 border-b-primary-500 rounded-t-md'
           : 'bg-gray-200 text-gray-500 hover:bg-gray-300 border-b border-b-gray-300'

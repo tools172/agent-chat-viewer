@@ -264,6 +264,28 @@ export const TabBar: React.FC<TabBarProps> = ({
     }
   }, []);
 
+  // 容器级 drop — 处理落在标签间隙或最后一个标签右侧蓝色指示条上的情况
+  const handleContainerDrop = useCallback(
+    (section: 'pinned' | 'regular', sectionStart: number) =>
+      (e: React.DragEvent) => {
+        e.preventDefault();
+        if (dragSectionRef.current !== section) return;
+        if (dragCancelledRef.current || dragIndexRef.current === null) return;
+        const fromIndex = dragIndexRef.current;
+        const toIndex = dragOverIndex;
+        if (toIndex === null || fromIndex === toIndex) return;
+        let targetGlobal: number;
+        if (dragOverSide === 'right') {
+          targetGlobal = fromIndex < toIndex ? toIndex : toIndex + 1;
+        } else {
+          targetGlobal = fromIndex < toIndex ? toIndex - 1 : toIndex;
+        }
+        onMoveTab(sectionStart + fromIndex, sectionStart + targetGlobal);
+        resetDragState();
+      },
+    [onMoveTab, dragOverSide, resetDragState],
+  );
+
   // === 滚轮事件 ===
   const handleWheel = useCallback((e: React.WheelEvent) => {
     wheelTimeRef.current = Date.now();
@@ -352,6 +374,7 @@ export const TabBar: React.FC<TabBarProps> = ({
             ref={pinnedScrollRef}
             onWheel={handleWheel}
             onDragOver={handleContainerDragOver}
+            onDrop={handleContainerDrop('pinned', pinnedStart)}
             onDragEnd={handleDragEnd}
             className="flex items-stretch min-w-0 overflow-x-auto"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -415,6 +438,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         ref={regularScrollRef}
         onWheel={handleWheel}
         onDragOver={handleContainerDragOver}
+        onDrop={handleContainerDrop('regular', regularStart)}
         onDragEnd={handleDragEnd}
         className="flex items-stretch flex-1 min-w-0 overflow-x-auto"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
