@@ -22,6 +22,7 @@ pub fn run() {
             commands::browser::list_all_sessions,
             commands::browser::polish_sessions,
             commands::browser::search_sessions,
+            commands::browser::trigger_native_find,
             commands::export::export_markdown,
             commands::export::export_json,
             commands::export::write_text_file,

@@ -122,7 +122,7 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
     onStatsChange?.(stats);
   }, [stats, onStatsChange]);
 
-  // NOT intercepting Ctrl+F — let browser handle native find
+  // Ctrl+F is intercepted globally in MainLayout — it opens this conversation find bar
 
   if (isLoading) {
     return <LoadingSpinner size="lg" message="加载会话中..." />;

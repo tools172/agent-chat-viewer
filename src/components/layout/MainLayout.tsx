@@ -127,6 +127,53 @@ export const MainLayout: React.FC = () => {
     }
   }, [activeSearchHighlight, activeTabId]);
 
+  // 全局快捷键：Ctrl+F → 会话内查找；Ctrl+G → 窗口原生查找
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl+F：打开/聚焦会话内查找栏
+      if (e.ctrlKey && !e.altKey && !e.metaKey && e.key === 'f') {
+        // 如果是由 Ctrl+G 触发的模拟 Ctrl+F，跳过拦截，让 WebView2 处理原生查找
+        if ((window as any).__skip_ctrl_f_intercept) {
+          delete (window as any).__skip_ctrl_f_intercept;
+          return;
+        }
+        e.preventDefault();
+        const state = useTabStore.getState();
+        const currentActiveTabId = state.activeTabId;
+        if (!currentActiveTabId) return;
+
+        const tab = state.tabs.find((t) => t.id === currentActiveTabId);
+        if (!tab) return;
+
+        if (tab.showFindBar) {
+          // 查找栏已打开 → 聚焦输入框
+          const input = document.querySelector<HTMLInputElement>(
+            '[data-conversation-find-input]'
+          );
+          input?.focus();
+          input?.select();
+        } else {
+          // 打开查找栏
+          state.updateTabFindBar(currentActiveTabId, true);
+        }
+        return;
+      }
+
+      // Ctrl+G：触发浏览器原生查找
+      // Rust 后端通过 keybd_event 发送模拟 Ctrl+F 按键
+      // WebView2 原生响应，JS 层面由 __skip_ctrl_f_intercept 标志跳过拦截
+      if (e.ctrlKey && !e.altKey && !e.metaKey && e.key === 'g') {
+        e.preventDefault();
+        (window as any).__skip_ctrl_f_intercept = true;
+        tauri.triggerNativeFind();
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   // 选择工作目录
   const handleSelectProject = useCallback(
     (projectPath: string, providerName: string) => {

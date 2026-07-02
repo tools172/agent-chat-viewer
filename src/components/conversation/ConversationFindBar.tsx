@@ -126,6 +126,7 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="在会话中查找..."
+        data-conversation-find-input=""
         className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
       />
       {/* 匹配计数 */}

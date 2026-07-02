@@ -762,6 +762,42 @@ pub async fn search_sessions(
     .map_err(|e| format!("搜索失败: {}", e))
 }
 
+/// 触发 WebView 原生查找栏。
+///
+/// Windows: 模拟 Ctrl+F 按键，WebView2 会响应并显示原生查找条。
+/// macOS / Linux: `window.find()` 在 WebView 中可能不可用，降级为无操作。
+#[tauri::command]
+pub fn trigger_native_find() {
+    #[cfg(target_os = "windows")]
+    {
+        // 使用 Windows API keybd_event 模拟 Ctrl+F
+        // VK_CONTROL = 0x11, VK_F = 0x46, KEYEVENTF_KEYUP = 0x0002
+        const VK_CONTROL: u8 = 0x11;
+        const VK_F: u8 = 0x46;
+        const KEYEVENTF_KEYUP: u32 = 0x0002;
+
+        extern "system" {
+            fn keybd_event(bVk: u8, bScan: u8, dwFlags: u32, dwExtraInfo: usize);
+        }
+
+        unsafe {
+            // 按下 Ctrl
+            keybd_event(VK_CONTROL, 0, 0, 0);
+            // 按下 F
+            keybd_event(VK_F, 0, 0, 0);
+            // 释放 F
+            keybd_event(VK_F, 0, KEYEVENTF_KEYUP, 0);
+            // 释放 Ctrl
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        // macOS / Linux: 暂无原生查找触发机制
+        // 用户可通过菜单栏 Edit > Find 手动打开
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

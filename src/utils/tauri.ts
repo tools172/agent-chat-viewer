@@ -155,3 +155,8 @@ export async function openProjectFolder(folderPath: string): Promise<void> {
 export async function getProviderDataDir(providerName: string): Promise<string | null> {
   return invoke<string | null>('get_provider_data_dir', { providerName });
 }
+
+/** 触发 WebView 原生查找栏（模拟 Ctrl+F 按键） */
+export async function triggerNativeFind(): Promise<void> {
+  return invoke<void>('trigger_native_find');
+}
