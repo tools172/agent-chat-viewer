@@ -493,7 +493,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   批次刷新量
                 </span>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  每批加载文件数，电脑及磁盘性能较好建议调大
+                  每批加载文件数，性能好的电脑可调大
                 </p>
               </div>
               <select
@@ -508,38 +508,36 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 ))}
               </select>
             </div>
-            {/* 会话标题显示首条/末条 */}
+            {/* 会话标题 */}
             <div className="flex items-center justify-between">
-              <div>
-                <span className="text-sm font-medium text-gray-700">
-                  会话标题
-                </span>
+              <div className="mr-4">
+                <span className="text-sm font-medium text-gray-700">会话标题</span>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {settings.displayFirstUserMessage !== false
-                    ? '显示第一条用户消息'
-                    : '显示最后一条用户消息'}
+                  控制会话列表标题的显示来源
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  const newVal = !(settings.displayFirstUserMessage !== false);
-                  store.setSetting({ displayFirstUserMessage: newVal });
-                }}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                  (settings.displayFirstUserMessage !== false)
-                    ? 'bg-primary-600'
-                    : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform ${
+              <div className="flex rounded-full bg-gray-100 p-0.5 flex-shrink-0">
+                <button
+                  onClick={() => store.setSetting({ displayFirstUserMessage: true })}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
                     (settings.displayFirstUserMessage !== false)
-                      ? 'translate-x-[18px]'
-                      : 'translate-x-[3px]'
+                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
-                  style={{ backgroundColor: '#fff' }}
-                />
-              </button>
+                >
+                  第一条
+                </button>
+                <button
+                  onClick={() => store.setSetting({ displayFirstUserMessage: false })}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
+                    (settings.displayFirstUserMessage === false)
+                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  最后一条
+                </button>
+              </div>
             </div>
           </section>
 
