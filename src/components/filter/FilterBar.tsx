@@ -6,7 +6,7 @@ interface FilterBarProps {
   filter: FilterConfig;
   onChange: (filter: Partial<FilterConfig>) => void;
   /** 统计信息，显示在过滤按钮右侧 */
-  stats?: { totalEvents: number; userCount: number; assistantCount: number; thinkingCount: number; toolCallCount: number };
+  stats?: { totalEvents: number; userCount: number; assistantCount: number; thinkingCount: number };
   /** 查找按钮回调 */
   showFindBar?: boolean;
   onToggleFind?: () => void;
@@ -110,9 +110,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filter, onChange, stats, s
           <span>{stats.assistantCount} 助手回复</span>
           {stats.thinkingCount > 0 && (
             <span>{stats.thinkingCount} 思考块</span>
-          )}
-          {stats.toolCallCount > 0 && (
-            <span>{stats.toolCallCount} 工具调用</span>
           )}
           {onToggleFind && (
             <>

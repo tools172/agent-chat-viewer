@@ -209,6 +209,13 @@ export const MainLayout: React.FC = () => {
           break;
         case 'openFolder':
           try {
+            if (tab.providerName === 'cursor') {
+              const dataDir = await tauri.getProviderDataDir('cursor');
+              if (dataDir) {
+                await tauri.openProjectFolder(dataDir);
+                break;
+              }
+            }
             await tauri.openContainingFolder(tab.sessionPath);
           } catch (err) {
             console.error('打开文件夹失败:', err);
@@ -257,6 +264,13 @@ export const MainLayout: React.FC = () => {
     setConvContextMenu(null);
     if (!activeTab?.sessionPath) return;
     try {
+      if (activeTab.providerName === 'cursor') {
+        const dataDir = await tauri.getProviderDataDir('cursor');
+        if (dataDir) {
+          await tauri.openProjectFolder(dataDir);
+          return;
+        }
+      }
       await tauri.openContainingFolder(activeTab.sessionPath);
     } catch (err) {
       console.error('打开文件夹失败:', err);

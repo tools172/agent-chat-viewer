@@ -32,6 +32,7 @@ pub fn run() {
             commands::settings::save_settings,
             commands::settings::get_settings_path,
             commands::settings::list_providers,
+            commands::settings::get_provider_data_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

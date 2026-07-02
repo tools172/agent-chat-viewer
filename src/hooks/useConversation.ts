@@ -69,17 +69,12 @@ export function useConversation(
     let userCount = 0;
     let assistantCount = 0;
     let thinkingCount = 0;
-    let toolCallCount = 0;
-    let toolResultCount = 0;
-
     for (const event of events) {
       if (event.eventType === 'user') userCount++;
       if (event.eventType === 'assistant') assistantCount++;
 
       for (const block of event.content) {
         if (block.blockType === 'thinking') thinkingCount++;
-        if (block.blockType === 'tool_use') toolCallCount++;
-        if (block.blockType === 'tool_result') toolResultCount++;
       }
     }
 
@@ -87,8 +82,6 @@ export function useConversation(
       userCount,
       assistantCount,
       thinkingCount,
-      toolCallCount,
-      toolResultCount,
       totalEvents: events.length,
     };
   }, [events]);

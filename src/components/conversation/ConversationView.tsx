@@ -44,7 +44,7 @@ interface ConversationViewProps {
   showFindBar?: boolean;
   onToggleFind?: () => void;
   /** 统计信息变化回调 */
-  onStatsChange?: (s: { totalEvents: number; userCount: number; assistantCount: number; thinkingCount: number; toolCallCount: number }) => void;
+  onStatsChange?: (s: { totalEvents: number; userCount: number; assistantCount: number; thinkingCount: number }) => void;
 }
 
 export const ConversationView: React.FC<ConversationViewProps> = React.memo(({

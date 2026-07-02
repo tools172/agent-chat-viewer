@@ -42,10 +42,13 @@ function shouldShowEvent(event: ChatEvent, config: FilterConfig): boolean {
 }
 
 /**
- * 合并连发：折叠同一角色的连续事件，每组只保留最后一条。
+ * 合并连发：折叠同一角色的连续纯文本事件，每组只保留最后一条。
  *
  * 可折叠角色：user / assistant / developer / system
  * 其他事件类型（attachment、unknown 等）不参与折叠，直接透传。
+ *
+ * **重要**：只折叠全部由纯文本块组成的事件组。如果组内任何事件包含
+ * 工具调用、思考、工具结果等结构化块，整组不折叠，避免丢失工具调用记录。
  *
  * 应在 content-block 过滤之后调用，此时已移除空事件。
  */
@@ -71,8 +74,25 @@ export function collapseConsecutiveEvents(events: ChatEvent[]): ChatEvent[] {
       j++;
     }
 
-    // 只保留该组的最后一条
-    result.push(events[j]);
+    // 检查组内是否有任何非纯文本事件（含 tool_use / thinking / tool_result）
+    const allTextOnly = (function () {
+      for (let k = i; k <= j; k++) {
+        if (events[k].content.some((b) => b.blockType !== 'text')) {
+          return false;
+        }
+      }
+      return true;
+    })();
+
+    if (allTextOnly) {
+      // 纯文本组：只保留最后一条
+      result.push(events[j]);
+    } else {
+      // 包含工具调用/思考等结构化块：全部保留，不折叠
+      for (let k = i; k <= j; k++) {
+        result.push(events[k]);
+      }
+    }
     i = j + 1;
   }
 

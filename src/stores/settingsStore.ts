@@ -46,6 +46,7 @@ const defaultSettings: AppSettings = {
   providerEnabled: {
     claude_code: true,
     codex: true,
+    cursor: true,
     openclaw: false,
   },
   searchColors: {

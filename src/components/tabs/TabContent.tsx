@@ -34,7 +34,6 @@ export const TabContent: React.FC<TabContentProps> = React.memo(
     userCount: number;
     assistantCount: number;
     thinkingCount: number;
-    toolCallCount: number;
   } | null>(null);
 
   // 前端侧过滤

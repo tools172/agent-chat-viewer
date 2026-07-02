@@ -1,6 +1,6 @@
 # Agent Chat Viewer
 
-一个基于 Tauri v2 开发的桌面应用，用于浏览、查看和导出 Claude Code、Codex (OpenAI)、OpenClaw 等 Agent 的聊天记录。
+一个基于 Tauri v2 开发的桌面应用，用于浏览、查看和导出 Claude Code、Cursor、Codex (OpenAI)、OpenClaw 等 Agent 的聊天记录。
 
 ## ✨ 功能
 
@@ -13,12 +13,15 @@
   - **OpenClaw**：去除 `Sender (untrusted metadata):` 块、时间戳行、`[Subagent Task]:` 等元数据
   - **Claude Code VSCode**：跳过 `<ide_selection>` 代码选区标记块，取用户实际提问
   - **Codex (OpenAI)**：剥离 `<environment_context>`、`<app-context>` 等 XML 标签，提取用户真实输入
+  - **Cursor**：消息天然无元数据前缀，直接透传
   - **兜底回退**：非预期格式时保持原文，不清空
+  - **Cursor**：直接从 SQLite 数据库读取 composer 和 bubble 数据，自动生成 JSONL 缓存，支持新旧版本工作目录格式
 - 🏷️ **客户端环境标签** — 侧边栏一眼区分会话来源
   - `VSCode` — Claude Code 插件对话
   - `UI` — OpenClaw 图形客户端（qclaw、workbuddy、Web UI 等）
   - `Sub` — OpenClaw 子 Agent 会话
   - `Desktop` — Codex Desktop 客户端
+  - `IDE` — Cursor IDE 内对话
   - CLI（命令行）为默认情况，不显示标签
 - 📁 **文件夹浏览** — 按工作目录/文件夹浏览所有聊天记录
 - 📅 **时间线视图** — 按时间分组查看会话，组标题 sticky 吸附、子项缩进引导线
@@ -46,7 +49,7 @@
 - 💾 **记住面板宽度** — 开关控制拖拽后是否自动保存宽度
 - 📌 **左侧导航折叠** — 一键折叠/展开整个导航面板，保存状态
 - 📂 **自定义监控目录** — 递归扫描（深度 4 层），自动识别会话格式，支持任意目录结构
-- 🔌 **多 Agent 支持** — Claude Code / Codex / OpenClaw 可切换启用
+- 🔌 **多 Agent 支持** — Claude Code / Cursor / Codex / OpenClaw 可切换启用
 - 📁 **打开设置文件** — 一键在资源管理器中打开 settings.json
 
 ## 📖 核心概念
@@ -57,7 +60,7 @@
 |---|---|---|
 | **工作目录** | 用户执行 Agent 命令时的**当前目录**，即 Agent 实际工作所在的目录。应用左侧栏的文件夹项按此目录分组展示。 | `D:\my-project` |
 | **会话 (Session)** | 一次完整的 Agent 对话。聊天记录以 `.jsonl` 文件保存在用户目录的监控目录下（如 `.claude\projects\`），由应用自动发现和解析。 | `C:\Users\xxx\.claude\projects\D--my-project\abc123.jsonl` |
-| **提供者 (Provider)** | 解析不同 Agent 聊天格式的**适配器**。不同 Agent（Claude Code、Codex、OpenClaw 等）写入的文件格式不同，Provider 负责统一解析。所有 Provider 实现同一 trait，通过运行时多态（策略模式）统一调用。 | `claude_code`、`codex`、`openclaw` |
+| **提供者 (Provider)** | 解析不同 Agent 聊天格式的**适配器**。不同 Agent（Claude Code、Cursor、Codex、OpenClaw 等）存储的格式不同（JSONL 文件或 SQLite 数据库），Provider 负责统一解析。所有 Provider 实现同一 trait，通过运行时多态（策略模式）统一调用。 | `claude_code`、`cursor`、`codex`、`openclaw` |
 | **客户端环境** | 会话的**来源环境**标识：VSCode 插件、OpenClaw 图形客户端、子 Agent 或命令行。展示为侧边栏的小标签，CLI 为默认不显示。 | `VSCode` `UI` `Sub` |
 | **刷新 🔄** | 重新从磁盘扫描所有数据源，确保列表与磁盘同步。 | 点击侧边栏顶部的刷新按钮 |
 
@@ -187,7 +190,7 @@ impl ChatProvider for MyNewProvider {
 
 ## 🧪 测试
 
-项目包含 **464 个测试**（317 前端 + 119 Rust 单元 + 28 Rust 集成），覆盖组件渲染、工具函数、数据过滤、解析器、骨架扫描、渐进抛光、内容清洗、客户端检测、向后兼容、递归扫描等场景。
+项目包含 **505 个测试**（323 前端 + 154 Rust 单元 + 28 Rust 集成），覆盖组件渲染、工具函数、数据过滤、解析器、骨架扫描、渐进抛光、内容清洗、客户端检测、SQLite 缓存、向后兼容、递归扫描等场景。
 
 ```bash
 pnpm test                          # 前端测试 (Vitest)

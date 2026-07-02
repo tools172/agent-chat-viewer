@@ -2,6 +2,22 @@
 
 > ✅ = 已完成，🚧 = 进行中，💡 = 计划中
 
+## 已完成的重大功能
+
+### ✅ Cursor AI 编辑器支持
+- 从 Cursor SQLite 数据库（`%APPDATA%\Cursor\User\globalStorage\state.vscdb`）直接读取聊天记录
+- 自动生成 JSONL 缓存文件，与现有文件型 Provider 架构无缝集成
+- 支持新版（`workspaceIdentifier.uri.fsPath`）和旧版（`workspaceProjectDir`）工作目录格式
+- 缓存版本机制，格式变更时自动刷新
+- 35 个 Rust 单元测试覆盖（解析、序列化、工作目录多级 fallback、路径转换）
+- Cursor 数据库锁容错：SQLite 连接失败时跳过刷新，使用已有缓存
+
+### ✅ 合并连发优化
+- 含工具调用/思考块的事件组不折叠，只折叠纯文本连发
+- 修复隐藏工具结果后合并连发导致工具调用丢失的问题
+
+---
+
 ## 体验优化
 
 ### ✅ 极速加载 + 渐进抛光

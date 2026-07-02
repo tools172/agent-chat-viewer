@@ -149,3 +149,8 @@ export async function openContainingFolder(filePath: string): Promise<void> {
 export async function openProjectFolder(folderPath: string): Promise<void> {
   return invoke<void>('open_project_folder', { folderPath });
 }
+
+/** Get the source data directory for a provider (e.g. Cursor's DB dir) */
+export async function getProviderDataDir(providerName: string): Promise<string | null> {
+  return invoke<string | null>('get_provider_data_dir', { providerName });
+}

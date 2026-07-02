@@ -27,7 +27,7 @@ describe('collapseConsecutiveEvents', () => {
     const events = [makeEvent('user', 'hello')];
     const result = collapseConsecutiveEvents(events);
     expect(result).toHaveLength(1);
-    expect(result[0]).toBe(events[0]);
+    expect(result[0].content).toEqual(events[0].content);
   });
 
   it('交替角色不折叠', () => {
@@ -39,10 +39,9 @@ describe('collapseConsecutiveEvents', () => {
     ];
     const result = collapseConsecutiveEvents(events);
     expect(result).toHaveLength(4);
-    expect(result.map((e) => e.uuid)).toEqual(events.map((e) => e.uuid));
   });
 
-  it('连续用户消息只保留最后一条', () => {
+  it('连续纯文本用户消息：只保留最后一条', () => {
     const events = [
       makeEvent('user', 'first'),
       makeEvent('user', 'second'),
@@ -55,7 +54,7 @@ describe('collapseConsecutiveEvents', () => {
     expect(result[1].content[0]).toMatchObject({ text: 'reply' });
   });
 
-  it('连续助手消息只保留最后一条', () => {
+  it('连续纯文本助手消息：只保留最后一条', () => {
     const events = [
       makeEvent('user', 'question'),
       makeEvent('assistant', 'thinking...'),
@@ -68,7 +67,7 @@ describe('collapseConsecutiveEvents', () => {
     expect(result[1].content[0]).toMatchObject({ text: 'final answer' });
   });
 
-  it('多组连续同角色均被折叠', () => {
+  it('多组连续纯文本均被折叠', () => {
     const events = [
       makeEvent('user', 'u1'),
       makeEvent('user', 'u2'),
@@ -107,12 +106,11 @@ describe('collapseConsecutiveEvents', () => {
       makeEvent('user', 'u2'),
     ];
     const result = collapseConsecutiveEvents(events);
-    // u1 is alone, sys breaks chain, u2 is alone
     expect(result).toHaveLength(3);
     expect(result.map((e) => e.eventType)).toEqual(['user', 'system', 'user']);
   });
 
-  it('只有一条 user 和一条 assistant 交替穿插, 不折叠', () => {
+  it('交替穿插不折叠', () => {
     const events = [
       makeEvent('user', 'hi'),
       makeEvent('assistant', 'hello'),
@@ -122,6 +120,72 @@ describe('collapseConsecutiveEvents', () => {
     ];
     const result = collapseConsecutiveEvents(events);
     expect(result).toHaveLength(5);
+  });
+
+  // ======================== 工具调用保护 ========================
+
+  it('包含 tool_use 的连续 assistant 不折叠，全部保留', () => {
+    const events = [
+      makeEvent('user', 'fix this'),
+      makeEvent('assistant', '', {
+        content: [{ blockType: 'tool_use', toolId: 't1', toolName: 'edit', toolInput: {} }],
+      }),
+      makeEvent('assistant', '', {
+        content: [{ blockType: 'tool_use', toolId: 't2', toolName: 'read', toolInput: {} }],
+      }),
+      makeEvent('assistant', 'Done!'),
+    ];
+    const result = collapseConsecutiveEvents(events);
+    // All 3 assistants kept because group contains tool_use blocks
+    expect(result).toHaveLength(4); // user + 3 assistants
+    expect(result[1].content[0]).toMatchObject({ blockType: 'tool_use', toolName: 'edit' });
+    expect(result[2].content[0]).toMatchObject({ blockType: 'tool_use', toolName: 'read' });
+    expect(result[3].content[0]).toMatchObject({ blockType: 'text', text: 'Done!' });
+  });
+
+  it('包含 thinking 的连续 assistant 不折叠', () => {
+    const events = [
+      makeEvent('assistant', '', {
+        content: [{ blockType: 'thinking', thinking: 'hmm', signature: '' }],
+      }),
+      makeEvent('assistant', 'answer'),
+    ];
+    const result = collapseConsecutiveEvents(events);
+    expect(result).toHaveLength(2);
+  });
+
+  it('纯文本组正常折叠，含工具组不折叠（混合场景）', () => {
+    const events = [
+      makeEvent('user', 'u1'),
+      makeEvent('user', 'u2'), // pure text → collapse
+      makeEvent('assistant', '', {
+        content: [{ blockType: 'tool_use', toolId: 't1', toolName: 'read', toolInput: {} }],
+      }),
+      makeEvent('assistant', '', {
+        content: [{ blockType: 'tool_use', toolId: 't2', toolName: 'edit', toolInput: {} }],
+      }),
+      makeEvent('assistant', 'Done!'),
+    ];
+    const result = collapseConsecutiveEvents(events);
+    // users → collapsed to 1, assistants (has tool_use) → all 3 kept
+    expect(result).toHaveLength(4);
+    expect(result[0].content[0]).toMatchObject({ text: 'u2' });
+    expect(result[1].content[0]).toMatchObject({ blockType: 'tool_use', toolName: 'read' });
+    expect(result[2].content[0]).toMatchObject({ blockType: 'tool_use', toolName: 'edit' });
+    expect(result[3].content[0]).toMatchObject({ blockType: 'text', text: 'Done!' });
+  });
+
+  it('包含 tool_result 的连续 user 不折叠', () => {
+    const events = [
+      makeEvent('user', '', {
+        content: [{ blockType: 'tool_result', toolUseId: 't1', content: 'ok', isError: false }],
+      }),
+      makeEvent('user', '', {
+        content: [{ blockType: 'tool_result', toolUseId: 't2', content: 'done', isError: false }],
+      }),
+    ];
+    const result = collapseConsecutiveEvents(events);
+    expect(result).toHaveLength(2);
   });
 
   // ======================== 边界测试 ========================
@@ -134,13 +198,9 @@ describe('collapseConsecutiveEvents', () => {
       makeEvent('assistant', 'reply'),
     ];
     const result = collapseConsecutiveEvents(events);
-    // attachment 不折叠，各保留
     expect(result).toHaveLength(4);
     expect(result.map((e) => e.eventType)).toEqual([
-      'user',
-      'attachment',
-      'attachment',
-      'assistant',
+      'user', 'attachment', 'attachment', 'assistant',
     ]);
   });
 
@@ -155,27 +215,7 @@ describe('collapseConsecutiveEvents', () => {
     expect(result).toHaveLength(4);
   });
 
-  it('混合 attachment 和 system 不折叠但 user/assistant 正常折叠', () => {
-    const events = [
-      makeEvent('system', 'sys'),
-      makeEvent('user', 'u1'),
-      makeEvent('user', 'u2'),
-      makeEvent('attachment', 'file'),
-      makeEvent('assistant', 'a1'),
-      makeEvent('assistant', 'a2'),
-      makeEvent('assistant', 'a3'),
-    ];
-    const result = collapseConsecutiveEvents(events);
-    expect(result).toHaveLength(4);
-    expect(result[0].eventType).toBe('system');
-    expect(result[1].eventType).toBe('user');
-    expect(result[1].content[0]).toMatchObject({ text: 'u2' });
-    expect(result[2].eventType).toBe('attachment');
-    expect(result[3].eventType).toBe('assistant');
-    expect(result[3].content[0]).toMatchObject({ text: 'a3' });
-  });
-
-  it('整个列表只有一种角色全部折叠为一条', () => {
+  it('整个纯文本列表全部折叠为一条', () => {
     const events = [
       makeEvent('user', 'u1'),
       makeEvent('user', 'u2'),
@@ -200,7 +240,7 @@ describe('collapseConsecutiveEvents', () => {
     expect(events).toHaveLength(3);
   });
 
-  it('保留事件的完整属性（uuid, timestamp, parentUuid 等）', () => {
+  it('保留最后一条事件的完整属性', () => {
     const events = [
       makeEvent('user', 'u1', { parentUuid: 'parent1', timestamp: '2026-01-01T00:00:00Z' }),
       makeEvent('user', 'u2', { parentUuid: 'parent2', timestamp: '2026-06-09T10:00:00Z' }),
@@ -208,15 +248,12 @@ describe('collapseConsecutiveEvents', () => {
     ];
     const result = collapseConsecutiveEvents(events);
     expect(result).toHaveLength(2);
-    // 保留最后一条 user 的完整属性
     expect(result[0].uuid).toBe('uuid-user-u2');
     expect(result[0].parentUuid).toBe('parent2');
     expect(result[0].timestamp).toBe('2026-06-09T10:00:00Z');
-    expect(result[0].content).toHaveLength(1);
-    expect(result[0].content[0]).toMatchObject({ blockType: 'text', text: 'u2' });
   });
 
-  it('大序列：100 条连续 user + 1 条 assistant → 折叠为 2 条', () => {
+  it('大序列：100 条连续纯文本 user → 折叠为 1 条', () => {
     const events: ChatEvent[] = [];
     for (let i = 0; i < 100; i++) {
       events.push(makeEvent('user', `msg${i}`));

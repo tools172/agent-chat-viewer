@@ -47,6 +47,19 @@ pub fn list_providers(registry: tauri::State<'_, ProviderRegistry>) -> Vec<Provi
         .collect()
 }
 
+/// Get the source data directory for a provider, if any.
+/// Used to open the real data source folder instead of a cached file path.
+#[tauri::command]
+pub fn get_provider_data_dir(
+    provider_name: String,
+    registry: tauri::State<'_, ProviderRegistry>,
+) -> Option<String> {
+    registry
+        .get(&provider_name)
+        .and_then(|p| p.data_dir())
+        .map(|d| d.to_string_lossy().to_string())
+}
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderInfo {

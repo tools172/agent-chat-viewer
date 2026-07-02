@@ -1,6 +1,6 @@
 # Provider 检测策略
 
-本文档说明 Agent Chat Viewer 如何判断一个 `.jsonl` 会话文件属于哪个 Agent（Claude Code、Codex、OpenClaw 或未来的其他工具），以及如何从任意目录结构中自动发现和组织会话记录。
+本文档说明 Agent Chat Viewer 如何判断一个 `.jsonl` 会话文件属于哪个 Agent（Claude Code、Cursor、Codex、OpenClaw 或未来的其他工具），以及如何从任意目录结构中自动发现和组织会话记录。
 
 ---
 
@@ -200,7 +200,8 @@ impl ProviderRegistry {
 | Provider | 第一行特征字段 | 互斥保证 |
 |----------|---------------|---------|
 | Claude Code | `type: "user"` / `"assistant"` / `"system"` | 其他 provider 不会有这些 type 值 |
-| Codex (OpenAI) | `type: "session_meta"` / `"response_item"` / `"event_msg"` | Claude Code 和 OpenClaw 不会有这些 type 值 |
+| Cursor | `type: "session_meta"` + `composerId` 字段 | `session_meta` 与 Codex 同名但由 `composerId` 字段区分 |
+| Codex (OpenAI) | `type: "session_meta"` / `"response_item"` / `"event_msg"` | Codex 的 `session_meta` 无 `composerId`，由 `payload.id` 区分 |
 | OpenClaw | `type: "session"` + `version` 字段 | Claude Code / Codex 不会有 `type: "session"` |
 
 ---
@@ -282,6 +283,21 @@ registry.register(Arc::new(cursor::CursorProvider::new()));
 - 设置面板（自动识别新 provider）
 
 整个过程对现有代码零侵入。
+
+---
+
+### Cursor 特殊架构
+
+Cursor 是唯一一个**非文件型** Provider：
+
+- **数据源**：SQLite 数据库（`state.vscdb`），不是 JSONL 文件
+- **桥接方式**：首次扫描时从 SQLite 读取 composer/bubble 数据，生成 JSONL 缓存文件到 `~/.agent-chat-viewer/cursor_sessions/`
+- **缓存策略**：通过 `CACHE_VERSION` 和数据库 mtime 比较决定是否刷新；SQLite 被 Cursor IDE 锁定时降级使用已有缓存
+- **分组方式**：使用 `use_cwd_grouping()`（与 Codex 相同），按工作目录分组展示会话
+- **路径检测**：检测路径是否在缓存目录下
+- **内容检测**：首行 `type: "session_meta"` + `composerId` 字段存在
+
+> Cursor 证明：`ChatProvider` trait 不仅支持文件型 Agent，也支持 DB 型 Agent。只需桥接到 JSONL 缓存即可复用全部解析/渲染管线。
 
 ---
 

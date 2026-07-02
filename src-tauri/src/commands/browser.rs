@@ -23,9 +23,7 @@ pub(crate) fn collect_base_paths(
         if *enabled {
             if let Some(provider) = registry.get(provider_name) {
                 let dir = provider.default_base_dir();
-                if dir.exists() {
-                    paths.push((provider_name.clone(), dir));
-                }
+                paths.push((provider_name.clone(), dir));
             }
         }
     }
@@ -197,6 +195,11 @@ fn scan_projects(
                         }
                     }
                 }
+                // Fallback: flat directory (e.g., Cursor cached JSONL)
+                if session_files.is_empty() {
+                    session_files =
+                        provider.enumerate_session_files(base_path);
+                }
 
                 let mut cwd_groups: HashMap<String, (u32, String)> =
                     HashMap::new();
@@ -346,6 +349,11 @@ pub async fn list_sessions(
                     }
                 }
             }
+            // Fallback: flat directory (e.g., Cursor cached JSONL)
+            if session_files.is_empty() {
+                session_files =
+                    provider.enumerate_session_files(&base_dir);
+            }
             let mut sessions: Vec<SessionSummary> = session_files
                 .iter()
                 .filter(|file_path| {
@@ -458,6 +466,11 @@ pub async fn list_all_sessions(
                                 );
                             }
                         }
+                    }
+                    // Fallback: flat directory (e.g., Cursor cached JSONL)
+                    if session_files.is_empty() {
+                        session_files =
+                            provider.enumerate_session_files(base_path);
                     }
                     for file_path in &session_files {
                         let cwd =
@@ -660,6 +673,11 @@ pub async fn search_sessions(
                                 );
                             }
                         }
+                    }
+                    // Fallback: flat directory (e.g., Cursor cached JSONL)
+                    if session_files.is_empty() {
+                        session_files =
+                            provider.enumerate_session_files(base_path);
                     }
                     for file_path in &session_files {
                         if let Ok(content) =

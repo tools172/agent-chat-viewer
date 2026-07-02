@@ -12,6 +12,10 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     label: 'Codex',
     color: 'bg-emerald-200 text-emerald-800 border-emerald-400',
   },
+  cursor: {
+    label: 'Cursor',
+    color: 'bg-blue-200 text-blue-800 border-blue-400',
+  },
   openclaw: {
     label: 'OpenClaw',
     color: 'bg-purple-200 text-purple-800 border-purple-400',
@@ -39,6 +43,7 @@ export function getProviderColor(providerName: string): string {
 const PROVIDER_DOT_COLORS: Record<string, string> = {
   claude_code: 'bg-amber-500',
   codex: 'bg-emerald-500',
+  cursor: 'bg-blue-500',
   openclaw: 'bg-purple-500',
 };
 

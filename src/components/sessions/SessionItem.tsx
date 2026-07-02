@@ -90,6 +90,14 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   const handleOpenFolder = async () => {
     setContextMenu(null);
     try {
+      // Cursor: open the source DB directory instead of the cached JSONL path
+      if (session.providerName === 'cursor') {
+        const dataDir = await tauri.getProviderDataDir('cursor');
+        if (dataDir) {
+          await tauri.openProjectFolder(dataDir);
+          return;
+        }
+      }
       await tauri.openContainingFolder(session.filePath);
     } catch (err) {
       console.error('打开文件夹失败:', err);

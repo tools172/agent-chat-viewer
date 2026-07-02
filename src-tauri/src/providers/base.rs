@@ -126,6 +126,14 @@ pub trait ChatProvider: Send + Sync {
         None
     }
 
+    /// Return the directory where this provider's source data lives
+    /// (e.g. Cursor's SQLite DB directory). Default: `None`.
+    /// Used by "Open containing folder" to open the real data source
+    /// instead of a cached/generated file path.
+    fn data_dir(&self) -> Option<PathBuf> {
+        None
+    }
+
     /// Whether this provider groups sessions by working directory (cwd)
     /// rather than by filesystem subdirectory structure.
     ///

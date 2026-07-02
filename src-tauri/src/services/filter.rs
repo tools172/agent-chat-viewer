@@ -180,4 +180,72 @@ mod tests {
         };
         assert!(config.collapse_consecutive);
     }
+
+    #[test]
+    fn test_cursor_tool_call_visible_without_tool_results() {
+        // Simulates Cursor's pattern: standalone ToolUse in Assistant event
+        let config = FilterConfig {
+            show_tool_calls: true,
+            show_tool_results: false,
+            ..FilterConfig::default()
+        };
+        let events = vec![
+            make_event(
+                EventType::Assistant,
+                vec![ContentBlock::ToolUse {
+                    tool_id: "call_1".to_string(),
+                    tool_name: "edit_file_v2".to_string(),
+                    tool_input: serde_json::json!({"path": "test.html"}),
+                }],
+            ),
+            make_event(
+                EventType::User,
+                vec![ContentBlock::ToolResult {
+                    tool_use_id: "call_1".to_string(),
+                    content: Some("file written".to_string()),
+                    is_error: false,
+                }],
+            ),
+        ];
+
+        let filtered = filter_events(&events, &config);
+        // Tool call event should survive, tool result should be hidden
+        assert_eq!(filtered.len(), 1);
+        assert!(matches!(filtered[0].event_type, EventType::Assistant));
+        assert!(matches!(filtered[0].content[0], ContentBlock::ToolUse { .. }));
+    }
+
+    #[test]
+    fn test_cursor_tool_result_visible_without_tool_calls() {
+        // Simulates Cursor's standalone ToolResult in User event
+        let config = FilterConfig {
+            show_tool_calls: false,
+            show_tool_results: true,
+            ..FilterConfig::default()
+        };
+        let events = vec![
+            make_event(
+                EventType::Assistant,
+                vec![ContentBlock::ToolUse {
+                    tool_id: "call_1".to_string(),
+                    tool_name: "edit_file_v2".to_string(),
+                    tool_input: serde_json::json!({"path": "test.html"}),
+                }],
+            ),
+            make_event(
+                EventType::User,
+                vec![ContentBlock::ToolResult {
+                    tool_use_id: "call_1".to_string(),
+                    content: Some("file written".to_string()),
+                    is_error: false,
+                }],
+            ),
+        ];
+
+        let filtered = filter_events(&events, &config);
+        // Tool result event should survive, tool call should be hidden
+        assert_eq!(filtered.len(), 1);
+        assert!(matches!(filtered[0].event_type, EventType::User));
+        assert!(matches!(filtered[0].content[0], ContentBlock::ToolResult { .. }));
+    }
 }
