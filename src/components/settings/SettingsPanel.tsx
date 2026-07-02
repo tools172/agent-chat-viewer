@@ -26,6 +26,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../stores/settingsStore';
 import type { ThemeMode } from '../../types';
 import * as tauri from '../../utils/tauri';
+import { getProviderEnabledColor } from '../../utils/providers';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -136,7 +137,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   <span
                     className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
                       enabled
-                        ? 'bg-green-100 text-green-700'
+                        ? getProviderEnabledColor(name)
                         : 'bg-gray-100 text-gray-400'
                     }`}
                   >
