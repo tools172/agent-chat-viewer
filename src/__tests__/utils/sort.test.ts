@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { multiSort, getFieldLabel, getDirectionLabel, getLevelLabel, SORT_FIELDS } from '../../utils/sort';
+import { multiSort, getFieldLabel, getDirectionLabel, getLevelLabel, SORT_FIELDS, getTimeField, getSessionTime } from '../../utils/sort';
 import type { SessionSummary, SortConfig, SortField, SortDirection } from '../../types';
 
 // ============================================================
@@ -353,5 +353,61 @@ describe('标签函数', () => {
   it('getLevelLabel 返回摘要', () => {
     expect(getLevelLabel({ field: 'created', direction: 'desc' })).toBe('按创建时间 ↓');
     expect(getLevelLabel({ field: 'path', direction: 'asc' })).toBe('按路径 ↑');
+  });
+});
+
+// ============================================================
+// TimeField 工具函数
+// ============================================================
+
+describe('getTimeField', () => {
+  it('空配置返回 created', () => {
+    expect(getTimeField([])).toBe('created');
+  });
+
+  it('主排序为 created 返回 created', () => {
+    expect(getTimeField([{ field: 'created', direction: 'desc' }])).toBe('created');
+  });
+
+  it('主排序为 modified 返回 modified', () => {
+    expect(getTimeField([{ field: 'modified', direction: 'asc' }])).toBe('modified');
+  });
+
+  it('主排序为非时间字段（path）回退到 created', () => {
+    expect(getTimeField([{ field: 'path', direction: 'asc' }])).toBe('created');
+  });
+
+  it('主排序为非时间字段（name）回退到 created', () => {
+    expect(getTimeField([{ field: 'name', direction: 'asc' }])).toBe('created');
+  });
+
+  it('多级排序只看第一级', () => {
+    const cfg: SortConfig = [
+      { field: 'modified', direction: 'desc' },
+      { field: 'path', direction: 'asc' },
+    ];
+    expect(getTimeField(cfg)).toBe('modified');
+  });
+});
+
+describe('getSessionTime', () => {
+  it('timeField=created 返回 timestamp', () => {
+    const s = make({ timestamp: '2026-06-01T00:00:00Z', fileMtime: '2026-07-01T00:00:00Z' });
+    expect(getSessionTime(s, 'created')).toBe('2026-06-01T00:00:00Z');
+  });
+
+  it('timeField=modified 返回 fileMtime', () => {
+    const s = make({ timestamp: '2026-06-01T00:00:00Z', fileMtime: '2026-07-01T00:00:00Z' });
+    expect(getSessionTime(s, 'modified')).toBe('2026-07-01T00:00:00Z');
+  });
+
+  it('timeField=modified 但 fileMtime 为空时 fallback 到 timestamp', () => {
+    const s = make({ timestamp: '2026-06-01T00:00:00Z', fileMtime: '' });
+    expect(getSessionTime(s, 'modified')).toBe('2026-06-01T00:00:00Z');
+  });
+
+  it('timeField=modified 且 fileMtime 和 timestamp 都为空时返回空字符串', () => {
+    const s = make({ timestamp: '', fileMtime: '' });
+    expect(getSessionTime(s, 'modified')).toBe('');
   });
 });

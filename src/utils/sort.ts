@@ -1,4 +1,4 @@
-import type { SessionSummary, SortField, SortDirection, SortConfig, SortLevel } from '../types';
+import type { SessionSummary, SortField, SortDirection, SortConfig, SortLevel, TimeField } from '../types';
 
 // ===== Strategy Pattern: 每种排序字段是一个策略 =====
 
@@ -104,6 +104,35 @@ export function multiSort(
     return 0;
   });
   return sorted;
+}
+
+// ===== Timeline TimeField Strategy =====
+
+/**
+ * 从 SortConfig 提取主时间字段。
+ * - 主排序为 'modified' → 返回 'modified'
+ * - 其他所有情况 → 返回 'created'（安全默认）
+ *
+ * 用于时间线视图决定按哪个时间字段进行分组。
+ */
+export function getTimeField(config: SortConfig): TimeField {
+  if (config.length === 0) return 'created';
+  const primary = config[0].field;
+  return primary === 'modified' ? 'modified' : 'created';
+}
+
+/**
+ * 根据 TimeField 策略，从 SessionSummary 提取对应的时间字符串。
+ * - 'modified' → fileMtime，fallback 到 timestamp
+ * - 'created' → timestamp
+ *
+ * 与排序策略 `modified` 的 compare 逻辑保持一致。
+ */
+export function getSessionTime(session: SessionSummary, field: TimeField): string {
+  if (field === 'modified') {
+    return session.fileMtime || session.timestamp;
+  }
+  return session.timestamp;
 }
 
 /** 默认排序配置（每种视图独立） */

@@ -35,6 +35,8 @@ describe('sessionListStore', () => {
       viewMode: 'flat',
       sortConfig: [{ field: 'created', direction: 'desc' }],
       viewSortConfigs: {},
+      timeField: 'created',
+      viewTimeFields: {},
       allSessions: [],
       projects: [],
       projectSessionsCache: {},
@@ -213,5 +215,38 @@ describe('sessionListStore', () => {
 
     expect(useSessionListStore.getState().isLoadingProjects).toBe(false);
     expect(useSessionListStore.getState().error).toContain('Disk error');
+  });
+
+  // ============================================================
+  // timeField — 时间线分组依据，按视图独立保持
+  // ============================================================
+
+  it('timeField 默认为 created', () => {
+    expect(useSessionListStore.getState().timeField).toBe('created');
+  });
+
+  it('setTimeField 更新当前视图的时间字段', () => {
+    useSessionListStore.getState().setTimeField('modified');
+    expect(useSessionListStore.getState().timeField).toBe('modified');
+  });
+
+  it('viewTimeFields 按视图独立存储', () => {
+    // 切换到时间线视图 → 设置 modified
+    useSessionListStore.getState().setViewMode('by-time');
+    useSessionListStore.getState().setTimeField('modified');
+
+    // 切换到 flat 视图 → timeField 应恢复为该视图之前的值（created）
+    useSessionListStore.getState().setViewMode('flat');
+    expect(useSessionListStore.getState().timeField).toBe('created');
+
+    // 切换回时间线视图 → timeField 应为之前保存的 modified
+    useSessionListStore.getState().setViewMode('by-time');
+    expect(useSessionListStore.getState().timeField).toBe('modified');
+  });
+
+  it('setViewMode 对未保存的视图使用默认值 created', () => {
+    // 切换到 by-project，该视图之前未保存过 timeField
+    useSessionListStore.getState().setViewMode('by-project');
+    expect(useSessionListStore.getState().timeField).toBe('created');
   });
 });

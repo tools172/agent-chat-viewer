@@ -2,6 +2,11 @@
 
 export type ViewMode = 'flat' | 'by-project' | 'by-time' | 'search' | 'folder' | 'timeline';
 
+// ===== Timeline Time Field =====
+
+/** 时间线分组依据：按创建时间 or 按修改时间 */
+export type TimeField = 'created' | 'modified';
+
 // ===== Sort System =====
 
 export type SortField = 'created' | 'modified' | 'path' | 'name' | 'messageCount' | 'agent' | 'size';

@@ -55,7 +55,7 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
   };
 
   return (
-    <div className="px-3 py-1.5 text-xs" ref={menuRef}>
+    <div className="px-3 py-0.5 text-xs" ref={menuRef}>
       {/* 标签行 */}
       <div className="flex items-center gap-1 flex-wrap">
         <span className="text-gray-500 mr-0.5">排序</span>

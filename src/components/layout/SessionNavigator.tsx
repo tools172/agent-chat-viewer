@@ -10,7 +10,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
-import type { ViewMode, Project, SessionSummary, SortConfig } from '../../types';
+import type { ViewMode, Project, SessionSummary, SortConfig, TimeField } from '../../types';
 import { FlatSessionList } from '../sessions/FlatSessionList';
 import { ProjectList } from '../projects/ProjectList';
 import { TimelineView } from '../sessions/TimelineView';
@@ -40,6 +40,10 @@ const VIEWS: ViewDef[] = [
 interface SessionNavigatorProps {
   viewMode: ViewMode;
   sortConfig: SortConfig;
+  /** 时间线分组依据 */
+  timeField: TimeField;
+  /** 切换时间线分组依据 */
+  onTimeFieldChange: (field: TimeField) => void;
   projects: Project[];
   allSessions: SessionSummary[];
   projectSessionsCache: Record<string, SessionSummary[]>;
@@ -70,6 +74,8 @@ interface SessionNavigatorProps {
 export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   viewMode,
   sortConfig,
+  timeField,
+  onTimeFieldChange,
   projects,
   allSessions,
   projectSessionsCache,
@@ -190,8 +196,8 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
       />
 
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-100">
-        <div className="flex items-center justify-between mb-3">
+      <div className="px-4 pt-0 pb-0 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary-600" />
             <h1 className="font-semibold text-sm text-gray-800">
@@ -230,7 +236,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
         </div>
 
         {/* 视图 Tab（4个） */}
-        <div className="flex bg-gray-100 rounded-lg p-0.5 mb-2">
+        <div className="flex bg-gray-100 rounded-lg p-0.5 mb-1.5">
           {VIEWS.map(({ mode, label, icon }) => (
             <button
               key={mode}
@@ -247,8 +253,10 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
           ))}
         </div>
 
-        {/* 排序栏（所有视图统一可用） */}
-        <SortBar config={sortConfig} onChange={onSortChange} />
+        {/* 排序栏（时间线视图内部自己渲染，放在过滤条下方） */}
+        {viewMode !== 'by-time' && (
+          <SortBar config={sortConfig} onChange={onSortChange} />
+        )}
       </div>
 
       {/* Content — 每个视图独立滚动容器，切换时保留各自的滚动位置 */}
@@ -307,6 +315,9 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
                 projectFilter ? (projectSessionsCache[projectFilter] ?? []) : allSessions
               }
               sortConfig={sortConfig}
+              onSortChange={onSortChange}
+              timeField={timeField}
+              onTimeFieldChange={onTimeFieldChange}
               selectedSessionPath={selectedSessionPath}
               filterContext={projectFilter ?? 'all'}
               filterContextLabel={

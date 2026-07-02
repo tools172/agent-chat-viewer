@@ -3,16 +3,29 @@ import type {
   SessionSummary,
   ViewMode,
   SortConfig,
+  TimeField,
   AppSettings,
 } from '../types';
 import { DEFAULT_SORTS } from '../utils/sort';
 import { useSettingsStore } from './settingsStore';
 import * as tauri from '../utils/tauri';
 
+/** 各视图的默认时间字段 */
+const DEFAULT_TIME_FIELDS: Record<string, TimeField> = {
+  flat: 'created',
+  'by-project': 'created',
+  'by-time': 'created',
+  search: 'created',
+};
+
 interface SessionListState {
   viewMode: ViewMode;
   sortConfig: SortConfig;
   viewSortConfigs: Record<string, SortConfig>;
+
+  // 时间线时间字段（按视图独立保持状态）
+  timeField: TimeField;
+  viewTimeFields: Record<string, TimeField>;
 
   // 数据
   allSessions: SessionSummary[];
@@ -38,6 +51,7 @@ interface SessionListState {
   // 操作
   setViewMode: (mode: ViewMode) => void;
   setSortConfig: (config: SortConfig) => void;
+  setTimeField: (field: TimeField) => void;
   setProjectFilter: (path: string | null) => void;
   toggleHighlight: () => void;
   loadAllSessions: (settings: AppSettings) => Promise<void>;
@@ -63,6 +77,9 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
   sortConfig: DEFAULT_SORTS.flat,
   viewSortConfigs: { ...DEFAULT_SORTS },
 
+  timeField: 'created',
+  viewTimeFields: { ...DEFAULT_TIME_FIELDS },
+
   allSessions: [],
   projects: [],
   projectSessionsCache: {},
@@ -79,10 +96,11 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
   error: null,
 
   setViewMode: (mode) => {
-    const { viewSortConfigs } = get();
+    const { viewSortConfigs, viewTimeFields } = get();
     set({
       viewMode: mode,
       sortConfig: viewSortConfigs[mode] ?? DEFAULT_SORTS[mode],
+      timeField: viewTimeFields[mode] ?? DEFAULT_TIME_FIELDS[mode],
     });
   },
 
@@ -91,6 +109,14 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
     set({
       sortConfig: config,
       viewSortConfigs: { ...viewSortConfigs, [viewMode]: config },
+    });
+  },
+
+  setTimeField: (field) => {
+    const { viewMode, viewTimeFields } = get();
+    set({
+      timeField: field,
+      viewTimeFields: { ...viewTimeFields, [viewMode]: field },
     });
   },
 

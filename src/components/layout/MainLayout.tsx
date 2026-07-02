@@ -144,6 +144,15 @@ export const MainLayout: React.FC = () => {
     [list]
   );
 
+  const handleTimeFieldChange = useCallback(
+    (field: import('../../types').TimeField) => {
+      list.setTimeField(field);
+      // 排序跟随分组依据：创建时间 → created，修改时间 → modified
+      list.setSortConfig([{ field, direction: 'desc' }]);
+    },
+    [list]
+  );
+
   const handleSearch = useCallback(
     (query: string) => {
       list.search(query, settings);
@@ -410,6 +419,8 @@ export const MainLayout: React.FC = () => {
       <SessionNavigator
         viewMode={list.viewMode}
         sortConfig={list.sortConfig}
+        timeField={list.timeField}
+        onTimeFieldChange={handleTimeFieldChange}
         projects={list.projects}
         allSessions={list.allSessions}
         projectSessionsCache={list.projectSessionsCache}
