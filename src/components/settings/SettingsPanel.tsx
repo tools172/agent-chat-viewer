@@ -507,6 +507,39 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 ))}
               </select>
             </div>
+            {/* 会话标题显示首条/末条 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  会话标题
+                </span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {settings.displayFirstUserMessage !== false
+                    ? '显示第一条用户消息'
+                    : '显示最后一条用户消息'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  const newVal = !(settings.displayFirstUserMessage !== false);
+                  store.setSetting({ displayFirstUserMessage: newVal });
+                }}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  (settings.displayFirstUserMessage !== false)
+                    ? 'bg-primary-600'
+                    : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform ${
+                    (settings.displayFirstUserMessage !== false)
+                      ? 'translate-x-[18px]'
+                      : 'translate-x-[3px]'
+                  }`}
+                  style={{ backgroundColor: '#fff' }}
+                />
+              </button>
+            </div>
           </section>
 
           {/* 主题选择 */}

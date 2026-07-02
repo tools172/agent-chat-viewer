@@ -40,7 +40,9 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   onClick,
   onOpenInNewTab,
 }) => {
-  const searchColors = useSettingsStore((s) => s.settings.searchColors);
+  const settings = useSettingsStore((s) => s.settings);
+  const searchColors = settings.searchColors;
+  const showFirst = settings.displayFirstUserMessage !== false;
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [copiedPath, setCopiedPath] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -189,10 +191,34 @@ export const SessionItem: React.FC<SessionItemProps> = ({
               </>
             ) : (
               <>
-                <p className="text-sm font-medium truncate" title={session.display}>
+                <p className="text-sm font-medium truncate" title={
+                  ((f, l) => {
+                    const first = (f || '').trim();
+                    const last = (l || '').trim();
+                    if (!last || first === last) return first || '(空会话)';
+                    const MAX = 1000;
+                    const prefix1 = '第一条:\n';
+                    const prefix2 = '\n\n最后一条:\n';
+                    const overhead = (prefix1 + prefix2).length;
+                    const total = first.length + last.length;
+                    if (total + overhead <= MAX) {
+                      return prefix1 + first + prefix2 + last;
+                    }
+                    // 超限时等比例分配空间
+                    const available = MAX - overhead;
+                    const half = Math.floor(available / 2);
+                    const fLen = Math.min(first.length, half);
+                    const lLen = Math.min(last.length, available - fLen);
+                    const fTrunc = first.length > fLen ? first.slice(0, fLen - 2) + '..' : first;
+                    const lTrunc = last.length > lLen ? last.slice(0, lLen - 2) + '..' : last;
+                    return prefix1 + fTrunc + prefix2 + lTrunc;
+                  })(session.display, session.lastUserText || '')
+                }>
                   {highlight
-                    ? highlightText(session.display || '(空会话)', highlight, searchColors.search)
-                    : (session.display || '(空会话)')}
+                    ? highlightText(
+                        showFirst ? (session.display || '(空会话)') : (session.lastUserText || session.display || '(空会话)'),
+                        highlight, searchColors.search)
+                    : (showFirst ? (session.display || '(空会话)') : (session.lastUserText || session.display || '(空会话)'))}
                 </p>
                 <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 flex-wrap">
                   <span title={`创建: ${formatDateTime(session.timestamp)}${session.fileMtime ? `\n修改: ${formatDateTime(session.fileMtime)}` : ''}`}>

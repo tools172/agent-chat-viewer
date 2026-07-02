@@ -64,21 +64,45 @@ export const TabItem: React.FC<TabItemProps> = ({
           if (tab.error) {
             return `加载失败: ${tab.error}\n\n${dirInfo}`;
           }
-          // 优先使用后端清理过的 display 字段，兜底用前端 extractUserText
-          let rawText = tab.sessionDetail?.display;
-          if (!rawText || rawText === '(Empty session)') {
-            const firstUserEvent = tab.sessionDetail?.events?.find(
-              (e) => e.eventType === 'user'
-            );
-            rawText = firstUserEvent
-              ? extractUserText(firstUserEvent)
-              : '';
+          // 收集第一条和最后一条用户消息
+          let firstText = tab.sessionDetail?.display || '';
+          let lastText = '';
+          if (tab.sessionDetail?.events) {
+            for (const e of tab.sessionDetail.events) {
+              if (e.eventType === 'user') {
+                const t = extractUserText(e);
+                if (t) {
+                  if (!firstText || firstText === '(Empty session)') firstText = t;
+                  lastText = t;
+                }
+              }
+            }
           }
-          const truncated =
-            rawText.length > HINT_MAX_LEN
-              ? rawText.slice(0, HINT_MAX_LEN) + '...'
-              : rawText;
-          return `${dirInfo}\n\n${truncated}`;
+          const same = !lastText || firstText === lastText;
+          let msgInfo: string;
+          if (same) {
+            msgInfo = firstText.length > HINT_MAX_LEN
+              ? firstText.slice(0, HINT_MAX_LEN - 2) + '..'
+              : firstText;
+          } else {
+            const MAX = 1000;
+            const prefix1 = '第一条:\n';
+            const prefix2 = '\n\n最后一条:\n';
+            const overhead = (prefix1 + prefix2).length;
+            const total = firstText.length + lastText.length;
+            if (total + overhead <= MAX) {
+              msgInfo = prefix1 + firstText + prefix2 + lastText;
+            } else {
+              const available = MAX - overhead;
+              const half = Math.floor(available / 2);
+              const fLen = Math.min(firstText.length, half);
+              const lLen = Math.min(lastText.length, available - fLen);
+              const fTrunc = firstText.length > fLen ? firstText.slice(0, fLen - 2) + '..' : firstText;
+              const lTrunc = lastText.length > lLen ? lastText.slice(0, lLen - 2) + '..' : lastText;
+              msgInfo = prefix1 + fTrunc + prefix2 + lTrunc;
+            }
+          }
+          return `${dirInfo}\n\n${msgInfo}`;
         })()
       }
     >

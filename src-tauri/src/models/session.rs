@@ -24,6 +24,9 @@ pub struct SessionSummary {
     pub file_mtime: String,
     /// Client environment: "vscode", "cli", "ui", "subagent", or "" (unknown)
     pub client_type: String,
+    /// Last user message text (for hover hints), empty until polished
+    #[serde(default)]
+    pub last_user_text: String,
 }
 
 /// Full session detail with all events

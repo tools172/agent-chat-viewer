@@ -119,6 +119,9 @@ pub struct AppSettings {
     /// 上次活跃的标签页索引
     #[serde(default)]
     pub active_tab_index: usize,
+    /// 会话列表标题显示第一条用户消息 (true) 还是最后一条 (false)
+    #[serde(default = "default_true")]
+    pub display_first_user_message: bool,
 }
 
 fn default_theme() -> String {
@@ -145,6 +148,10 @@ fn default_max_pinned_tabs() -> u32 {
     4
 }
 
+fn default_true() -> bool {
+    true
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         let mut provider_enabled = std::collections::HashMap::new();
@@ -166,6 +173,7 @@ impl Default for AppSettings {
             max_pinned_tabs: 4,
             tab_snapshots: Vec::new(),
             active_tab_index: 0,
+            display_first_user_message: true,
         }
     }
 }

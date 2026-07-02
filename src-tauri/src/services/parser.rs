@@ -112,6 +112,7 @@ pub fn create_skeleton_summary(
         provider_name: provider_name.to_string(),
         file_mtime,
         client_type: String::new(), // polish 后填充
+        last_user_text: String::new(), // polish 后填充
     })
 }
 
@@ -140,6 +141,7 @@ pub fn create_session_summary(
     let id = file_path.file_stem()?.to_str()?.to_string();
 
     let mut display = String::from("(Empty session)");
+    let mut last_user_text = String::new();
     let mut timestamp = String::new();
     let mut message_count: u32 = 0;
     let mut cwd = String::new();
@@ -178,36 +180,44 @@ pub fn create_session_summary(
                 _ => {}
             }
 
-            // Find first user text message for display title + client type detection
-            if display == "(Empty session)" {
-                if let crate::models::EventType::User = event.event_type {
-                    for block in &event.content {
-                        if let crate::models::ContentBlock::Text { text } = block {
-                            if first_raw.is_empty() {
-                                first_raw = text.clone();
-                            }
+            // Track user text (first for display, last for hint)
+            if let crate::models::EventType::User = event.event_type {
+                for block in &event.content {
+                    if let crate::models::ContentBlock::Text { text } = block {
+                        if first_raw.is_empty() {
+                            first_raw = text.clone();
+                        }
+                        let cleaned = provider.clean_display_text(text);
+                        if !cleaned.is_empty() {
+                            // Always update last_user_text on every user event
                             if quick {
-                                // 快速模式：直接用原文，不清理、不检测
+                                last_user_text = text.chars().take(1000).collect();
+                            } else {
+                                last_user_text = cleaned.chars().take(1000).collect();
+                            }
+                        }
+                        if display == "(Empty session)" {
+                            // 快速模式：直接用原文，不清理、不检测
+                            if quick {
                                 display = text.chars().take(80).collect();
                                 if text.len() > 80 {
                                     display.push_str("...");
                                 }
-                                break;
+                            } else {
+                                // 完整模式：检测类型 + 清理显示文本
+                                if !client_detected {
+                                    client_type = provider.detect_client_from_text(text).to_string();
+                                    client_detected = true;
+                                }
+                                let cleaned = provider.clean_display_text(text);
+                                if cleaned.is_empty() {
+                                    continue;
+                                }
+                                display = cleaned.chars().take(80).collect();
+                                if cleaned.len() > 80 {
+                                    display.push_str("...");
+                                }
                             }
-                            // 完整模式：检测类型 + 清理显示文本
-                            if !client_detected {
-                                client_type = provider.detect_client_from_text(text).to_string();
-                                client_detected = true;
-                            }
-                            let cleaned = provider.clean_display_text(text);
-                            if cleaned.is_empty() {
-                                continue;
-                            }
-                            display = cleaned.chars().take(80).collect();
-                            if cleaned.len() > 80 {
-                                display.push_str("...");
-                            }
-                            break;
                         }
                     }
                 }
@@ -230,6 +240,7 @@ pub fn create_session_summary(
         project_name: project_name.to_string(),
         project_path: project_path.to_string(),
         display,
+        last_user_text,
         timestamp,
         message_count,
         file_size,
@@ -248,6 +259,7 @@ pub fn create_session_summary(
 pub struct SessionPolish {
     pub file_path: String,
     pub display: String,
+    pub last_user_text: String,
     pub timestamp: String,
     pub message_count: u32,
     pub cwd: String,
@@ -261,6 +273,7 @@ pub fn polish_session(
 ) -> Option<SessionPolish> {
     let content = std::fs::read_to_string(file_path).ok()?;
     let mut display = String::from("(Empty session)");
+    let mut last_user_text = String::new();
     let mut timestamp = String::new();
     let mut message_count: u32 = 0;
     let mut cwd = String::new();
@@ -290,31 +303,32 @@ pub fn polish_session(
                 }
                 _ => {}
             }
-            if display == "(Empty session)" {
-                if let crate::models::EventType::User = event.event_type {
-                    // Detect client type from raw JSON text (before parse-time cleaning)
-                    if !client_detected {
-                        if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
-                            if let Some(raw_text) = provider.extract_raw_user_text(&value) {
-                                client_type = provider.detect_client_from_text(&raw_text).to_string();
-                                client_detected = true;
-                            }
+            if let crate::models::EventType::User = event.event_type {
+                // Detect client type from first user event
+                if !client_detected {
+                    if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                        if let Some(raw_text) = provider.extract_raw_user_text(&value) {
+                            client_type = provider.detect_client_from_text(&raw_text).to_string();
+                            client_detected = true;
                         }
                     }
-                    for block in &event.content {
-                        if let crate::models::ContentBlock::Text { text } = block {
-                            if first_raw.is_empty() {
-                                first_raw = text.clone();
+                }
+                for block in &event.content {
+                    if let crate::models::ContentBlock::Text { text } = block {
+                        if first_raw.is_empty() {
+                            first_raw = text.clone();
+                        }
+                        let cleaned = provider.clean_display_text(text);
+                        if !cleaned.is_empty() {
+                            // 始终更新最后一条用户消息
+                            last_user_text = cleaned.chars().take(1000).collect();
+                            // 仅在首次遇到时设置 display
+                            if display == "(Empty session)" {
+                                display = last_user_text.clone();
+                                if cleaned.len() > 1000 {
+                                    display.push_str("...");
+                                }
                             }
-                            let cleaned = provider.clean_display_text(text);
-                            if cleaned.is_empty() {
-                                continue;
-                            }
-                            display = cleaned.chars().take(1000).collect();
-                            if cleaned.len() > 1000 {
-                                display.push_str("...");
-                            }
-                            break;
                         }
                     }
                 }
@@ -333,6 +347,7 @@ pub fn polish_session(
     Some(SessionPolish {
         file_path: file_path.to_string_lossy().to_string(),
         display,
+        last_user_text,
         timestamp,
         message_count,
         cwd,
@@ -520,6 +535,33 @@ mod tests {
         // Verify Codex always returns desktop even without XML tags
         let provider = CodexProvider::new();
         assert_eq!(provider.detect_client_from_text("plain message"), "desktop");
+    }
+
+    #[test]
+    fn test_polish_session_tracks_last_user_text() {
+        use crate::providers::claude_code::ClaudeCodeProvider;
+        use std::io::Write;
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("multi-user.jsonl");
+        let content = concat!(
+            r#"{"type":"user","message":{"role":"user","content":"First question"},"uuid":"u1","timestamp":"2026-01-01T00:00:00Z","sessionId":"s1"}"#,
+            "\n",
+            r#"{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Answer 1"}]},"uuid":"u2","timestamp":"2026-01-01T00:00:01Z","sessionId":"s1"}"#,
+            "\n",
+            r#"{"type":"user","message":{"role":"user","content":"Second question"},"uuid":"u3","timestamp":"2026-01-01T00:00:02Z","sessionId":"s1"}"#,
+            "\n",
+            r#"{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Answer 2"}]},"uuid":"u4","timestamp":"2026-01-01T00:00:03Z","sessionId":"s1"}"#,
+            "\n",
+            r#"{"type":"user","message":{"role":"user","content":"Third question"},"uuid":"u5","timestamp":"2026-01-01T00:00:04Z","sessionId":"s1"}"#,
+            "\n",
+        );
+        let mut file = std::fs::File::create(&file_path).unwrap();
+        file.write_all(content.as_bytes()).unwrap();
+        let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
+        let polished = polish_session(&file_path, &provider).unwrap();
+        assert_eq!(polished.display, "First question");
+        assert_eq!(polished.last_user_text, "Third question");
+        assert_eq!(polished.message_count, 5);
     }
 
     // ===== create_skeleton_summary 测试 =====

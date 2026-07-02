@@ -41,6 +41,8 @@ export interface SessionSummary {
   fileMtime: string;
   /** 客户端环境: "vscode" | "cli" | "ui" | "subagent" | "" */
   clientType: string;
+  /** 最后一条用户消息文本（用于 hover hint），骨架阶段为空 */
+  lastUserText?: string;
 }
 
 export interface SessionDetail {
@@ -142,6 +144,8 @@ export interface AppSettings {
   tabSnapshots?: TabSnapshot[];
   /** 上次活跃的标签页索引 */
   activeTabIndex?: number;
+  /** 会话标题显示第一条用户消息 (true) 还是最后一条 (false) */
+  displayFirstUserMessage?: boolean;
 }
 
 export interface ProviderInfo {

@@ -27,6 +27,7 @@ interface SettingsState {
   updateRestoreTabsOnStartup: (restore: boolean) => void;
   updateTheme: (theme: ThemeMode) => void;
   updateMaxPinnedTabs: (n: number) => void;
+  setSetting: (partial: Partial<AppSettings>) => void;
   resetSearchColors: () => void;
   resetFilter: () => void;
   clearError: () => void;
@@ -61,6 +62,7 @@ const defaultSettings: AppSettings = {
   restoreTabsOnStartup: true,
   theme: 'system',
   maxPinnedTabs: 4,
+  displayFirstUserMessage: true,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -252,6 +254,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         ...settings,
         maxPinnedTabs: Math.max(1, Math.min(8, n)),
       },
+    });
+  },
+
+  setSetting: (partial: Partial<AppSettings>) => {
+    const { settings } = get();
+    set({
+      settings: { ...settings, ...partial },
     });
   },
 

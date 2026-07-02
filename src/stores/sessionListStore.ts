@@ -123,7 +123,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
         set((state) => ({
           allSessions: state.allSessions.map((s) => {
             const p = map.get(s.filePath);
-            return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
+            return p ? { ...s, display: p.display, lastUserText: p.lastUserText, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
           }),
         }));
       } catch {
@@ -187,7 +187,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
               ...state.projectSessionsCache,
               [projectPath]: entries.map((s) => {
                 const p = map.get(s.filePath);
-                return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
+                return p ? { ...s, display: p.display, lastUserText: p.lastUserText, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
               }),
             },
           };
@@ -211,7 +211,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
         set((state) => ({
           searchResults: state.searchResults.map((s) => {
             const p = map.get(s.filePath);
-            return p ? { ...s, display: p.display, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
+            return p ? { ...s, display: p.display, lastUserText: p.lastUserText, timestamp: p.timestamp, messageCount: p.messageCount, cwd: p.cwd, clientType: p.clientType } : s;
           }),
         }));
       } catch {
