@@ -21,6 +21,7 @@ import {
   Monitor,
   SwatchBook,
   Highlighter,
+  Keyboard,
 } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -352,49 +353,61 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               <PanelLeft className="h-4 w-4" />
               布局
             </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-sm text-gray-600">
-                  侧边栏
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="range"
-                    min={200}
-                    max={600}
-                    step={10}
-                    value={settings.sidebarWidth ?? 320}
-                    onChange={(e) =>
-                      store.updateSidebarWidth(Number(e.target.value))
-                    }
-                    className="w-24 h-1.5 accent-primary-600 cursor-pointer"
-                  />
-                  <span className="text-xs text-gray-500 w-10 text-right tabular-nums">
-                    {settings.sidebarWidth ?? 320}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm text-gray-600">
-                  轮次导航
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="range"
-                    min={160}
-                    max={400}
-                    step={10}
-                    value={settings.navigatorWidth ?? 256}
-                    onChange={(e) =>
-                      store.updateNavigatorWidth(Number(e.target.value))
-                    }
-                    className="w-24 h-1.5 accent-primary-600 cursor-pointer"
-                  />
-                  <span className="text-xs text-gray-500 w-10 text-right tabular-nums">
-                    {settings.navigatorWidth ?? 256}
-                  </span>
-                </div>
-              </div>
+            <div className="space-y-4">
+              {([
+                {
+                  label: '左侧边栏（会话记录导航）',
+                  min: 200,
+                  max: 600,
+                  value: settings.sidebarWidth ?? 320,
+                  onChange: (v: number) => store.updateSidebarWidth(v),
+                },
+                {
+                  label: '右侧边栏（轮次导航）',
+                  min: 160,
+                  max: 400,
+                  value: settings.navigatorWidth ?? 256,
+                  onChange: (v: number) => store.updateNavigatorWidth(v),
+                },
+              ]).map(({ label, min, max, value, onChange }) => {
+                const pct = ((value - min) / (max - min)) * 100;
+                return (
+                  <div
+                    key={label}
+                    className="grid items-end"
+                    style={{ gridTemplateColumns: '176px 1fr' }}
+                  >
+                    <label className="text-sm text-gray-600 pb-0.5">
+                      {label}
+                    </label>
+                    <div className="flex flex-col">
+                      <div className="relative h-4">
+                        <span className="absolute left-0 text-[10px] text-gray-400 tabular-nums leading-none">
+                          {min}
+                        </span>
+                        <span
+                          className="absolute text-[10px] text-gray-500 tabular-nums leading-none"
+                          style={{ left: `${pct}%`, transform: 'translateX(-50%)' }}
+                        >
+                          {value}
+                        </span>
+                        <span className="absolute right-0 text-[10px] text-gray-400 tabular-nums leading-none">
+                          {max}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={min}
+                        max={max}
+                        step={10}
+                        value={value}
+                        onChange={(e) => onChange(Number(e.target.value))}
+                        className="w-full h-1.5 accent-primary-600 cursor-pointer m-0 p-0"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* 自动保存拖拽宽度 */}
@@ -538,6 +551,31 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   最后一条
                 </button>
               </div>
+            </div>
+          </section>
+
+          {/* 快捷键 */}
+          <section>
+            <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+              <Keyboard className="h-4 w-4" />
+              快捷键
+            </h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
+                <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono bg-white border border-gray-300 rounded shadow-sm">
+                  Ctrl + F
+                </kbd>
+                <span>在会话中查找</span>
+              </div>
+              <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
+                <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono bg-white border border-gray-300 rounded shadow-sm">
+                  Ctrl + G
+                </kbd>
+                <span>窗口全局查找</span>
+              </div>
+              <p className="text-xs text-gray-400">
+                打开会话后，使用以上快捷键快速定位内容
+              </p>
             </div>
           </section>
 
