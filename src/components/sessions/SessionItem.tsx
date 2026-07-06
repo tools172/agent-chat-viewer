@@ -250,7 +250,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                 {showProject && (
                   <p
                     className="text-xs text-gray-400 mt-0.5 truncate"
-                    title={`会话存储路径: ${session.projectPath}\n工作目录: ${session.cwd || session.projectPath}`}
+                    title={`会话存储路径: ${session.storagePath}\n工作目录: ${session.cwd || session.projectPath}`}
                   >
                     📁 {session.projectName}
                   </p>

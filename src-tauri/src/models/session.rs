@@ -27,6 +27,10 @@ pub struct SessionSummary {
     /// Last user message text (for hover hints), empty until polished
     #[serde(default)]
     pub last_user_text: String,
+    /// 会话文件的实际存储目录（与 project_path 不同：project_path 是分组键，
+    /// storage_path 是文件所在目录；对于有 data_dir() 的 provider 如 Cursor，
+    /// 则是源数据库目录）
+    pub storage_path: String,
 }
 
 /// Full session detail with all events

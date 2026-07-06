@@ -62,7 +62,7 @@ describe('sessionListStore', () => {
         { name: 'proj', path: '/p', sessionCount: 1, lastActivity: '', providerName: 'claude_code' },
       ]);
       mockedListAllSessions.mockResolvedValue([
-        { id: 's1', projectName: 'proj', projectPath: '/p', display: 'hi', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
+        { id: 's1', projectName: 'proj', projectPath: '/p', display: 'hi', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '', storagePath: '' },
       ]);
 
       await useSessionListStore.getState().refresh(mockSettings);
@@ -79,7 +79,7 @@ describe('sessionListStore', () => {
       mockedListProjects.mockResolvedValue([]);
       mockedListAllSessions.mockResolvedValue([]);
       mockedSearchSessions.mockResolvedValue([
-        { id: 's1', projectName: 'p', projectPath: '/p', display: 'hello world', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
+        { id: 's1', projectName: 'p', projectPath: '/p', display: 'hello world', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/s.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '', storagePath: '' },
       ]);
 
       await useSessionListStore.getState().refresh(mockSettings);
@@ -112,8 +112,8 @@ describe('sessionListStore', () => {
       ]);
       mockedListAllSessions.mockResolvedValue([]);
       mockedListSessions.mockResolvedValue([
-        { id: 's1', projectName: 'proj', projectPath: '/p', display: 'a', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/a.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
-        { id: 's2', projectName: 'proj', projectPath: '/p', display: 'b', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/b.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '' },
+        { id: 's1', projectName: 'proj', projectPath: '/p', display: 'a', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/a.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '', storagePath: '' },
+        { id: 's2', projectName: 'proj', projectPath: '/p', display: 'b', timestamp: '', messageCount: 1, fileSize: 0, cwd: '/p', filePath: '/p/b.jsonl', providerName: 'claude_code', fileMtime: '', clientType: '', storagePath: '' },
       ]);
 
       await useSessionListStore.getState().refresh(mockSettings);

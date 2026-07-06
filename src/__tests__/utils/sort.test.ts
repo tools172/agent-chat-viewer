@@ -22,6 +22,7 @@ function make(overrides: Partial<SessionSummary> = {}): SessionSummary {
     providerName: 'claude_code',
     fileMtime: '2026-06-01T00:00:00Z',
     clientType: 'cli',
+    storagePath: '/data/a',
     ...overrides,
   };
 }

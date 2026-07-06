@@ -44,6 +44,7 @@ describe('SessionItem', () => {
     providerName: 'claude_code',
     fileMtime: '2026-06-09T10:00:00Z',
     clientType: 'cli',
+    storagePath: '/test/project',
   };
 
   it('渲染会话标题', () => {

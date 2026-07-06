@@ -368,6 +368,12 @@ pub async fn list_sessions(
                         &project_path,
                         &provider_name,
                     )
+                    .map(|mut s| {
+                        if let Some(dir) = provider.data_dir() {
+                            s.storage_path = dir.to_string_lossy().to_string();
+                        }
+                        s
+                    })
                 })
                 .collect();
             sessions.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
@@ -391,6 +397,12 @@ pub async fn list_sessions(
                     &project_path,
                     &provider_name,
                 )
+                .map(|mut s| {
+                    if let Some(dir) = provider.data_dir() {
+                        s.storage_path = dir.to_string_lossy().to_string();
+                    }
+                    s
+                })
             })
             .collect();
         sessions.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
@@ -482,7 +494,7 @@ pub async fn list_all_sessions(
                             .file_name()
                             .map(|n| n.to_string_lossy().to_string())
                             .unwrap_or_else(|| cwd.clone());
-                        if let Some(summary) =
+                        if let Some(mut summary) =
                             crate::services::parser::create_skeleton_summary(
                                 file_path,
                                 &project_name,
@@ -490,6 +502,10 @@ pub async fn list_all_sessions(
                                 provider_name,
                             )
                         {
+                            if let Some(dir) = provider.data_dir() {
+                                summary.storage_path =
+                                    dir.to_string_lossy().to_string();
+                            }
                             all.push(summary);
                         }
                     }
@@ -507,7 +523,7 @@ pub async fn list_all_sessions(
                             for file_path in
                                 provider.enumerate_session_files(&project_path)
                             {
-                                if let Some(summary) =
+                                if let Some(mut summary) =
                                     crate::services::parser::create_skeleton_summary(
                                         &file_path,
                                         &project_name,
@@ -515,6 +531,10 @@ pub async fn list_all_sessions(
                                         provider_name,
                                     )
                                 {
+                                    if let Some(dir) = provider.data_dir() {
+                                        summary.storage_path =
+                                            dir.to_string_lossy().to_string();
+                                    }
                                     all.push(summary);
                                 }
                             }

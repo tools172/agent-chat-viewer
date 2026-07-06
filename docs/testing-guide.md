@@ -7,7 +7,7 @@
 | 层级 | 框架 | 测试文件 | 测试数 |
 |---|---|---|---|
 | 前端测试 | Vitest + @testing-library/react | 24 | 323 |
-| Rust 单元测试 | cargo test --lib | 19 | 154 |
+| Rust 单元测试 | cargo test --lib | 19 | 156 |
 | Rust 集成测试 | cargo test --test integration_test | 1 | 28 |
 
 ## 快速命令
@@ -121,12 +121,12 @@ src-tauri/
 │   ├── services/
 │   │   ├── filter.rs            # FilterConfig 测试（10 个单元测试，含 Cursor 独立 ToolUse/ToolResult 过滤）
 │   │   ├── settings.rs          # 设置加载/保存测试
-│   │   ├── parser.rs            # 会话解析 + polish + 文本清理测试
+│   │   ├── parser.rs            # 会话解析 + polish + 文本清理 + storage_path 测试
 │   │   └── exporter.rs          # 导出测试
 │   ├── providers/               # ─── OCP 核心：各 provider 独立测试
 │   │   ├── base.rs              # ChatProvider trait 定义（含默认实现）
 │   │   ├── claude_code.rs       # Claude Code 解析 + clean 函数测试（13 个）
-│   │   ├── cursor.rs            # Cursor 解析 + 序列化 + workspace 提取 + 路径转换（35 个）
+│   │   ├── cursor.rs            # Cursor 解析 + 序列化 + workspace 提取 + 路径转换 + storage_path（36 个）
 │   │   ├── openclaw.rs          # OpenClaw 解析 + clean 函数测试（18 个）
 │   │   └── codex.rs             # Codex 解析 + clean 函数测试（17 个）
 │   ├── commands/

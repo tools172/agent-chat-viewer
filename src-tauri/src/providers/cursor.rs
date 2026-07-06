@@ -1152,4 +1152,41 @@ mod tests {
         assert!(!polished.timestamp.is_empty());
         assert_eq!(polished.cwd, "F:\\test\\project");
     }
+
+    #[test]
+    fn test_create_session_summary_uses_data_dir() {
+        use std::sync::Arc;
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("test-cursor-storage.jsonl");
+
+        let content = concat!(
+            r#"{"type":"session_meta","composerId":"test-storage","workspaceProjectDir":"F:\\test\\project","createdAt":1782985612483,"unifiedMode":"agent","status":"completed","timestamp":"2026-07-02T09:46:52.830Z"}"#,
+            "\n",
+            r#"{"type":"cursor_bubble","parentComposerId":"test-storage","bubbleId":"b1","bubbleType":1,"text":"Hello","createdAt":"2026-07-02T09:46:52.830Z","allThinkingBlocks":[],"toolFormerData":null,"codeBlocks":[],"modelInfo":{}}"#,
+            "\n",
+        );
+        let mut file = std::fs::File::create(&file_path).unwrap();
+        file.write_all(content.as_bytes()).unwrap();
+
+        let provider: Arc<dyn ChatProvider> = Arc::new(CursorProvider::new());
+        let summary = crate::services::parser::create_session_summary(
+            &file_path,
+            "test-proj",
+            "F:\\test\\project",
+            &provider,
+            true,
+        )
+        .expect("create_session_summary should succeed");
+
+        // Cursor 的 data_dir() 返回数据库所在目录，不应等于临时文件父目录
+        let temp_parent = dir.path().to_string_lossy().to_string();
+        assert!(
+            !summary.storage_path.is_empty(),
+            "storage_path 不应为空"
+        );
+        assert_ne!(
+            summary.storage_path, temp_parent,
+            "Cursor 的 storage_path 应为数据库目录，而非缓存文件父目录"
+        );
+    }
 }

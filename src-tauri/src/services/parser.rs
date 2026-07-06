@@ -113,6 +113,10 @@ pub fn create_skeleton_summary(
         file_mtime,
         client_type: String::new(), // polish 后填充
         last_user_text: String::new(), // polish 后填充
+        storage_path: file_path
+            .parent()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default(),
     })
 }
 
@@ -249,6 +253,15 @@ pub fn create_session_summary(
         provider_name,
         file_mtime,
         client_type,
+        storage_path: provider
+            .data_dir()
+            .map(|d| d.to_string_lossy().to_string())
+            .unwrap_or_else(|| {
+                file_path
+                    .parent()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_default()
+            }),
     })
 }
 
@@ -568,7 +581,7 @@ mod tests {
 
     #[test]
     fn test_skeleton_uses_file_metadata() {
-        let (_dir, file_path) = create_temp_jsonl(
+        let (dir, file_path) = create_temp_jsonl(
             r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u1","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#,
         );
         let summary = create_skeleton_summary(
@@ -586,6 +599,11 @@ mod tests {
         assert_eq!(summary.cwd, "");
         assert!(!summary.file_mtime.is_empty());
         assert!(summary.file_size > 0);
+        assert_eq!(
+            summary.storage_path,
+            dir.path().to_string_lossy().to_string(),
+            "storage_path 默认为 file_path 父目录"
+        );
     }
 
     #[test]

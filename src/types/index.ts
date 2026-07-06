@@ -48,6 +48,8 @@ export interface SessionSummary {
   clientType: string;
   /** 最后一条用户消息文本（用于 hover hint），骨架阶段为空 */
   lastUserText?: string;
+  /** 会话文件的实际存储目录（用于 tooltip hint） */
+  storagePath: string;
 }
 
 export interface SessionDetail {
