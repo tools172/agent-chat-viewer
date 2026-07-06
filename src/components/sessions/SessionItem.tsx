@@ -12,6 +12,8 @@ interface SessionItemProps {
   showProject?: boolean;
   highlight?: string;
   showProvider?: boolean;
+  /** 相对时间显示依据：'created' | 'modified'，默认 'created' */
+  timeField?: import('../../types').TimeField;
   onClick: (path: string, providerName: string, cwd?: string) => void;
   /** 在新标签页中打开（中键/Ctrl+点击/右键菜单） */
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
@@ -37,6 +39,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   showProject,
   highlight,
   showProvider = true,
+  timeField = 'created',
   onClick,
   onOpenInNewTab,
 }) => {
@@ -222,7 +225,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                 </p>
                 <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 flex-wrap">
                   <span title={`创建: ${formatDateTime(session.timestamp)}${session.fileMtime ? `\n修改: ${formatDateTime(session.fileMtime)}` : ''}`}>
-                    {relativeTime(session.timestamp)}
+                    {relativeTime(timeField === 'modified' ? (session.fileMtime || session.timestamp) : session.timestamp)}
                   </span>
                   {session.messageCount > 0 && (
                     <span className="text-gray-400">

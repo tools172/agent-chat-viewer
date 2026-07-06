@@ -239,6 +239,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     isSelected={selectedSessionPath === session.filePath}
                     showProject={filterContext === 'all'}
                     showProvider={true}
+                    timeField={timeField}
                     onClick={onSelectSession}
                     onOpenInNewTab={onOpenInNewTab}
                   />
