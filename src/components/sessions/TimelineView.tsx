@@ -133,24 +133,27 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* 过滤上下文 + 时间切换 + 折叠 — 融为一条 */}
+      {/* 过滤上下文 + 时间切换 — 左右两栏 */}
       <div className="px-3 py-0.5 border-b border-gray-100 bg-gray-50/50">
         <div className="flex items-center gap-2 text-xs min-w-0">
-          {/* 左侧：范围标签 */}
-          <span className="text-gray-400 flex items-center gap-1 flex-shrink-0">
-            <Filter className="h-3 w-3" />
-            {filterContext === 'all' ? '全部' : (filterContextLabel ?? filterContext)}
-          </span>
-          {filterContext !== 'all' && onClearFilter && (
-            <button onClick={onClearFilter} className="whitespace-nowrap text-primary-600 hover:text-primary-700 flex-shrink-0">
-              清除
-            </button>
-          )}
+          {/* 左侧：范围标签 + 清除，超长省略 */}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <span className="text-gray-400 flex items-center gap-1 min-w-0 truncate"
+                  title={filterContext === 'all' ? '全部' : (filterContextLabel ?? filterContext)}>
+              <Filter className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{filterContext === 'all' ? '全部' : (filterContextLabel ?? filterContext)}</span>
+            </span>
+            {filterContext !== 'all' && onClearFilter && (
+              <button onClick={onClearFilter} className="whitespace-nowrap text-primary-600 hover:text-primary-700 flex-shrink-0">
+                清除
+              </button>
+            )}
+          </div>
 
-          {/* 中间：时间字段滑动胶囊 — 加宽 3x，恢复完整文案 */}
-          <div className="flex-1 flex justify-center">
+          {/* 右侧：时间字段滑动胶囊 */}
+          <div className="flex-shrink-0">
             <div
-              className="relative flex items-center rounded-full p-px w-full max-w-[280px]
+              className="relative flex items-center rounded-lg p-px
                           bg-amber-100/40 backdrop-blur-sm
                           shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]
                           border border-amber-200/50"
@@ -158,7 +161,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             >
               {/* 滑动指示器 */}
               <div
-                className="absolute top-px h-[calc(100%-2px)] w-[calc(50%-1px)] rounded-full
+                className="absolute top-px h-[calc(100%-2px)] w-[calc(50%-1px)] rounded-md
                             bg-gradient-to-r from-amber-400 to-orange-400
                             shadow shadow-amber-400/25
                             transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
@@ -166,27 +169,24 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               />
               <button
                 onClick={() => onTimeFieldChange('created')}
-                className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 px-4 py-1 text-xs rounded-full transition-colors duration-200
+                className={`relative z-10 flex items-center justify-center gap-0.5 px-1.5 py-0.5 text-[11px] rounded-md transition-colors duration-200 whitespace-nowrap
                   ${timeField === 'created' ? 'font-semibold text-white' : 'font-medium text-amber-700/50 hover:text-amber-700/70'}`}
                 role="radio" aria-checked={timeField === 'created'}
               >
-                <Clock className={`h-3.5 w-3.5 transition-transform duration-200 ${timeField === 'created' ? 'scale-110' : ''}`} />
-                按创建时间
+                <Clock className={`h-3 w-3 transition-transform duration-200 ${timeField === 'created' ? 'scale-110' : ''}`} />
+                创建时间
               </button>
               <button
                 onClick={() => onTimeFieldChange('modified')}
-                className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 px-4 py-1 text-xs rounded-full transition-colors duration-200
+                className={`relative z-10 flex items-center justify-center gap-0.5 px-1.5 py-0.5 text-[11px] rounded-md transition-colors duration-200 whitespace-nowrap
                   ${timeField === 'modified' ? 'font-semibold text-white' : 'font-medium text-amber-700/50 hover:text-amber-700/70'}`}
                 role="radio" aria-checked={timeField === 'modified'}
               >
-                <Sparkles className={`h-3.5 w-3.5 transition-transform duration-200 ${timeField === 'modified' ? 'scale-110' : ''}`} />
-                按修改时间
+                <Sparkles className={`h-3 w-3 transition-transform duration-200 ${timeField === 'modified' ? 'scale-110' : ''}`} />
+                修改时间
               </button>
             </div>
           </div>
-
-          {/* 右侧：占位（折叠按钮移到排序行） */}
-          <span className="flex-shrink-0 w-0" />
         </div>
       </div>
 
