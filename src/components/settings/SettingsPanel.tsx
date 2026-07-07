@@ -552,6 +552,38 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 </button>
               </div>
             </div>
+
+            {/* 时间基准 */}
+            <div className="flex items-center justify-between">
+              <div className="mr-4">
+                <span className="text-sm font-medium text-gray-700">时间基准</span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  左侧会话列表的时间显示基准
+                </p>
+              </div>
+              <div className="flex rounded-full bg-gray-100 p-0.5 flex-shrink-0">
+                <button
+                  onClick={() => store.setSetting({ timeBase: 'created' })}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
+                    (settings.timeBase ?? 'created') === 'created'
+                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  创建时间
+                </button>
+                <button
+                  onClick={() => store.setSetting({ timeBase: 'modified' })}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
+                    settings.timeBase === 'modified'
+                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  修改时间
+                </button>
+              </div>
+            </div>
           </section>
 
           {/* 快捷键 */}

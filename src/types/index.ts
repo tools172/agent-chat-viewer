@@ -153,6 +153,8 @@ export interface AppSettings {
   activeTabIndex?: number;
   /** 会话标题显示第一条用户消息 (true) 还是最后一条 (false) */
   displayFirstUserMessage?: boolean;
+  /** 时间基准：'created'（创建时间）| 'modified'（修改时间），默认 'modified' */
+  timeBase?: 'created' | 'modified';
 }
 
 export interface ProviderInfo {

@@ -63,6 +63,7 @@ const defaultSettings: AppSettings = {
   theme: 'system',
   maxPinnedTabs: 4,
   displayFirstUserMessage: true,
+  timeBase: 'modified',
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

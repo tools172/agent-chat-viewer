@@ -39,13 +39,15 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   showProject,
   highlight,
   showProvider = true,
-  timeField = 'created',
+  timeField,
   onClick,
   onOpenInNewTab,
 }) => {
   const settings = useSettingsStore((s) => s.settings);
   const searchColors = settings.searchColors;
   const showFirst = settings.displayFirstUserMessage !== false;
+  const effectiveTimeField: import('../../types').TimeField =
+    timeField ?? (settings.timeBase as import('../../types').TimeField | undefined) ?? 'created';
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [copiedPath, setCopiedPath] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -225,7 +227,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                 </p>
                 <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 flex-wrap">
                   <span title={`创建: ${formatDateTime(session.timestamp)}${session.fileMtime ? `\n修改: ${formatDateTime(session.fileMtime)}` : ''}`}>
-                    {relativeTime(timeField === 'modified' ? (session.fileMtime || session.timestamp) : session.timestamp)}
+                    {relativeTime(effectiveTimeField === 'modified' ? (session.fileMtime || session.timestamp) : session.timestamp)}
                   </span>
                   {session.messageCount > 0 && (
                     <span className="text-gray-400">

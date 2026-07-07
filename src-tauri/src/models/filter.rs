@@ -122,6 +122,13 @@ pub struct AppSettings {
     /// 会话列表标题显示第一条用户消息 (true) 还是最后一条 (false)
     #[serde(default = "default_true")]
     pub display_first_user_message: bool,
+    /// 会话列表时间基准：created | modified，默认 created
+    #[serde(default = "default_time_base")]
+    pub time_base: String,
+}
+
+fn default_time_base() -> String {
+    "modified".to_string()
 }
 
 fn default_theme() -> String {
@@ -174,6 +181,7 @@ impl Default for AppSettings {
             tab_snapshots: Vec::new(),
             active_tab_index: 0,
             display_first_user_message: true,
+            time_base: "modified".to_string(),
         }
     }
 }
