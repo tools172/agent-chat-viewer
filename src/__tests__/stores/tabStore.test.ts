@@ -33,11 +33,16 @@ let mockSettingsState = {
   },
 };
 
+const settingsListeners = new Set<(state: typeof mockSettingsState) => void>();
 vi.mock('../../stores/settingsStore', () => ({
   useSettingsStore: {
     getState: vi.fn(() => mockSettingsState),
     setState: vi.fn((partial: Partial<typeof mockSettingsState>) => {
       Object.assign(mockSettingsState, partial);
+    }),
+    subscribe: vi.fn((listener: (state: typeof mockSettingsState) => void) => {
+      settingsListeners.add(listener);
+      return () => { settingsListeners.delete(listener); };
     }),
   },
 }));

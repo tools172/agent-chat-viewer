@@ -60,13 +60,27 @@ function triggerSaveTabState() {
   saveTabTimer = setTimeout(persistTabState, 300);
 }
 
+/** 读取当前设置的 displayFirstUserMessage */
+function getUseLast(): boolean {
+  return !useSettingsStore.getState().settings.displayFirstUserMessage;
+}
+
 /** 从 SessionDetail 提取标签页标题 */
-function buildTabTitle(detail: SessionDetail): string {
-  // 优先使用后端清理过的 display 字段
+function buildTabTitle(detail: SessionDetail, useLast?: boolean): string {
+  if (useLast) {
+    // 取最后一条用户消息
+    const userEvents = (detail.events || []).filter((e) => e.eventType === 'user');
+    const lastUser = userEvents[userEvents.length - 1];
+    if (lastUser) {
+      const text = extractUserText(lastUser);
+      if (text) return text.slice(0, 60);
+    }
+  }
+  // 默认取第一条用户消息：优先使用后端清理过的 display 字段
   if (detail.display && detail.display !== '(Empty session)') {
     return detail.display.slice(0, 60);
   }
-  // 兜底：前端从 events 中提取
+  // 兜底：前端从 events 中提取第一条
   const firstUserEvent = detail.events?.find((e) => e.eventType === 'user');
   if (!firstUserEvent) return 'Untitled';
   return extractUserText(firstUserEvent).slice(0, 60) || 'Untitled';
@@ -137,6 +151,10 @@ interface TabStoreState {
   loadTabContent: (tabId: string) => Promise<void>;
   /** 从快照恢复标签页（启动时调用），返回恢复的 tab ID 列表 */
   restoreTabs: () => Promise<string[]>;
+  /** 初始化设置订阅（app 启动时调用一次） */
+  initSettingsSubscription: () => void;
+  /** 同步所有标签页标题（设置变更时调用） */
+  syncTabTitles: () => void;
 }
 
 export const useTabStore = create<TabStoreState>((set, get) => ({
@@ -146,6 +164,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
   tabOrder: [],
 
   openTab: async (sessionPath, providerName, activate = true, cwd) => {
+    ensureSettingsSubscribed();
     const { tabs } = get();
     // 检测是否已存在相同 sessionPath 的标签页
     const existing = tabs.find((t) => t.sessionPath === sessionPath);
@@ -192,7 +211,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
         FULL_FILTER,
         providerName
       );
-      const title = buildTabTitle(detail);
+      const title = buildTabTitle(detail, getUseLast());
       set((s) => ({
         tabs: s.tabs.map((t) =>
           t.id === id
@@ -492,7 +511,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
         FULL_FILTER,
         tab.providerName
       );
-      const title = buildTabTitle(detail);
+      const title = buildTabTitle(detail, getUseLast());
       set((s) => ({
         tabs: s.tabs.map((t) =>
           t.id === tabId
@@ -546,7 +565,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
         FULL_FILTER,
         tab.providerName,
       );
-      const title = buildTabTitle(detail);
+      const title = buildTabTitle(detail, getUseLast());
       set((s) => ({
         tabs: s.tabs.map((t) =>
           t.id === tabId
@@ -650,4 +669,39 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
 
     return tabIds;
   },
+
+  /** app 启动时调用一次，激活设置变更监听 */
+  initSettingsSubscription: () => {
+    ensureSettingsSubscribed();
+  },
+
+  /** 设置变更时同步所有标签页标题 */
+  syncTabTitles: () => {
+    ensureSettingsSubscribed();
+    const { tabs } = get();
+    const useLast = getUseLast();
+    const updated = tabs.map((t) => {
+      if (!t.sessionDetail) return t;
+      const title = buildTabTitle(t.sessionDetail, useLast);
+      if (title === t.title) return t;
+      return { ...t, title };
+    });
+    set({ tabs: updated });
+  },
 }));
+
+// 订阅设置变更：显示最后一条/第一条的切换（惰性注册，首次调用时激活）
+let _settingsSubscribed = false;
+let _prevDisplayFirst: boolean | undefined;
+function ensureSettingsSubscribed() {
+  if (_settingsSubscribed) return;
+  _settingsSubscribed = true;
+  _prevDisplayFirst = useSettingsStore.getState().settings.displayFirstUserMessage;
+  useSettingsStore.subscribe((state) => {
+    const current = state.settings.displayFirstUserMessage;
+    if (current !== _prevDisplayFirst) {
+      _prevDisplayFirst = current;
+      useTabStore.getState().syncTabTitles();
+    }
+  });
+}

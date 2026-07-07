@@ -45,7 +45,13 @@ export const MainLayout: React.FC = () => {
     updateTabFilter,
     updateTabFindBar,
     refreshTab,
+    initSettingsSubscription,
   } = useTabStore();
+
+  // 激活标签页标题的设置订阅（仅挂载时一次）
+  useEffect(() => {
+    initSettingsSubscription();
+  }, [initSettingsSubscription]);
 
   const activeTab = useMemo(
     () => tabs.find((t) => t.id === activeTabId) ?? null,
