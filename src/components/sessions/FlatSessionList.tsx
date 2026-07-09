@@ -37,7 +37,7 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
   }
 
   return (
-    <div className="py-1">
+    <div className="py-0.5">
       {sorted.map((session) => (
         <SessionItem
           key={session.id}

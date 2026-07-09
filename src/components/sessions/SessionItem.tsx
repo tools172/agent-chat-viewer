@@ -183,30 +183,30 @@ export const SessionItem: React.FC<SessionItemProps> = ({
           }
         }}
         onContextMenu={handleContextMenu}
-        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors duration-150 group ${
+        className={`w-full text-left pl-1.5 pr-1.5 py-1 rounded-lg transition-colors duration-150 group ${
           isSelected
             ? 'bg-primary-100 text-primary-900'
             : 'hover:bg-gray-100 text-gray-700'
         }`}
       >
-        <div className="flex items-start gap-2.5">
+        <div className="flex items-start gap-1.5">
           <MessageSquare
-            className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+            className={`h-3.5 w-3.5 mt-px flex-shrink-0 ${
               isSelected ? 'text-primary-500' : 'text-gray-400'
             }`}
           />
           <div className="flex-1 min-w-0">
             {isSkeleton ? (
               <>
-                <div className="h-[20px] w-3/4 bg-gray-200 rounded" />
-                <div className="h-[16px] w-1/3 bg-gray-100 rounded mt-1" />
+                <div className="h-[17px] w-3/4 bg-gray-200 rounded" />
+                <div className="h-[12px] w-1/3 bg-gray-100 rounded mt-1" />
                 {showProject && (
-                  <div className="h-[16px] w-2/5 bg-gray-100 rounded mt-0.5" />
+                  <div className="h-[12px] w-2/5 bg-gray-100 rounded mt-px" />
                 )}
               </>
             ) : (
               <>
-                <p className="text-sm font-medium truncate" title={
+                <p className="text-[13px] font-medium truncate leading-snug" title={
                   ((f, l) => {
                     const first = (f || '').trim();
                     const last = (l || '').trim();
@@ -235,7 +235,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                         highlight, searchColors.search)
                     : (showFirst ? (session.display || '(空会话)') : (session.lastUserText || session.display || '(空会话)'))}
                 </p>
-                <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 flex-wrap">
+                <div className="flex items-center gap-1 mt-px text-xs text-gray-500 flex-wrap">
                   <span title={`创建: ${formatDateTime(session.timestamp)}${session.fileMtime ? `\n修改: ${formatDateTime(session.fileMtime)}` : ''}`}>
                     {relativeTime(effectiveTimeField === 'modified' ? (session.fileMtime || session.timestamp) : session.timestamp)}
                   </span>
@@ -246,14 +246,14 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                   )}
                   {showProvider && (
                     <span
-                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
+                      className={`inline-flex items-center px-1 py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
                     >
                       {getProviderLabel(session.providerName)}
                     </span>
                   )}
                   {clientBadge && (
                     <span
-                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${clientBadge.color}`}
+                      className={`inline-flex items-center px-1 py-0.5 rounded-full text-[10px] font-medium border ${clientBadge.color}`}
                     >
                       {clientBadge.label}
                     </span>
@@ -261,7 +261,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                 </div>
                 {showProject && (
                   <p
-                    className="text-xs text-gray-400 mt-0.5 truncate"
+                    className="text-xs text-gray-400 mt-px truncate"
                     title={`会话存储路径: ${session.storagePath}\n工作目录: ${session.cwd || session.projectPath}`}
                   >
                     📁 {session.projectName}

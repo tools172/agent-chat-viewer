@@ -214,9 +214,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       </div>
 
       {/* 时间分组列表 */}
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className="flex-1 overflow-y-auto py-0.5">
         {groups.map((group) => (
-          <div key={group.label} className="mb-2">
+          <div key={group.label} className="mb-1.5">
             <button
               onClick={() => toggleGroup(group.label)}
               className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors sticky top-0 bg-white z-10"
