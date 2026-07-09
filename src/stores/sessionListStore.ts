@@ -41,6 +41,9 @@ interface SessionListState {
   searchQuery: string;
   highlightEnabled: boolean;
 
+  // 文件夹视图定位目标（右键菜单 "定位到文件夹列表"）
+  locateTarget: { filePath: string; projectPath: string } | null;
+
   // 加载状态
   isLoadingAll: boolean;
   isLoadingProjects: boolean;
@@ -53,6 +56,7 @@ interface SessionListState {
   setSortConfig: (config: SortConfig) => void;
   setTimeField: (field: TimeField) => void;
   setProjectFilter: (path: string | null) => void;
+  setLocateTarget: (target: { filePath: string; projectPath: string } | null) => void;
   toggleHighlight: () => void;
   loadAllSessions: (settings: AppSettings) => Promise<void>;
   loadProjects: (settings: AppSettings) => Promise<void>;
@@ -86,6 +90,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
   searchResults: [],
 
   projectFilter: null,
+  locateTarget: null,
   searchQuery: '',
   highlightEnabled: true,
 
@@ -101,6 +106,8 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
       viewMode: mode,
       sortConfig: viewSortConfigs[mode] ?? DEFAULT_SORTS[mode],
       timeField: viewTimeFields[mode] ?? DEFAULT_TIME_FIELDS[mode],
+      // 切离文件夹视图时清除定位高亮
+      ...(mode !== 'by-project' ? { locateTarget: null } : {}),
     });
   },
 
@@ -121,6 +128,7 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
   },
 
   setProjectFilter: (path) => set({ projectFilter: path }),
+  setLocateTarget: (target) => set({ locateTarget: target }),
   toggleHighlight: () =>
     set((s) => ({ highlightEnabled: !s.highlightEnabled })),
 

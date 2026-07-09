@@ -20,6 +20,7 @@ interface TimelineViewProps {
   filterContextLabel?: string;
   onSelectSession: (path: string, providerName: string, cwd?: string) => void;
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
+  onLocateInFolderList?: (filePath: string, projectPath: string, providerName: string) => void;
   onClearFilter?: () => void;
 }
 
@@ -96,6 +97,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   filterContextLabel,
   onSelectSession,
   onOpenInNewTab,
+  onLocateInFolderList,
   onClearFilter,
 }) => {
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(
@@ -242,6 +244,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     timeField={timeField}
                     onClick={onSelectSession}
                     onOpenInNewTab={onOpenInNewTab}
+                    onLocateInFolderList={onLocateInFolderList}
                   />
                 ))}
               </div>

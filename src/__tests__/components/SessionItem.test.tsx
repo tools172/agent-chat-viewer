@@ -161,7 +161,7 @@ describe('SessionItem', () => {
     expect(mockedOpenProjectFolder).toHaveBeenCalledWith('/test/project');
   });
 
-  it('右键菜单：打开所在文件夹 打开包含文件的文件夹', () => {
+  it('右键菜单：打开存储目录 打开包含文件的文件夹', () => {
     render(
       <SessionItem
         session={mockSession}
@@ -171,7 +171,7 @@ describe('SessionItem', () => {
     );
 
     fireEvent.contextMenu(screen.getByRole('button'));
-    const menuItem = screen.getByText('打开所在文件夹');
+    const menuItem = screen.getByText('打开存储目录');
     fireEvent.click(menuItem);
 
     expect(mockedOpenContainingFolder).toHaveBeenCalledWith(
@@ -190,7 +190,7 @@ describe('SessionItem', () => {
 
     fireEvent.contextMenu(screen.getByRole('button'));
 
-    expect(screen.getByText('打开所在文件夹')).toBeInTheDocument();
+    expect(screen.getByText('打开存储目录')).toBeInTheDocument();
     expect(screen.getByText('打开工作目录')).toBeInTheDocument();
     expect(screen.getByText('复制文件路径')).toBeInTheDocument();
     expect(screen.getByText('复制会话 ID')).toBeInTheDocument();

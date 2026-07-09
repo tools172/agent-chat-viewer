@@ -4,6 +4,7 @@ import type { Project, SessionSummary, SortConfig } from '../../types';
 import { multiSort } from '../../utils/sort';
 import { SessionItem } from '../sessions/SessionItem';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
+import { useSessionListStore } from '../../stores/sessionListStore';
 import * as tauri from '../../utils/tauri';
 
 interface ProjectListProps {
@@ -32,6 +33,8 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   onSelectSession,
   onOpenInNewTab,
 }) => {
+  const locateTarget = useSessionListStore((s) => s.locateTarget);
+  const setLocateTarget = useSessionListStore((s) => s.setLocateTarget);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
     new Set()
   );
@@ -72,7 +75,32 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     }
   }, [contextMenu]);
 
+  // 响应 "定位到文件夹列表" 信号：展开对应项目并滚动到目标会话
+  useEffect(() => {
+    if (!locateTarget) return;
+    const { filePath, projectPath } = locateTarget;
+    // 展开目标项目
+    setExpandedProjects((prev) => {
+      if (prev.has(projectPath)) return prev;
+      const next = new Set(prev);
+      next.add(projectPath);
+      return next;
+    });
+    // 等待 sessions 缓存就绪后滚动
+    const cached = sessionsCache[projectPath];
+    if (cached && cached.some((s) => s.filePath === filePath)) {
+      // 延迟一帧等 DOM 更新后滚动，高亮保持直到用户交互时清除
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-session-path="${CSS.escape(filePath)}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+  }, [locateTarget, sessionsCache]);
+
   const handleProjectClick = (projectPath: string, providerName: string) => {
+    setLocateTarget(null);
     setExpandedProjects((prev) => {
       const next = new Set(prev);
       if (next.has(projectPath)) next.delete(projectPath);
@@ -82,12 +110,17 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     onSelectProject(projectPath, providerName);
   };
 
+  const handleSessionClick = (filePath: string, providerName: string, cwd?: string) => {
+    setLocateTarget(null);
+    onSelectSession(filePath, providerName, cwd);
+  };
+
   const handleProjectContextMenu = (e: React.MouseEvent, projectPath: string) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, projectPath });
   };
 
-  const handleOpenProjectFolder = async () => {
+  const handleOpenWorkingDir = async () => {
     if (!contextMenu) return;
     const projectPath = contextMenu.projectPath;
     setContextMenu(null);
@@ -101,14 +134,14 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     }
   };
 
-  const handleOpenProjectLocateFolder = async () => {
+  const handleOpenStorageDir = async () => {
     if (!contextMenu) return;
     const path = contextMenu.projectPath;
     setContextMenu(null);
     try {
       await tauri.openContainingFolder(path);
     } catch (err) {
-      console.error('打开所在文件夹失败:', err);
+      console.error('打开存储目录失败:', err);
     }
   };
 
@@ -207,15 +240,20 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   </p>
                 ) : (
                   sortedProjectSessions.map((session) => (
-                    <SessionItem
-                      key={session.id}
-                      session={session}
-                      isSelected={selectedSessionPath === session.filePath}
-                      showProject={false}
-                      showProvider={true}
-                      onClick={onSelectSession}
-                      onOpenInNewTab={onOpenInNewTab}
-                    />
+                    <div key={session.id} data-session-path={session.filePath}>
+                      <SessionItem
+                        session={session}
+                        isSelected={
+                          locateTarget
+                            ? locateTarget.filePath === session.filePath
+                            : selectedSessionPath === session.filePath
+                        }
+                        showProject={false}
+                        showProvider={true}
+                        onClick={handleSessionClick}
+                        onOpenInNewTab={onOpenInNewTab}
+                      />
+                    </div>
                   ))
                 )}
               </div>
@@ -233,14 +271,14 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           <button
-            onClick={handleOpenProjectLocateFolder}
+            onClick={handleOpenStorageDir}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <FolderOpen className="h-4 w-4 text-gray-400" />
             打开所在文件夹
           </button>
           <button
-            onClick={handleOpenProjectFolder}
+            onClick={handleOpenWorkingDir}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <Folder className="h-4 w-4 text-gray-400" />

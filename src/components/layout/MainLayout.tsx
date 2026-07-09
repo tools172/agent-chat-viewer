@@ -215,10 +215,20 @@ export const MainLayout: React.FC = () => {
 
   const handleViewModeChange = useCallback(
     (mode: import('../../types').ViewMode) => {
-      if (mode === 'by-project') {
-        list.setProjectFilter(null);
-      }
+      list.setProjectFilter(null);
       list.setViewMode(mode);
+    },
+    [list]
+  );
+
+  const handleLocateInFolderList = useCallback(
+    (filePath: string, projectPath: string, providerName: string) => {
+      // 切换到文件夹视图
+      list.setViewMode('by-project');
+      // 加载/选中该项目（确保 sessionsCache 中有数据）
+      list.selectProject(projectPath, providerName);
+      // 设置定位目标（触发 ProjectList 展开+滚动）
+      list.setLocateTarget({ filePath, projectPath });
     },
     [list]
   );
@@ -433,7 +443,7 @@ export const MainLayout: React.FC = () => {
     [openTab]
   );
 
-  const handleOpenProjectFolder = async () => {
+  const handleOpenWorkingDir = async () => {
     setConvContextMenu(null);
     if (!currentProjectPath) return;
     try {
@@ -493,6 +503,7 @@ export const MainLayout: React.FC = () => {
         onSelectProject={handleSelectProject}
         onSelectSession={handleSelectSession}
         onOpenInNewTab={handleOpenInNewTab}
+        onLocateInFolderList={handleLocateInFolderList}
         onSearchQueryChange={setLocalSearchQuery}
         onSearch={handleSearch}
         onToggleHighlight={list.toggleHighlight}
@@ -620,7 +631,7 @@ export const MainLayout: React.FC = () => {
                   打开所在文件夹
                 </button>
                 <button
-                  onClick={handleOpenProjectFolder}
+                  onClick={handleOpenWorkingDir}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                 >
                   <Folder className="h-4 w-4 text-gray-400" />

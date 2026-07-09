@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder, ExternalLink } from 'lucide-react';
+import { MessageSquare, FolderOpen, Copy, Check, Hash, Folder, ExternalLink, FolderTree } from 'lucide-react';
 import { relativeTime, formatDateTime } from '../../utils/time';
 import { getProviderLabel, getProviderColor } from '../../utils/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -17,6 +17,8 @@ interface SessionItemProps {
   onClick: (path: string, providerName: string, cwd?: string) => void;
   /** 在新标签页中打开（中键/Ctrl+点击/右键菜单） */
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
+  /** 定位到文件夹列表（右键菜单） */
+  onLocateInFolderList?: (filePath: string, projectPath: string, providerName: string) => void;
 }
 
 /** 返回客户端环境标签（CLI 不显示，属于默认） */
@@ -42,6 +44,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   timeField,
   onClick,
   onOpenInNewTab,
+  onLocateInFolderList,
 }) => {
   const settings = useSettingsStore((s) => s.settings);
   const searchColors = settings.searchColors;
@@ -94,7 +97,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
     setContextMenu({ x: e.clientX, y: e.clientY });
   };
 
-  const handleOpenFolder = async () => {
+  const handleOpenStorageDir = async () => {
     setContextMenu(null);
     try {
       // Cursor: open the source DB directory instead of the cached JSONL path
@@ -122,7 +125,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
     }
   };
 
-  const handleOpenProjectFolder = async () => {
+  const handleOpenWorkingDir = async () => {
     setContextMenu(null);
     try {
       // cwd 是会话记录中实际的工作目录，projectPath 只是 .jsonl 文件的存放目录
@@ -150,6 +153,13 @@ export const SessionItem: React.FC<SessionItemProps> = ({
     setContextMenu(null);
     if (onOpenInNewTab) {
       onOpenInNewTab(session.filePath, session.providerName, sessionCwd);
+    }
+  };
+
+  const handleLocateInFolderList = () => {
+    setContextMenu(null);
+    if (onLocateInFolderList) {
+      onLocateInFolderList(session.filePath, session.projectPath, session.providerName);
     }
   };
 
@@ -280,20 +290,32 @@ export const SessionItem: React.FC<SessionItemProps> = ({
             </button>
           )}
           <button
-            onClick={handleOpenFolder}
+            onClick={handleOpenStorageDir}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <FolderOpen className="h-4 w-4 text-gray-400" />
-            打开所在文件夹
+            打开存储目录
           </button>
           <button
-            onClick={handleOpenProjectFolder}
+            onClick={handleOpenWorkingDir}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <Folder className="h-4 w-4 text-gray-400" />
             打开工作目录
           </button>
-          <div className="border-t border-gray-100 my-1" />
+          {onLocateInFolderList && (
+            <>
+              <div className="border-t border-gray-100 my-1" />
+              <button
+                onClick={handleLocateInFolderList}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <FolderTree className="h-4 w-4 text-gray-400" />
+                定位到文件夹列表
+              </button>
+              <div className="border-t border-gray-100 my-1" />
+            </>
+          )}
           <button
             onClick={handleCopyPath}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"

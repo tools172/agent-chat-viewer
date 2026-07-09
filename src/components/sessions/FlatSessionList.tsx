@@ -11,6 +11,7 @@ interface FlatSessionListProps {
   highlight?: string;
   onSelectSession: (path: string, providerName: string, cwd?: string) => void;
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
+  onLocateInFolderList?: (filePath: string, projectPath: string, providerName: string) => void;
 }
 
 export const FlatSessionList: React.FC<FlatSessionListProps> = ({
@@ -20,6 +21,7 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
   highlight,
   onSelectSession,
   onOpenInNewTab,
+  onLocateInFolderList,
 }) => {
   const sorted = useMemo(
     () => multiSort(sessions, sortConfig),
@@ -46,6 +48,7 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
           highlight={highlight}
           onClick={onSelectSession}
           onOpenInNewTab={onOpenInNewTab}
+          onLocateInFolderList={onLocateInFolderList}
         />
       ))}
     </div>

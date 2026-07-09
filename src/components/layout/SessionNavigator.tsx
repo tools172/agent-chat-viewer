@@ -63,6 +63,7 @@ interface SessionNavigatorProps {
   onSelectProject: (path: string, providerName: string) => void;
   onSelectSession: (path: string, providerName: string, cwd?: string) => void;
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
+  onLocateInFolderList?: (filePath: string, projectPath: string, providerName: string) => void;
   onSearchQueryChange: (query: string) => void;
   onSearch: (query: string) => void;
   onToggleHighlight: () => void;
@@ -95,6 +96,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   onSelectProject,
   onSelectSession,
   onOpenInNewTab,
+  onLocateInFolderList,
   onSearchQueryChange,
   onSearch,
   onToggleHighlight,
@@ -275,6 +277,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               selectedSessionPath={selectedSessionPath}
               onSelectSession={onSelectSession}
               onOpenInNewTab={onOpenInNewTab}
+              onLocateInFolderList={onLocateInFolderList}
             />
           )}
         </div>
@@ -327,6 +330,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               }
               onSelectSession={onSelectSession}
               onOpenInNewTab={onOpenInNewTab}
+              onLocateInFolderList={onLocateInFolderList}
               onClearFilter={
                 projectFilter ? onClearProjectFilter : undefined
               }
@@ -349,6 +353,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
             onSearch={onSearch}
             onSelectSession={onSelectSession}
             onOpenInNewTab={onOpenInNewTab}
+            onLocateInFolderList={onLocateInFolderList}
             onToggleHighlight={onToggleHighlight}
             selectedSessionPath={selectedSessionPath}
           />
