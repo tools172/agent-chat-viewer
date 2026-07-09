@@ -1,5 +1,13 @@
 import { create } from 'zustand';
 import type { AppSettings, FilterConfig, WatchDirectory, ThemeMode } from '../types';
+import {
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_DEFAULT_WIDTH,
+  TURN_NAV_MIN_WIDTH,
+  TURN_NAV_MAX_WIDTH,
+  TURN_NAV_DEFAULT_WIDTH,
+} from '../types';
 import * as tauri from '../utils/tauri';
 
 interface SettingsState {
@@ -56,8 +64,8 @@ const defaultSettings: AppSettings = {
   },
   navCollapsed: false,
   autoSavePanelWidths: true,
-  sidebarWidth: 320,
-  navigatorWidth: 256,
+  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
+  navigatorWidth: TURN_NAV_DEFAULT_WIDTH,
   polishBatchSize: 5,
   restoreTabsOnStartup: true,
   theme: 'system',
@@ -203,7 +211,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({
       settings: {
         ...settings,
-        sidebarWidth: Math.max(200, Math.min(600, width)),
+        sidebarWidth: Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width)),
       },
     });
   },
@@ -213,7 +221,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({
       settings: {
         ...settings,
-        navigatorWidth: Math.max(160, Math.min(400, width)),
+        navigatorWidth: Math.max(TURN_NAV_MIN_WIDTH, Math.min(TURN_NAV_MAX_WIDTH, width)),
       },
     });
   },

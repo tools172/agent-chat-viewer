@@ -1,3 +1,12 @@
+// ===== Panel Width Constants =====
+
+export const SIDEBAR_MIN_WIDTH = 200;
+export const SIDEBAR_MAX_WIDTH = 600;
+export const SIDEBAR_DEFAULT_WIDTH = 320;
+export const TURN_NAV_MIN_WIDTH = 160;
+export const TURN_NAV_MAX_WIDTH = 600;
+export const TURN_NAV_DEFAULT_WIDTH = 256;
+
 // ===== View Modes =====
 
 export type ViewMode = 'flat' | 'by-project' | 'by-time' | 'search' | 'folder' | 'timeline';
@@ -137,9 +146,9 @@ export interface AppSettings {
   navCollapsed?: boolean;
   /** 是否自动保存手动拖拽的侧边栏和轮次导航宽度，默认 true */
   autoSavePanelWidths?: boolean;
-  /** 左侧侧边栏默认宽度（px），200-600，默认 320 */
+  /** 左侧侧边栏默认宽度（px） */
   sidebarWidth?: number;
-  /** 右侧轮次导航默认宽度（px），160-400，默认 256 */
+  /** 右侧轮次导航默认宽度（px） */
   navigatorWidth?: number;
   /** 渐进 polish 每批文件数：5/10/20/30/50，默认 5 */
   polishBatchSize?: number;

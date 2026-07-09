@@ -21,8 +21,7 @@ import { LoadingBar } from '../common/LoadingBar';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { version } from '../../../package.json';
 
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 600;
+import { SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from '../../types';
 
 interface ViewDef {
   mode: ViewMode;
@@ -139,7 +138,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
     const onMove = (e: MouseEvent) => {
       if (!draggingRef.current) return;
       const delta = e.clientX - startXRef.current; // 右拖 = 变宽
-      const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWRef.current + delta));
+      const next = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, startWRef.current + delta));
       setWidth(next);
     };
     const onUp = () => {

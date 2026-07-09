@@ -56,19 +56,14 @@ function extractTurns(events: ChatEvent[]): Turn[] {
     turnIndex++;
     // 跳过系统注解块，取真实用户消息
     const fullText = extractUserText(event);
-    // 显示标签：40 字，替换换行
+    // 替换换行，完整文本由 CSS line-clamp 按宽度动态截断
     const flatText = fullText.replace(/\n/g, ' ');
-    const label = flatText.slice(0, 40) || '(空)';
-    // 仅当内容被截断时才设置 hint（超出 2000 字再截断一次）
-    const truncated = flatText.length > 40;
-    const hint = truncated
-      ? (fullText.length > TURN_HINT_MAX_LEN
-          ? fullText.slice(0, TURN_HINT_MAX_LEN) + '...'
-          : fullText)
-      : '';
+    const hint = fullText.length > TURN_HINT_MAX_LEN
+      ? fullText.slice(0, TURN_HINT_MAX_LEN) + '...'
+      : fullText;
     turns.push({
       uuid: event.uuid,
-      label: label.length >= 40 ? label + '…' : label,
+      label: flatText || '(空)',
       hint,
       index: turnIndex,
     });
@@ -76,11 +71,9 @@ function extractTurns(events: ChatEvent[]): Turn[] {
   return turns;
 }
 
-const MIN_WIDTH = 160;
-const DEFAULT_WIDTH = 256;
-const MAX_WIDTH = 400;
+import { TURN_NAV_MIN_WIDTH, TURN_NAV_DEFAULT_WIDTH, TURN_NAV_MAX_WIDTH } from '../../types';
 
-export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerRef, defaultWidth = DEFAULT_WIDTH, onWidthChange }) => {
+export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerRef, defaultWidth = TURN_NAV_DEFAULT_WIDTH, onWidthChange }) => {
   const turns = useMemo(() => extractTurns(events), [events]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -92,6 +85,13 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
   const draggingRef = useRef(false);
   const startXRef = useRef(0);
   const startWRef = useRef(0);
+
+  // 同步外部 defaultWidth 变化（如设置面板滑块调整）
+  useEffect(() => {
+    if (!draggingRef.current) {
+      setWidth(defaultWidth);
+    }
+  }, [defaultWidth]);
 
   // 导航列表自身的滚动容器 ref
   const listRef = useRef<HTMLDivElement>(null);
@@ -177,7 +177,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
     const onMove = (e: MouseEvent) => {
       if (!draggingRef.current) return;
       const delta = startXRef.current - e.clientX; // 向左拖 = 变大
-      const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWRef.current + delta));
+      const next = Math.min(TURN_NAV_MAX_WIDTH, Math.max(TURN_NAV_MIN_WIDTH, startWRef.current + delta));
       setWidth(next);
     };
     const onUp = () => {

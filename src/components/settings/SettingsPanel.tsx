@@ -26,6 +26,14 @@ import {
 import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../stores/settingsStore';
 import type { ThemeMode } from '../../types';
+import {
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_DEFAULT_WIDTH,
+  TURN_NAV_MIN_WIDTH,
+  TURN_NAV_MAX_WIDTH,
+  TURN_NAV_DEFAULT_WIDTH,
+} from '../../types';
 import * as tauri from '../../utils/tauri';
 import { getProviderEnabledColor } from '../../utils/providers';
 
@@ -353,20 +361,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               <PanelLeft className="h-4 w-4" />
               布局
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-1">
               {([
                 {
                   label: '左侧边栏（会话记录导航）',
-                  min: 200,
-                  max: 600,
-                  value: settings.sidebarWidth ?? 320,
+                  min: SIDEBAR_MIN_WIDTH,
+                  max: SIDEBAR_MAX_WIDTH,
+                  value: settings.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH,
                   onChange: (v: number) => store.updateSidebarWidth(v),
                 },
                 {
                   label: '右侧边栏（轮次导航）',
-                  min: 160,
-                  max: 400,
-                  value: settings.navigatorWidth ?? 256,
+                  min: TURN_NAV_MIN_WIDTH,
+                  max: TURN_NAV_MAX_WIDTH,
+                  value: settings.navigatorWidth ?? TURN_NAV_DEFAULT_WIDTH,
                   onChange: (v: number) => store.updateNavigatorWidth(v),
                 },
               ]).map(({ label, min, max, value, onChange }) => {
@@ -381,29 +389,44 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                       {label}
                     </label>
                     <div className="flex flex-col">
-                      <div className="relative h-4">
+                      <div className="relative h-3">
                         <span className="absolute left-0 text-[10px] text-gray-400 tabular-nums leading-none">
                           {min}
-                        </span>
-                        <span
-                          className="absolute text-[10px] text-gray-500 tabular-nums leading-none"
-                          style={{ left: `${pct}%`, transform: 'translateX(-50%)' }}
-                        >
-                          {value}
                         </span>
                         <span className="absolute right-0 text-[10px] text-gray-400 tabular-nums leading-none">
                           {max}
                         </span>
                       </div>
-                      <input
-                        type="range"
-                        min={min}
-                        max={max}
-                        step={10}
-                        value={value}
-                        onChange={(e) => onChange(Number(e.target.value))}
-                        className="w-full h-1.5 accent-primary-600 cursor-pointer m-0 p-0"
-                      />
+                      <div className="relative h-4">
+                        <input
+                          type="range"
+                          min={min}
+                          max={max}
+                          step={10}
+                          value={value}
+                          onChange={(e) => onChange(Number(e.target.value))}
+                          className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer m-0 p-0
+                            [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full
+                            [&::-webkit-slider-runnable-track]:bg-gray-200 [&::-webkit-slider-runnable-track]:shadow-inner
+                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2
+                            [&::-webkit-slider-thumb]:mt-[-9px] [&::-webkit-slider-thumb]:cursor-pointer
+                            [&::-webkit-slider-thumb]:border-0 [&::-webkit-slider-thumb]:rounded-none
+                            [&::-webkit-slider-thumb]:bg-no-repeat [&::-webkit-slider-thumb]:bg-center
+                            [&::-webkit-slider-thumb]:[background-image:var(--thumb-svg)]"
+                          style={{
+                            '--thumb-svg': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpolygon points='1,0 9,0 5,8' fill='%232563eb'/%3E%3C/svg%3E")`,
+                          } as React.CSSProperties}
+                        />
+                        <span
+                          className="absolute inset-y-0 flex items-center pointer-events-none text-[10px] text-gray-600 font-medium tabular-nums leading-none"
+                          style={{
+                            left: `calc(${pct}% + 8px - ${pct * 0.16}px)`,
+                            transform: 'translateX(-50%)',
+                          }}
+                        >
+                          {value}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
