@@ -23,17 +23,25 @@ const DirBtn: React.FC<{ dir: SortDirection; title: string; onClick: () => void 
 
 const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
   const [openMenu, setOpenMenu] = useState<number | null>(null); // null=关闭, 0/1=第几级的下拉打开
-  const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // 点击外部关闭下拉
+  // 点击外部 / Esc 关闭下拉
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+    if (openMenu === null) return;
+    const clickHandler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpenMenu(null);
       }
     };
-    if (openMenu !== null) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', clickHandler);
+    document.addEventListener('keydown', keyHandler);
+    return () => {
+      document.removeEventListener('mousedown', clickHandler);
+      document.removeEventListener('keydown', keyHandler);
+    };
   }, [openMenu]);
 
   // 修改某一级
@@ -55,7 +63,7 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
   };
 
   return (
-    <div className="px-3 py-0.5 text-xs" ref={menuRef}>
+    <div className="px-3 py-0.5 text-xs">
       {/* 标签行 */}
       <div className="flex items-center gap-1 flex-wrap">
         <span className="text-gray-500 mr-0.5">排序</span>
@@ -65,7 +73,7 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
             {/* 字段下拉 */}
             <button
               onClick={() => setOpenMenu(openMenu === idx ? null : idx)}
-              className="pl-1.5 pr-0.5 py-0.5 hover:bg-gray-100 rounded-l-md text-gray-700"
+              className="pl-1.5 pr-0.5 py-0.5 hover:bg-gray-100 rounded-l-md text-gray-700 outline-none"
             >
               {getFieldLabel(level.field)}
             </button>
@@ -93,7 +101,7 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
         {config.length < MAX_LEVELS && (
           <button
             onClick={() => setOpenMenu(openMenu === -1 ? null : -1)}
-            className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-gray-400 hover:text-primary-600 hover:bg-primary-50"
+            className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-gray-400 hover:text-primary-600 hover:bg-primary-50 outline-none"
             title="添加排序条件"
           >
             <Plus className="h-3 w-3" />
@@ -103,7 +111,7 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
 
       {/* 下拉字段选择菜单 */}
       {openMenu !== null && (
-        <div className="mt-1 py-1 bg-white border rounded-md shadow-lg z-10">
+        <div ref={dropdownRef} className="mt-1 py-1 bg-white border rounded-md shadow-lg z-10">
           {SORT_FIELDS.map((field) => {
             const alreadyUsed = config.some((l) => l.field === field);
             const action = openMenu === -1 ? 'addLevel' : 'updateLevel';

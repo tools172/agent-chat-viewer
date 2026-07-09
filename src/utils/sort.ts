@@ -137,8 +137,8 @@ export function getSessionTime(session: SessionSummary, field: TimeField): strin
 
 /** 默认排序配置（每种视图独立） */
 export const DEFAULT_SORTS: Record<string, SortConfig> = {
-  flat: [{ field: 'created', direction: 'desc' }],
+  flat: [{ field: 'modified', direction: 'desc' }],
   'by-project': [{ field: 'path', direction: 'asc' }],
   'by-time': [{ field: 'created', direction: 'desc' }],
-  search: [{ field: 'created', direction: 'desc' }],
+  search: [{ field: 'modified', direction: 'desc' }],
 };
