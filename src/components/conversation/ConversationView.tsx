@@ -12,7 +12,7 @@ import { EmptyState } from '../common/EmptyState';
 /** 小尖括号 + 顶部横线：回到最顶部 */
 function ScrollTopIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
       stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
     >
       <line x1="4" y1="3" x2="12" y2="3" />
@@ -24,7 +24,7 @@ function ScrollTopIcon() {
 /** 小尖括号 + 底部横线：回到底部 */
 function ScrollBottomIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
       stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
     >
       <polyline points="5,9 8,12 11,9" />
@@ -180,12 +180,12 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
         <div ref={bottomRef} data-bottom-sentinel="" />
 
         {/* 浮动滚动按钮 */}
-        <div className="sticky bottom-3 flex flex-col items-end gap-1.5 pr-3 pointer-events-none">
+        <div className="sticky bottom-3 flex flex-col items-end gap-0.5 pr-1.5 pointer-events-none">
           {showScrollBtns.top && (
             <button
               onClick={scrollToTop}
               title="回到顶部"
-              className="pointer-events-auto p-1.5 bg-white border rounded-full shadow-md hover:bg-gray-50 text-gray-500 transition-all"
+              className="pointer-events-auto p-0.5 bg-white border rounded-full shadow-md hover:bg-gray-50 text-gray-500 transition-all"
             >
               <ScrollTopIcon />
             </button>
@@ -194,7 +194,7 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
             <button
               onClick={scrollToBottom}
               title="回到底部"
-              className="pointer-events-auto p-1.5 bg-white border rounded-full shadow-md hover:bg-gray-50 text-gray-500 transition-all"
+              className="pointer-events-auto p-0.5 bg-white border rounded-full shadow-md hover:bg-gray-50 text-gray-500 transition-all"
             >
               <ScrollBottomIcon />
             </button>

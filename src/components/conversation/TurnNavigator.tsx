@@ -6,7 +6,7 @@ import { extractUserText } from '../../utils/filterEvents';
 /** 小尖括号 + 顶部横线：回到最顶部 */
 function ScrollTopIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
       stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
     >
       <line x1="4" y1="3" x2="12" y2="3" />
@@ -18,7 +18,7 @@ function ScrollTopIcon() {
 /** 小尖括号 + 底部横线：回到底部 */
 function ScrollBottomIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
       stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
     >
       <polyline points="5,9 8,12 11,9" />
@@ -288,7 +288,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
         </span>
         <button
           onClick={scrollToTop}
-          className="flex-1 flex items-center justify-center gap-0.5 py-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="flex-1 flex items-center justify-center gap-0.5 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           title="回到顶部"
         >
           {overflowAbove > 0 && (
@@ -298,10 +298,10 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
         </button>
         <button
           onClick={() => setCollapsed(true)}
-          className="py-2 px-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="py-1 px-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           title="折叠导航"
         >
-          <PanelRightClose className="h-4 w-4" />
+          <PanelRightClose className="h-3.5 w-3.5" />
         </button>
       </div>
 
@@ -330,7 +330,7 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
       {/* 底部按钮 */}
       <button
         onClick={scrollToBottom}
-        className="flex items-center justify-center gap-0.5 py-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors border-t border-gray-200"
+        className="flex items-center justify-center gap-0.5 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors border-t border-gray-200"
         title="回到底部"
       >
         <ScrollBottomIcon />

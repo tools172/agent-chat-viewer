@@ -361,7 +361,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/50">
+      <div className="px-4 py-1 border-t border-gray-100 bg-gray-50/50">
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <Database className="h-3 w-3" />
           <span>
