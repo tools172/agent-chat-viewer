@@ -361,7 +361,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               <PanelLeft className="h-4 w-4" />
               布局
             </h3>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {([
                 {
                   label: '左侧边栏（会话记录导航）',
@@ -388,43 +388,39 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                     <label className="text-sm text-gray-600 pb-0.5">
                       {label}
                     </label>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col gap-0.5">
+                      <div className="relative h-3">
+                        <span
+                          className="absolute text-[10px] text-gray-600 font-medium tabular-nums leading-none"
+                          style={{
+                            left: `calc(${pct}% + 7px - ${pct * 0.14}px)`,
+                            transform: 'translateX(-50%)',
+                          }}
+                        >
+                          {value}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={min}
+                        max={max}
+                        step={10}
+                        value={value}
+                        onChange={(e) => onChange(Number(e.target.value))}
+                        className="w-full h-2 appearance-none bg-transparent cursor-pointer m-0 p-0
+                          [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-gray-200
+                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+                          [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
+                          [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm
+                          [&::-webkit-slider-thumb]:bg-primary-600 [&::-webkit-slider-thumb]:bg-clip-padding
+                          [&::-webkit-slider-thumb]:mt-[-5px]"
+                      />
                       <div className="relative h-3">
                         <span className="absolute left-0 text-[10px] text-gray-400 tabular-nums leading-none">
                           {min}
                         </span>
                         <span className="absolute right-0 text-[10px] text-gray-400 tabular-nums leading-none">
                           {max}
-                        </span>
-                      </div>
-                      <div className="relative h-4">
-                        <input
-                          type="range"
-                          min={min}
-                          max={max}
-                          step={10}
-                          value={value}
-                          onChange={(e) => onChange(Number(e.target.value))}
-                          className="absolute inset-0 w-full appearance-none bg-transparent cursor-pointer m-0 p-0
-                            [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full
-                            [&::-webkit-slider-runnable-track]:bg-gray-200 [&::-webkit-slider-runnable-track]:shadow-inner
-                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2
-                            [&::-webkit-slider-thumb]:mt-[-9px] [&::-webkit-slider-thumb]:cursor-pointer
-                            [&::-webkit-slider-thumb]:border-0 [&::-webkit-slider-thumb]:rounded-none
-                            [&::-webkit-slider-thumb]:bg-no-repeat [&::-webkit-slider-thumb]:bg-center
-                            [&::-webkit-slider-thumb]:[background-image:var(--thumb-svg)]"
-                          style={{
-                            '--thumb-svg': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpolygon points='1,0 9,0 5,8' fill='%232563eb'/%3E%3C/svg%3E")`,
-                          } as React.CSSProperties}
-                        />
-                        <span
-                          className="absolute inset-y-0 flex items-center pointer-events-none text-[10px] text-gray-600 font-medium tabular-nums leading-none"
-                          style={{
-                            left: `calc(${pct}% + 8px - ${pct * 0.16}px)`,
-                            transform: 'translateX(-50%)',
-                          }}
-                        >
-                          {value}
                         </span>
                       </div>
                     </div>
