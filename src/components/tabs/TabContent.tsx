@@ -46,8 +46,9 @@ export const TabContent: React.FC<TabContentProps> = React.memo(
     return filtered;
   }, [tab.sessionDetail, tab.filter]);
 
-  // Cold pool: 不渲染 DOM，仅占位
-  if (keepAliveRank > 3) {
+  // Cold pool: 不渲染 DOM，仅占位。激活中的标签永远渲染——
+  // 否则钉住/取消钉住导致的重排会把激活标签推到 rank>3 的位置，聊天区会闪空。
+  if (keepAliveRank > 3 && !isActive) {
     return (
       <div
         data-tab-id={tab.id}
