@@ -5,6 +5,7 @@ import { getProviderLabel, getProviderColor } from '../../utils/providers';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { highlightText } from '../../utils/highlight';
 import * as tauri from '../../utils/tauri';
+import { runOpenFolderAction } from '../../utils/openFolder';
 
 interface SessionItemProps {
   session: import('../../types').SessionSummary;
@@ -99,7 +100,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
 
   const handleOpenStorageDir = async () => {
     setContextMenu(null);
-    try {
+    await runOpenFolderAction('打开存储目录', async () => {
       // Cursor: open the source DB directory instead of the cached JSONL path
       if (session.providerName === 'cursor') {
         const dataDir = await tauri.getProviderDataDir('cursor');
@@ -109,9 +110,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
         }
       }
       await tauri.openContainingFolder(session.filePath);
-    } catch (err) {
-      console.error('打开文件夹失败:', err);
-    }
+    });
   };
 
   const handleCopyPath = async () => {
@@ -127,13 +126,10 @@ export const SessionItem: React.FC<SessionItemProps> = ({
 
   const handleOpenWorkingDir = async () => {
     setContextMenu(null);
-    try {
-      // cwd 是会话记录中实际的工作目录，projectPath 只是 .jsonl 文件的存放目录
-      const projectDir = session.cwd || session.projectPath;
-      await tauri.openProjectFolder(projectDir);
-    } catch (err) {
-      console.error('打开工作目录失败:', err);
-    }
+    // cwd 是会话记录中实际的工作目录，projectPath 只是 .jsonl 文件的存放目录
+    await runOpenFolderAction('打开工作目录', () =>
+      tauri.openProjectFolder(session.cwd || session.projectPath),
+    );
   };
 
   const handleCopySessionId = async () => {

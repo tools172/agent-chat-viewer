@@ -26,6 +26,14 @@ vi.mock('../../utils/tauri', () => ({
   openProjectFolder: (...args: unknown[]) => mockedOpenProjectFolder(...args),
 }));
 
+// Mock toastStore
+const mockShowToast = vi.fn();
+vi.mock('../../stores/toastStore', () => ({
+  useToastStore: {
+    getState: () => ({ showToast: mockShowToast }),
+  },
+}));
+
 describe('SessionItem', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -159,6 +167,51 @@ describe('SessionItem', () => {
 
     // 回退到 projectPath
     expect(mockedOpenProjectFolder).toHaveBeenCalledWith('/test/project');
+  });
+
+  it('右键菜单：打开工作目录 目录不存在时提示完整路径且不打开其他目录', async () => {
+    mockedOpenProjectFolder.mockRejectedValue('文件夹不存在: /test');
+
+    render(
+      <SessionItem
+        session={mockSession}
+        isSelected={false}
+        onClick={() => {}}
+      />
+    );
+
+    fireEvent.contextMenu(screen.getByRole('button'));
+    fireEvent.click(screen.getByText('打开工作目录'));
+
+    // 只尝试打开 cwd，失败后提示完整路径，不再尝试其他目录
+    await vi.waitFor(() => {
+      expect(mockedOpenProjectFolder).toHaveBeenCalledTimes(1);
+      expect(mockedOpenProjectFolder).toHaveBeenCalledWith('/test');
+      expect(mockShowToast).toHaveBeenCalledWith(
+        '打开工作目录失败：文件夹不存在: /test',
+        { variant: 'error', copyable: true }
+      );
+    });
+  });
+
+  it('右键菜单：打开工作目录 成功时无提示', async () => {
+    mockedOpenProjectFolder.mockResolvedValue(undefined);
+
+    render(
+      <SessionItem
+        session={mockSession}
+        isSelected={false}
+        onClick={() => {}}
+      />
+    );
+
+    fireEvent.contextMenu(screen.getByRole('button'));
+    fireEvent.click(screen.getByText('打开工作目录'));
+
+    await vi.waitFor(() => {
+      expect(mockedOpenProjectFolder).toHaveBeenCalledWith('/test');
+    });
+    expect(mockShowToast).not.toHaveBeenCalled();
   });
 
   it('右键菜单：打开存储目录 打开包含文件的文件夹', () => {

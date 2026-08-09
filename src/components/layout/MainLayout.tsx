@@ -13,6 +13,11 @@ import {
 import { useSessionList } from '../../hooks/useSessionList';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useTabStore } from '../../stores/tabStore';
+import { useToastStore } from '../../stores/toastStore';
+import {
+  openProjectFolderWithFeedback,
+  runOpenFolderAction,
+} from '../../utils/openFolder';
 import { SessionNavigator } from './SessionNavigator';
 import { TabBar } from '../tabs/TabBar';
 import { TabContextMenu, type TabContextAction } from '../tabs/TabContextMenu';
@@ -280,18 +285,16 @@ export const MainLayout: React.FC = () => {
           }
           break;
         case 'openFolder':
-          try {
+          await runOpenFolderAction('打开存储目录', async () => {
             if (tab.providerName === 'cursor') {
               const dataDir = await tauri.getProviderDataDir('cursor');
               if (dataDir) {
                 await tauri.openProjectFolder(dataDir);
-                break;
+                return;
               }
             }
             await tauri.openContainingFolder(tab.sessionPath);
-          } catch (err) {
-            console.error('打开文件夹失败:', err);
-          }
+          });
           break;
         case 'openProjectFolder': {
           // 查找该会话的工作目录
@@ -300,11 +303,11 @@ export const MainLayout: React.FC = () => {
           );
           const projectDir = session?.cwd || session?.projectPath;
           if (projectDir) {
-            try {
-              await tauri.openProjectFolder(projectDir);
-            } catch (err) {
-              console.error('打开工作目录失败:', err);
-            }
+            await openProjectFolderWithFeedback(projectDir);
+          } else {
+            useToastStore
+              .getState()
+              .showToast('找不到该会话的工作目录', { variant: 'error' });
           }
           break;
         }
@@ -335,7 +338,7 @@ export const MainLayout: React.FC = () => {
   const handleOpenSessionFolder = async () => {
     setConvContextMenu(null);
     if (!activeTab?.sessionPath) return;
-    try {
+    await runOpenFolderAction('打开存储目录', async () => {
       if (activeTab.providerName === 'cursor') {
         const dataDir = await tauri.getProviderDataDir('cursor');
         if (dataDir) {
@@ -344,9 +347,7 @@ export const MainLayout: React.FC = () => {
         }
       }
       await tauri.openContainingFolder(activeTab.sessionPath);
-    } catch (err) {
-      console.error('打开文件夹失败:', err);
-    }
+    });
   };
 
   const handleCopySessionPath = async () => {
@@ -445,12 +446,13 @@ export const MainLayout: React.FC = () => {
 
   const handleOpenWorkingDir = async () => {
     setConvContextMenu(null);
-    if (!currentProjectPath) return;
-    try {
-      await tauri.openProjectFolder(currentProjectPath);
-    } catch (err) {
-      console.error('打开工作目录失败:', err);
+    if (!currentProjectPath) {
+      useToastStore
+        .getState()
+        .showToast('找不到该会话的工作目录', { variant: 'error' });
+      return;
     }
+    await openProjectFolderWithFeedback(currentProjectPath);
   };
 
   // === keepAlive 排名计算 ===

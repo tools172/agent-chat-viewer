@@ -36,6 +36,7 @@ import {
 } from '../../types';
 import * as tauri from '../../utils/tauri';
 import { getProviderEnabledColor } from '../../utils/providers';
+import { runOpenFolderAction } from '../../utils/openFolder';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -53,14 +54,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
   const searchColors = settings.searchColors || { search: '#fef08a', find: '#fed7aa' };
 
   const handlePickDirectory = async () => {
-    try {
+    await runOpenFolderAction('打开文件夹选择器', async () => {
       const selected = await open({ directory: true, multiple: false });
       if (selected && typeof selected === 'string') {
         setNewDir(selected);
       }
-    } catch (err) {
-      console.error('打开文件夹选择器失败:', err);
-    }
+    });
   };
 
   const handleAddDirectory = () => {
@@ -94,12 +93,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
   };
 
   const handleOpenSettingsFile = async () => {
-    try {
+    await runOpenFolderAction('打开设置文件', async () => {
       const path = await tauri.getSettingsPath();
       await tauri.openContainingFolder(path);
-    } catch (err) {
-      console.error('打开设置文件失败:', err);
-    }
+    });
   };
 
   return (

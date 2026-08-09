@@ -6,6 +6,10 @@ import { SessionItem } from '../sessions/SessionItem';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { useSessionListStore } from '../../stores/sessionListStore';
 import * as tauri from '../../utils/tauri';
+import {
+  openProjectFolderWithFeedback,
+  runOpenFolderAction,
+} from '../../utils/openFolder';
 
 interface ProjectListProps {
   projects: Project[];
@@ -124,25 +128,18 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     if (!contextMenu) return;
     const projectPath = contextMenu.projectPath;
     setContextMenu(null);
-    try {
-      // 优先使用会话中记录的实际工作目录(cwd)，回退到数据目录
-      const session = allSessions?.find((s) => s.projectPath === projectPath && s.cwd);
-      const targetDir = session?.cwd || projectPath;
-      await tauri.openProjectFolder(targetDir);
-    } catch (err) {
-      console.error('打开工作目录失败:', err);
-    }
+    // 优先使用会话中记录的实际工作目录(cwd)，回退到数据目录
+    const session = allSessions?.find((s) => s.projectPath === projectPath && s.cwd);
+    await openProjectFolderWithFeedback(session?.cwd || projectPath);
   };
 
   const handleOpenStorageDir = async () => {
     if (!contextMenu) return;
     const path = contextMenu.projectPath;
     setContextMenu(null);
-    try {
-      await tauri.openContainingFolder(path);
-    } catch (err) {
-      console.error('打开存储目录失败:', err);
-    }
+    await runOpenFolderAction('打开存储目录', () =>
+      tauri.openContainingFolder(path),
+    );
   };
 
   // 对文件夹项排序
