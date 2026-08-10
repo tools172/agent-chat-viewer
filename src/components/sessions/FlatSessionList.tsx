@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { SessionSummary, SortConfig } from '../../types';
 import { multiSort } from '../../utils/sort';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { SessionItem } from './SessionItem';
 
 interface FlatSessionListProps {
@@ -23,6 +24,9 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
   onOpenInNewTab,
   onLocateInFolderList,
 }) => {
+  const density = useSettingsStore((s) => s.settings.sessionListStyle ?? 'loose');
+  const isCompact = density === 'compact';
+
   const sorted = useMemo(
     () => multiSort(sessions, sortConfig),
     [sessions, sortConfig]
@@ -37,7 +41,7 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
   }
 
   return (
-    <div className="py-0.5">
+    <div className={isCompact ? 'py-0.5' : 'py-1'}>
       {sorted.map((session) => (
         <SessionItem
           key={session.id}
@@ -46,6 +50,7 @@ export const FlatSessionList: React.FC<FlatSessionListProps> = ({
           showProject={true}
           showProvider={true}
           highlight={highlight}
+          density={density}
           onClick={onSelectSession}
           onOpenInNewTab={onOpenInNewTab}
           onLocateInFolderList={onLocateInFolderList}

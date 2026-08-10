@@ -23,6 +23,7 @@ const mockStore = {
   addWatchDirectory: vi.fn(),
   removeWatchDirectory: vi.fn(),
   toggleProvider: vi.fn(),
+  setSetting: vi.fn(),
   save: vi.fn(),
 };
 
@@ -79,5 +80,24 @@ describe('SettingsPanel', () => {
     render(<SettingsPanel onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('刷新应用'));
     expect(mockStore.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('渲染会话列表样式设置项', () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    expect(screen.getByText('会话列表样式')).toBeInTheDocument();
+    expect(screen.getByText('紧凑')).toBeInTheDocument();
+    expect(screen.getByText('宽松')).toBeInTheDocument();
+  });
+
+  it('点击紧凑/宽松切换会话列表样式', () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('紧凑'));
+    expect(mockStore.setSetting).toHaveBeenCalledWith({
+      sessionListStyle: 'compact',
+    });
+    fireEvent.click(screen.getByText('宽松'));
+    expect(mockStore.setSetting).toHaveBeenCalledWith({
+      sessionListStyle: 'loose',
+    });
   });
 });

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Filter, Clock, Sparkles } from 'lucide-react';
 import type { SessionSummary, SortConfig, TimeField } from '../../types';
 import { multiSort, getSessionTime } from '../../utils/sort';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { SessionItem } from './SessionItem';
 import SortBar from '../filter/SortBar';
 
@@ -123,6 +124,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     });
   };
 
+  const density = useSettingsStore((s) => s.settings.sessionListStyle ?? 'loose');
+  const isCompact = density === 'compact';
+
   const allCollapsed = collapsedGroups.size >= groups.length && groups.length > 0;
 
   const toggleAll = () => {
@@ -214,9 +218,9 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       </div>
 
       {/* 时间分组列表 */}
-      <div className="flex-1 overflow-y-auto py-0.5">
+      <div className={`flex-1 overflow-y-auto ${isCompact ? 'py-0.5' : 'py-1'}`}>
         {groups.map((group) => (
-          <div key={group.label} className="mb-1.5">
+          <div key={group.label} className={isCompact ? 'mb-1.5' : 'mb-2'}>
             <button
               onClick={() => toggleGroup(group.label)}
               className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors sticky top-0 bg-white z-10"
@@ -242,6 +246,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     showProject={filterContext === 'all'}
                     showProvider={true}
                     timeField={timeField}
+                    density={density}
                     onClick={onSelectSession}
                     onOpenInNewTab={onOpenInNewTab}
                     onLocateInFolderList={onLocateInFolderList}

@@ -15,6 +15,8 @@ interface SessionItemProps {
   showProvider?: boolean;
   /** 相对时间显示依据：'created' | 'modified'，默认 'created' */
   timeField?: import('../../types').TimeField;
+  /** 显示密度：'compact'（紧凑）| 'loose'（宽松），默认 'compact' */
+  density?: 'compact' | 'loose';
   onClick: (path: string, providerName: string, cwd?: string) => void;
   /** 在新标签页中打开（中键/Ctrl+点击/右键菜单） */
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
@@ -43,12 +45,14 @@ export const SessionItem: React.FC<SessionItemProps> = ({
   highlight,
   showProvider = true,
   timeField,
+  density,
   onClick,
   onOpenInNewTab,
   onLocateInFolderList,
 }) => {
   const settings = useSettingsStore((s) => s.settings);
   const searchColors = settings.searchColors;
+  const isCompact = (density ?? 'compact') === 'compact';
   const showFirst = settings.displayFirstUserMessage !== false;
   const effectiveTimeField: import('../../types').TimeField =
     timeField ?? (settings.timeBase as import('../../types').TimeField | undefined) ?? 'created';
@@ -179,30 +183,30 @@ export const SessionItem: React.FC<SessionItemProps> = ({
           }
         }}
         onContextMenu={handleContextMenu}
-        className={`w-full text-left pl-1.5 pr-1.5 py-1 rounded-lg transition-colors duration-150 group ${
+        className={`w-full text-left ${isCompact ? 'pl-1.5 pr-1.5 py-1' : 'px-3 py-2.5'} rounded-lg transition-colors duration-150 group ${
           isSelected
             ? 'bg-primary-100 text-primary-900'
             : 'hover:bg-gray-100 text-gray-700'
         }`}
       >
-        <div className="flex items-start gap-1.5">
+        <div className={`flex items-start ${isCompact ? 'gap-1.5' : 'gap-2.5'}`}>
           <MessageSquare
-            className={`h-3.5 w-3.5 mt-px flex-shrink-0 ${
+            className={`${isCompact ? 'h-3.5 w-3.5 mt-px' : 'h-4 w-4 mt-0.5'} flex-shrink-0 ${
               isSelected ? 'text-primary-500' : 'text-gray-400'
             }`}
           />
           <div className="flex-1 min-w-0">
             {isSkeleton ? (
               <>
-                <div className="h-[17px] w-3/4 bg-gray-200 rounded" />
-                <div className="h-[12px] w-1/3 bg-gray-100 rounded mt-1" />
+                <div className={`${isCompact ? 'h-[17px]' : 'h-[20px]'} w-3/4 bg-gray-200 rounded`} />
+                <div className={`${isCompact ? 'h-[12px]' : 'h-[16px]'} w-1/3 bg-gray-100 rounded mt-1`} />
                 {showProject && (
-                  <div className="h-[12px] w-2/5 bg-gray-100 rounded mt-px" />
+                  <div className={`${isCompact ? 'h-[12px]' : 'h-[16px]'} w-2/5 bg-gray-100 rounded ${isCompact ? 'mt-px' : 'mt-0.5'}`} />
                 )}
               </>
             ) : (
               <>
-                <p className="text-[13px] font-medium truncate leading-snug" title={
+                <p className={`${isCompact ? 'text-[13px] leading-snug' : 'text-sm'} font-medium truncate`} title={
                   ((f, l) => {
                     const first = (f || '').trim();
                     const last = (l || '').trim();
@@ -231,7 +235,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                         highlight, searchColors.search)
                     : (showFirst ? (session.display || '(空会话)') : (session.lastUserText || session.display || '(空会话)'))}
                 </p>
-                <div className="flex items-center gap-1 mt-px text-xs text-gray-500 flex-wrap">
+                <div className={`flex items-center ${isCompact ? 'gap-1 mt-px' : 'gap-1.5 mt-1'} text-xs text-gray-500 flex-wrap`}>
                   <span title={`创建: ${formatDateTime(session.timestamp)}${session.fileMtime ? `\n修改: ${formatDateTime(session.fileMtime)}` : ''}`}>
                     {relativeTime(effectiveTimeField === 'modified' ? (session.fileMtime || session.timestamp) : session.timestamp)}
                   </span>
@@ -242,14 +246,14 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                   )}
                   {showProvider && (
                     <span
-                      className={`inline-flex items-center px-1 py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
+                      className={`inline-flex items-center ${isCompact ? 'px-1' : 'px-1.5'} py-0.5 rounded-full text-[10px] font-medium border ${getProviderColor(session.providerName)}`}
                     >
                       {getProviderLabel(session.providerName)}
                     </span>
                   )}
                   {clientBadge && (
                     <span
-                      className={`inline-flex items-center px-1 py-0.5 rounded-full text-[10px] font-medium border ${clientBadge.color}`}
+                      className={`inline-flex items-center ${isCompact ? 'px-1' : 'px-1.5'} py-0.5 rounded-full text-[10px] font-medium border ${clientBadge.color}`}
                     >
                       {clientBadge.label}
                     </span>
@@ -257,7 +261,7 @@ export const SessionItem: React.FC<SessionItemProps> = ({
                 </div>
                 {showProject && (
                   <p
-                    className="text-xs text-gray-400 mt-px truncate"
+                    className={`text-xs text-gray-400 ${isCompact ? 'mt-px' : 'mt-0.5'} truncate`}
                     title={`会话存储路径: ${session.storagePath}\n工作目录: ${session.cwd || session.projectPath}`}
                   >
                     📁 {session.projectName}

@@ -72,6 +72,7 @@ const defaultSettings: AppSettings = {
   maxPinnedTabs: 4,
   displayFirstUserMessage: true,
   timeBase: 'modified',
+  sessionListStyle: 'loose',
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -95,6 +96,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       // 确保 maxPinnedTabs 有默认值（兼容旧版本设置文件）
       if (settings.maxPinnedTabs == null) {
         settings.maxPinnedTabs = defaultSettings.maxPinnedTabs;
+      }
+      // 确保 sessionListStyle 有默认值（兼容旧版本设置文件）
+      if (settings.sessionListStyle == null) {
+        settings.sessionListStyle = defaultSettings.sessionListStyle;
       }
       // 合并默认 providerEnabled（兼容旧版本设置文件缺少新增 agent）
       settings.providerEnabled = {

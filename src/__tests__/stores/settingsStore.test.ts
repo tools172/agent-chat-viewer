@@ -86,4 +86,34 @@ describe('settingsStore', () => {
     expect(settings.defaultFilter.showThinking).toBe(false);
     expect(settings.defaultFilter.showToolCalls).toBe(true);
   });
+
+  it('should update session list style via setSetting', () => {
+    useSettingsStore.getState().setSetting({ sessionListStyle: 'compact' });
+    expect(useSettingsStore.getState().settings.sessionListStyle).toBe('compact');
+    useSettingsStore.getState().setSetting({ sessionListStyle: 'loose' });
+    expect(useSettingsStore.getState().settings.sessionListStyle).toBe('loose');
+  });
+
+  it('load() fills default sessionListStyle for legacy settings files', async () => {
+    const { invoke } = await import('@tauri-apps/api/core');
+    (invoke as ReturnType<typeof vi.fn>).mockImplementation(
+      async (cmd: string) => {
+        if (cmd === 'load_settings') {
+          // 模拟旧版设置文件：缺少 sessionListStyle
+          return {
+            watchDirectories: [],
+            defaultFilter: {},
+            providerEnabled: { claude_code: true },
+            searchColors: { search: '#fef08a', find: '#fed7aa' },
+          };
+        }
+        if (cmd === 'get_default_paths') return {};
+        return undefined;
+      }
+    );
+
+    await useSettingsStore.getState().load();
+
+    expect(useSettingsStore.getState().settings.sessionListStyle).toBe('loose');
+  });
 });

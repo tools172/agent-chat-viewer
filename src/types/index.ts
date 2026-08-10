@@ -164,6 +164,8 @@ export interface AppSettings {
   displayFirstUserMessage?: boolean;
   /** 时间基准：'created'（创建时间）| 'modified'（修改时间），默认 'modified' */
   timeBase?: 'created' | 'modified';
+  /** 左侧会话列表样式：'compact'（紧凑）| 'loose'（宽松），默认 'loose' */
+  sessionListStyle?: 'compact' | 'loose';
 }
 
 export interface ProviderInfo {

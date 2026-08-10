@@ -130,6 +130,38 @@ describe('SessionItem', () => {
   });
 
   // ============================================================
+  // 显示密度 — density prop
+  // ============================================================
+
+  it('density 未传时默认使用紧凑样式', () => {
+    render(
+      <SessionItem
+        session={mockSession}
+        isSelected={false}
+        onClick={() => {}}
+      />
+    );
+    const btn = screen.getByRole('button');
+    expect(btn.className).toContain('pl-1.5');
+    expect(btn.className).toContain('py-1');
+  });
+
+  it('density=loose 时使用宽松样式', () => {
+    render(
+      <SessionItem
+        session={mockSession}
+        isSelected={false}
+        density="loose"
+        onClick={() => {}}
+      />
+    );
+    const btn = screen.getByRole('button');
+    expect(btn.className).toContain('px-3');
+    expect(btn.className).toContain('py-2.5');
+    expect(btn.className).not.toContain('pl-1.5');
+  });
+
+  // ============================================================
   // 右键菜单 — 打开工作目录 (cwd 优先)
   // ============================================================
 
