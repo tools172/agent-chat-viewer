@@ -23,6 +23,7 @@
   /* semantic tokens — used by @layer components and inline styles */
   --color-bg-base: #f9fafb;
   --color-bg-surface: #ffffff;
+  --color-bg-surface-rgb: 255 255 255;
   --color-bg-hover: #f3f4f6;
   --color-bg-secondary: #f9fafb;
   --color-bg-code: #f3f4f6;
@@ -103,6 +104,7 @@
   /* semantic */
   --color-bg-base: #0d1117;
   --color-bg-surface: #161b22;
+  --color-bg-surface-rgb: 22 27 34;
   --color-bg-hover: #1c2128;
   --color-bg-secondary: #161b22;
   --color-bg-code: #161b22;
@@ -179,6 +181,7 @@
   /* semantic */
   --color-bg-base: #c7edcc;
   --color-bg-surface: #d9f0db;
+  --color-bg-surface-rgb: 217 240 219;
   --color-bg-hover: #bde0c1;
   --color-bg-secondary: #d0ecd4;
   --color-bg-code: #c0e4c4;
@@ -307,6 +310,7 @@
 
 /* ---- gray backgrounds ---- */
 [data-theme="dark"] .bg-white, [data-theme="eyecare"] .bg-white { background-color: var(--color-bg-surface); }
+[data-theme="dark"] .bg-white\/60, [data-theme="eyecare"] .bg-white\/60 { background-color: color-mix(in srgb, var(--color-bg-surface) 60%, transparent); }
 [data-theme="dark"] .bg-gray-50, [data-theme="eyecare"] .bg-gray-50 { background-color: var(--tw-bg-subtle); }
 [data-theme="dark"] .bg-gray-100, [data-theme="eyecare"] .bg-gray-100 { background-color: var(--tw-bg-raised); }
 [data-theme="dark"] .bg-gray-200, [data-theme="eyecare"] .bg-gray-200 { background-color: var(--tw-bg-overlay); }
@@ -324,6 +328,7 @@
 [data-theme="dark"] .bg-gray-50\/50, [data-theme="eyecare"] .bg-gray-50\/50 { background-color: color-mix(in srgb, var(--tw-bg-subtle) 50%, transparent); }
 [data-theme="dark"] .bg-gray-50\/30, [data-theme="eyecare"] .bg-gray-50\/30 { background-color: color-mix(in srgb, var(--tw-bg-subtle) 35%, transparent); }
 [data-theme="dark"] .bg-gray-50\/80, [data-theme="eyecare"] .bg-gray-50\/80 { background-color: color-mix(in srgb, var(--tw-bg-subtle) 80%, transparent); }
+[data-theme="dark"] .bg-gray-50\/70, [data-theme="eyecare"] .bg-gray-50\/70 { background-color: color-mix(in srgb, var(--tw-bg-subtle) 70%, transparent); }
 [data-theme="dark"] .bg-gray-100\/70, [data-theme="eyecare"] .bg-gray-100\/70 { background-color: color-mix(in srgb, var(--tw-bg-raised) 70%, transparent); }
 [data-theme="dark"] .bg-gray-100\/80, [data-theme="eyecare"] .bg-gray-100\/80 { background-color: color-mix(in srgb, var(--tw-bg-raised) 80%, transparent); }
 [data-theme="dark"] .hover\:bg-gray-50\/50:hover, [data-theme="eyecare"] .hover\:bg-gray-50\/50:hover { background-color: color-mix(in srgb, var(--tw-bg-subtle) 50%, transparent); }
@@ -434,6 +439,28 @@
   .hover\:bg-hover:hover    { background-color: var(--color-bg-hover); }
   .hover\:text-link:hover   { color: var(--color-text-link); }
 
+  /* ---- DockablePanel：滑板底色（随主题变量自动适配） ---- */
+  /* 纯半透明背景：透明度由调用方经 --panel-opacity 注入（0~1），rgb 变量保证 WebView2 兼容。
+     默认「真正透明」（无 backdrop-filter）；开启毛玻璃开关时叠加 .panel-glass-blur 磨砂 */
+  .panel-glass {
+    background-color: rgba(var(--color-bg-surface-rgb) / var(--panel-opacity, 0.8));
+  }
+
+  /* 毛玻璃开关：仅在选择启用时叠加。模糊背后内容，与纯透明互补。模糊保持轻微，仅一点点磨砂质感 */
+  .panel-glass-blur {
+    -webkit-backdrop-filter: blur(3px) saturate(1.05);
+    backdrop-filter: blur(3px) saturate(1.05);
+  }
+
+  /* ---- DockablePanel 内层半透明表面：跟随 --panel-opacity 成比例缩放 ---- */
+  /* 输入框/卡片/分段器/页脚这些内层用固定 alpha（/50 /60 /70）时，
+     面板调高透明后它们仍是一层实色，导致"局部不透"、整块不统一。
+     这里让它们的颜色强度随面板整体透明度成比例缩放，保留相对层次但整块一起变透 */
+  .panel-glass .bg-white\/60   { background-color: color-mix(in srgb, var(--color-bg-surface) calc(var(--panel-opacity, 0.8) * 60%), transparent); }
+  .panel-glass .bg-gray-50\/50 { background-color: color-mix(in srgb, var(--tw-bg-subtle) calc(var(--panel-opacity, 0.8) * 50%), transparent); }
+  .panel-glass .bg-gray-50\/70 { background-color: color-mix(in srgb, var(--tw-bg-subtle) calc(var(--panel-opacity, 0.8) * 70%), transparent); }
+  .panel-glass .bg-gray-100\/70 { background-color: color-mix(in srgb, var(--tw-bg-raised) calc(var(--panel-opacity, 0.8) * 70%), transparent); }
+
   /* Markdown content */
   .markdown-body { @apply text-sm leading-relaxed; }
   .markdown-body h1 { @apply text-xl font-bold mt-4 mb-2; }
@@ -503,6 +530,12 @@
   }
 }
 
+/* DockablePanel 挂载滑入：从最近的屏外边缘滑到当前停靠位置 */
+@keyframes dockable-slide-in {
+  from {
+    transform: translateX(var(--slide-from-x));
+  }
+}
 
 /* ============================================================
    5. UTILITY LAYER

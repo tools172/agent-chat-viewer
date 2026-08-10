@@ -15,6 +15,9 @@ const mockStore = {
     },
     providerEnabled: { claude_code: true, openclaw: false },
     searchColors: { search: '#fef08a', find: '#fed7aa' },
+    settingsPanelOffset: 1, // 比例 1 = 停靠右侧
+    settingsPanelOpacity: 0.8, // 默认 20% 透明
+    settingsPanelGlass: true, // 毛玻璃默认勾选
   },
   updateFilter: vi.fn(),
   updateSearchColors: vi.fn(),
@@ -24,6 +27,9 @@ const mockStore = {
   removeWatchDirectory: vi.fn(),
   toggleProvider: vi.fn(),
   setSetting: vi.fn(),
+  updateSettingsPanelOffset: vi.fn(),
+  updateSettingsPanelOpacity: vi.fn(),
+  updateSettingsPanelGlass: vi.fn(),
   save: vi.fn(),
 };
 
@@ -99,5 +105,38 @@ describe('SettingsPanel', () => {
     expect(mockStore.setSetting).toHaveBeenCalledWith({
       sessionListStyle: 'loose',
     });
+  });
+
+  it('渲染标题栏透明度滑块（带当前值与 aria-label）', () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    const slider = screen.getByRole('slider', { name: '面板透明度' });
+    expect(slider).toBeInTheDocument();
+    // 默认 0.8 不透明度 → 20% 透明，当前值文本可见
+    expect(screen.getByText('20%')).toBeInTheDocument();
+  });
+
+  it('调整面板透明度滑块调用 store（50% 透明度 → 不透明度 0.5）', () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    const slider = screen.getByRole('slider', { name: '面板透明度' });
+    fireEvent.change(slider, { target: { value: '50' } });
+    expect(mockStore.updateSettingsPanelOpacity).toHaveBeenCalledWith(0.5);
+  });
+
+  it('透明度上限 95% 对应不透明度下限 0.05（保底不全透明）', () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    const slider = screen.getByRole('slider', { name: '面板透明度' });
+    fireEvent.change(slider, { target: { value: '95' } });
+    expect(mockStore.updateSettingsPanelOpacity).toHaveBeenCalledWith(0.05);
+  });
+
+  it('渲染毛玻璃开关复选框，默认勾选，取消勾选时调用 store', () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    const checkbox = screen.getByRole('checkbox', { name: '毛玻璃效果' });
+    expect(checkbox).toBeInTheDocument();
+    expect(screen.getByText('毛玻璃')).toBeInTheDocument();
+    // 默认勾选（毛玻璃开启）
+    expect(checkbox).toBeChecked();
+    fireEvent.click(checkbox);
+    expect(mockStore.updateSettingsPanelGlass).toHaveBeenCalledWith(false);
   });
 });

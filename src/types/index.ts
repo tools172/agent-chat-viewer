@@ -6,6 +6,13 @@ export const SIDEBAR_DEFAULT_WIDTH = 320;
 export const TURN_NAV_MIN_WIDTH = 160;
 export const TURN_NAV_MAX_WIDTH = 600;
 export const TURN_NAV_DEFAULT_WIDTH = 256;
+/** 设置面板不透明度范围：保留下限，避免全透明导致界面不可读 */
+export const PANEL_OPACITY_MIN = 0.05;
+export const PANEL_OPACITY_MAX = 0.95;
+/** 默认不透明度：0.8 = 透明度 20%（数值越大越不透明） */
+export const PANEL_OPACITY_DEFAULT = 0.8;
+/** 拖动面板时临时采用的不透明度：比静止更透明，方便看清下方内容（0.4 = 透明度 60%） */
+export const PANEL_OPACITY_DRAG = 0.4;
 
 // ===== View Modes =====
 
@@ -166,6 +173,12 @@ export interface AppSettings {
   timeBase?: 'created' | 'modified';
   /** 左侧会话列表样式：'compact'（紧凑）| 'loose'（宽松），默认 'loose' */
   sessionListStyle?: 'compact' | 'loose';
+  /** 设置面板水平偏移（0~1，相对可用空间的比例；省略时默认停靠右侧） */
+  settingsPanelOffset?: number;
+  /** 设置面板不透明度（PANEL_OPACITY_MIN ~ PANEL_OPACITY_MAX），默认 0.8（透明度 20%） */
+  settingsPanelOpacity?: number;
+  /** 设置面板毛玻璃模糊效果（backdrop-filter）：true 启用磨砂，false 纯透明，默认开启（true） */
+  settingsPanelGlass?: boolean;
 }
 
 export interface ProviderInfo {

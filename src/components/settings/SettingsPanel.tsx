@@ -33,9 +33,13 @@ import {
   TURN_NAV_MIN_WIDTH,
   TURN_NAV_MAX_WIDTH,
   TURN_NAV_DEFAULT_WIDTH,
+  PANEL_OPACITY_MIN,
+  PANEL_OPACITY_MAX,
+  PANEL_OPACITY_DEFAULT,
 } from '../../types';
 import * as tauri from '../../utils/tauri';
 import { getProviderEnabledColor } from '../../utils/providers';
+import { DockablePanel } from '../common/DockablePanel';
 import { runOpenFolderAction } from '../../utils/openFolder';
 
 interface SettingsPanelProps {
@@ -43,9 +47,36 @@ interface SettingsPanelProps {
   onSettingsSaved?: () => void;
 }
 
+/** 布局滑杆（宽度 / 面板透明度）统一外观 */
+const RANGE_SLIDER_CLASSES = `w-full h-2 appearance-none bg-transparent cursor-pointer m-0 p-0
+  [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-gray-200
+  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
+  [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm
+  [&::-webkit-slider-thumb]:bg-primary-600 [&::-webkit-slider-thumb]:bg-clip-padding
+  [&::-webkit-slider-thumb]:mt-[-5px]`;
+
+/** 标题栏里的紧凑滑块（透明度）：窄、细轨道、thumb 略小，垂直居中对齐 */
+const TITLE_SLIDER_CLASSES = `w-28 h-2 appearance-none bg-transparent cursor-default m-0 p-0 align-middle
+  [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-gray-200
+  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
+  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-default
+  [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm
+  [&::-webkit-slider-thumb]:bg-primary-600 [&::-webkit-slider-thumb]:bg-clip-padding
+  [&::-webkit-slider-thumb]:mt-[-4px]`;
+
+/** 透明度滑块范围（%）：5% 最不透 ↔ 95% 最透（保底不透明，防全透明看不见 UI） */
+const PANEL_TRANSPARENCY_MIN_PCT = Math.round((1 - PANEL_OPACITY_MAX) * 100);
+const PANEL_TRANSPARENCY_MAX_PCT = Math.round((1 - PANEL_OPACITY_MIN) * 100);
+
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSettingsSaved }) => {
   const store = useSettingsStore();
   const { settings } = store;
+  const panelOpacity = settings.settingsPanelOpacity ?? PANEL_OPACITY_DEFAULT;
+  // 面板透明度 = 1 - 不透明度；滑块按「透明度」语义显示，数值越大越透明
+  const panelTransparencyPct = Math.round((1 - panelOpacity) * 100);
+  // 毛玻璃开关：true 时面板背景叠加 backdrop-filter 磨砂模糊（缺省视为开启，与默认设置一致）
+  const glass = settings.settingsPanelGlass ?? true;
   const [saveMessage, setSaveMessage] = useState('');
   const [newDir, setNewDir] = useState('');
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
@@ -100,24 +131,67 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
-
-      {/* Panel */}
-      <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-xl z-50 animate-slide-in flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="text-lg font-semibold">⚙️ 设置</h2>
+    <DockablePanel
+      offset={settings.settingsPanelOffset}
+      opacity={panelOpacity}
+      glass={glass}
+      // 第二个吸附位点：面板左缘对齐左侧导航右缘（设置图标所在处），最右侧为另一吸附位点
+      anchorX={settings.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH}
+      onOffsetChange={(offset) => store.updateSettingsPanelOffset(offset)}
+      onClose={onClose}
+      title="⚙️ 设置"
+      actions={
+        <div
+          className="flex items-center gap-2 mr-2 min-w-0 flex-1"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {/* 面板透明度：常驻标题栏，属于面板自身属性。label 紧贴滑块，百分比移到滑块右侧 */}
+          <div
+            className="flex items-center gap-1 min-w-0 flex-1"
+            title="面板透明度：数值越大越透明（5% ~ 95%）"
+          >
+            <span className="text-xs text-gray-400 shrink-0 cursor-default">透明度</span>
+            <input
+              type="range"
+              min={PANEL_TRANSPARENCY_MIN_PCT}
+              max={PANEL_TRANSPARENCY_MAX_PCT}
+              step={5}
+              value={panelTransparencyPct}
+              onChange={(e) =>
+                store.updateSettingsPanelOpacity((100 - Number(e.target.value)) / 100)
+              }
+              aria-label="面板透明度"
+              className={`${TITLE_SLIDER_CLASSES} flex-1 min-w-14`}
+            />
+            <span className="text-xs text-gray-500 tabular-nums w-6 shrink-0 cursor-default">
+              {panelTransparencyPct}%
+            </span>
+          </div>
+          {/* 毛玻璃开关：勾选后面板背景叠加磨砂模糊（backdrop-filter） */}
+          <label
+            className="flex items-center gap-1 cursor-pointer select-none shrink-0"
+            title="毛玻璃效果：启用后背景带磨砂模糊"
+          >
+            <input
+              type="checkbox"
+              checked={glass}
+              onChange={(e) => store.updateSettingsPanelGlass(e.target.checked)}
+              aria-label="毛玻璃效果"
+              className="h-3.5 w-3.5 cursor-pointer shrink-0 accent-primary-600"
+            />
+            <span className="text-xs text-gray-400 shrink-0">毛玻璃</span>
+          </label>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-1 hover:bg-gray-100 rounded shrink-0"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-
+      }
+    >
+      <div className="flex flex-col flex-1 min-h-0">
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
           {/* Agent 支持 */}
@@ -169,7 +243,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               {settings.watchDirectories.map((dir) => (
                 <div
                   key={dir.path}
-                  className="flex items-center gap-1 px-2 py-1.5 bg-gray-50 border rounded-lg group"
+                  className="flex items-center gap-1 px-2 py-1.5 bg-gray-50/50 border rounded-lg group"
                   title={dir.path}
                 >
                   {/* 启用/禁用开关 */}
@@ -212,7 +286,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             </div>
             {/* 输入行：文本输入 + 浏览按钮 + 添加按钮 */}
             <div className="flex gap-1.5">
-              <div className="flex-1 flex items-center gap-1 px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-primary-500 bg-white">
+              <div className="flex-1 flex items-center gap-1 px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-primary-500 bg-white/60">
                 <input
                   type="text"
                   value={newDir}
@@ -404,13 +478,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                         step={10}
                         value={value}
                         onChange={(e) => onChange(Number(e.target.value))}
-                        className="w-full h-2 appearance-none bg-transparent cursor-pointer m-0 p-0
-                          [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-gray-200
-                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
-                          [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
-                          [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-sm
-                          [&::-webkit-slider-thumb]:bg-primary-600 [&::-webkit-slider-thumb]:bg-clip-padding
-                          [&::-webkit-slider-thumb]:mt-[-5px]"
+                        className={RANGE_SLIDER_CLASSES}
                       />
                       <div className="relative h-3">
                         <span className="absolute left-0 text-[10px] text-gray-400 tabular-nums leading-none">
@@ -545,7 +613,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   紧凑压缩间距一屏显示更多会话，宽松更易浏览
                 </p>
               </div>
-              <div className="flex rounded-full bg-gray-100 p-0.5 flex-shrink-0">
+              <div className="flex rounded-full bg-gray-100/70 p-0.5 flex-shrink-0">
                 <button
                   onClick={() => store.setSetting({ sessionListStyle: 'compact' })}
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
@@ -577,7 +645,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   控制会话列表标题的显示来源
                 </p>
               </div>
-              <div className="flex rounded-full bg-gray-100 p-0.5 flex-shrink-0">
+              <div className="flex rounded-full bg-gray-100/70 p-0.5 flex-shrink-0">
                 <button
                   onClick={() => store.setSetting({ displayFirstUserMessage: true })}
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
@@ -609,7 +677,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   左侧会话列表的时间显示基准
                 </p>
               </div>
-              <div className="flex rounded-full bg-gray-100 p-0.5 flex-shrink-0">
+              <div className="flex rounded-full bg-gray-100/70 p-0.5 flex-shrink-0">
                 <button
                   onClick={() => store.setSetting({ timeBase: 'created' })}
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
@@ -632,6 +700,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 </button>
               </div>
             </div>
+
           </section>
 
           {/* 快捷键 */}
@@ -641,14 +710,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               快捷键
             </h3>
             <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
-                <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono bg-white border border-gray-300 rounded shadow-sm">
+              <div className="flex items-center gap-3 px-3 py-2 bg-gray-50/50 rounded-lg">
+                <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono bg-white/60 border border-gray-300 rounded shadow-sm">
                   Ctrl + F
                 </kbd>
                 <span>在会话中查找</span>
               </div>
-              <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
-                <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono bg-white border border-gray-300 rounded shadow-sm">
+              <div className="flex items-center gap-3 px-3 py-2 bg-gray-50/50 rounded-lg">
+                <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono bg-white/60 border border-gray-300 rounded shadow-sm">
                   Ctrl + G
                 </kbd>
                 <span>窗口全局查找</span>
@@ -699,8 +768,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
 
         </div>
 
-        {/* Footer */}
-        <div className="pl-4 pr-[13px] py-4 border-t bg-gray-50 space-y-2">
+        {/* Footer（半透明，让玻璃背景透出来，透明度设置可见） */}
+        <div className="pl-4 pr-[13px] py-4 border-t bg-gray-50/70 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex gap-1">
               <button
@@ -729,6 +798,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
           </p>
         </div>
       </div>
-    </>
+    </DockablePanel>
   );
 };

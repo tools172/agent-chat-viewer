@@ -7,6 +7,9 @@ import {
   TURN_NAV_MIN_WIDTH,
   TURN_NAV_MAX_WIDTH,
   TURN_NAV_DEFAULT_WIDTH,
+  PANEL_OPACITY_MIN,
+  PANEL_OPACITY_MAX,
+  PANEL_OPACITY_DEFAULT,
 } from '../types';
 import * as tauri from '../utils/tauri';
 
@@ -35,6 +38,9 @@ interface SettingsState {
   updateRestoreTabsOnStartup: (restore: boolean) => void;
   updateTheme: (theme: ThemeMode) => void;
   updateMaxPinnedTabs: (n: number) => void;
+  updateSettingsPanelOffset: (offset: number) => void;
+  updateSettingsPanelOpacity: (opacity: number) => void;
+  updateSettingsPanelGlass: (glass: boolean) => void;
   setSetting: (partial: Partial<AppSettings>) => void;
   resetSearchColors: () => void;
   resetFilter: () => void;
@@ -73,6 +79,10 @@ const defaultSettings: AppSettings = {
   displayFirstUserMessage: true,
   timeBase: 'modified',
   sessionListStyle: 'loose',
+  // settingsPanelOffset 缺省 = 停靠右侧
+  settingsPanelOpacity: PANEL_OPACITY_DEFAULT,
+  // 毛玻璃默认勾选：面板带磨砂模糊质感
+  settingsPanelGlass: true,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -100,6 +110,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       // 确保 sessionListStyle 有默认值（兼容旧版本设置文件）
       if (settings.sessionListStyle == null) {
         settings.sessionListStyle = defaultSettings.sessionListStyle;
+      }
+      // 确保设置面板不透明度有默认值（兼容旧版本设置文件）
+      if (settings.settingsPanelOpacity == null) {
+        settings.settingsPanelOpacity = defaultSettings.settingsPanelOpacity;
+      }
+      // 确保设置面板毛玻璃开关有默认值（兼容旧版本设置文件）
+      if (settings.settingsPanelGlass == null) {
+        settings.settingsPanelGlass = defaultSettings.settingsPanelGlass;
       }
       // 合并默认 providerEnabled（兼容旧版本设置文件缺少新增 agent）
       settings.providerEnabled = {
@@ -227,6 +245,40 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         navigatorWidth: Math.max(TURN_NAV_MIN_WIDTH, Math.min(TURN_NAV_MAX_WIDTH, width)),
+      },
+    });
+  },
+
+  updateSettingsPanelOffset: (offset) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        // 比例存储：0~1，窗口缩放后按比例重新定位；保留 4 位小数避免抖动
+        settingsPanelOffset: Math.round(Math.min(1, Math.max(0, offset)) * 10000) / 10000,
+      },
+    });
+  },
+
+  updateSettingsPanelOpacity: (opacity) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        // 钳制到 0.3~0.95 并保留两位小数，避免浮点抖动
+        settingsPanelOpacity:
+          Math.round(Math.min(PANEL_OPACITY_MAX, Math.max(PANEL_OPACITY_MIN, opacity)) * 100) /
+          100,
+      },
+    });
+  },
+
+  updateSettingsPanelGlass: (glass) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        settingsPanelGlass: glass,
       },
     });
   },

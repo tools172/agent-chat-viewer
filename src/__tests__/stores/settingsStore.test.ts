@@ -115,5 +115,35 @@ describe('settingsStore', () => {
     await useSettingsStore.getState().load();
 
     expect(useSettingsStore.getState().settings.sessionListStyle).toBe('loose');
+    // 旧版文件无 settingsPanelOffset → 保持缺省（组件按停靠右侧处理）
+    expect(useSettingsStore.getState().settings.settingsPanelOffset).toBeUndefined();
+    // 旧版文件无 settingsPanelOpacity → 默认不透明度 0.8（透明度 20%）
+    expect(useSettingsStore.getState().settings.settingsPanelOpacity).toBe(0.8);
+    // 旧版文件无 settingsPanelGlass → 默认开启毛玻璃（true）
+    expect(useSettingsStore.getState().settings.settingsPanelGlass).toBe(true);
+  });
+
+  it('should update settings panel offset and opacity via dedicated actions', () => {
+    // 偏移以比例(0~1)存储
+    useSettingsStore.getState().updateSettingsPanelOffset(0.5);
+    expect(useSettingsStore.getState().settings.settingsPanelOffset).toBe(0.5);
+    // 比例被钳制在 0~1
+    useSettingsStore.getState().updateSettingsPanelOffset(2);
+    expect(useSettingsStore.getState().settings.settingsPanelOffset).toBe(1);
+    useSettingsStore.getState().updateSettingsPanelOffset(-1);
+    expect(useSettingsStore.getState().settings.settingsPanelOffset).toBe(0);
+
+    useSettingsStore.getState().updateSettingsPanelOpacity(0.5);
+    expect(useSettingsStore.getState().settings.settingsPanelOpacity).toBe(0.5);
+    // 超出上下限时被钳制：保底不会全透明
+    useSettingsStore.getState().updateSettingsPanelOpacity(1);
+    expect(useSettingsStore.getState().settings.settingsPanelOpacity).toBe(0.95);
+    useSettingsStore.getState().updateSettingsPanelOpacity(0);
+    expect(useSettingsStore.getState().settings.settingsPanelOpacity).toBe(0.05);
+
+    useSettingsStore.getState().updateSettingsPanelGlass(true);
+    expect(useSettingsStore.getState().settings.settingsPanelGlass).toBe(true);
+    useSettingsStore.getState().updateSettingsPanelGlass(false);
+    expect(useSettingsStore.getState().settings.settingsPanelGlass).toBe(false);
   });
 });
