@@ -34,7 +34,7 @@ const defaultFilter: FilterConfig = {
 function filterAndCollapse(events: ChatEvent[], config: FilterConfig): ChatEvent[] {
   const filtered = filterEvents(events, config);
   if (config.collapseConsecutive) {
-    return collapseConsecutiveEvents(filtered);
+    return collapseConsecutiveEvents(filtered, events);
   }
   return filtered;
 }
@@ -125,12 +125,14 @@ describe('filter + collapse 集成测试', () => {
       makeTextEvent('user', 'hello'),
       makeEvent('assistant', [
         { blockType: 'thinking', thinking: 'hmm', signature: '' },
-      ]), // thinking hidden → empty → removed
+      ]), // thinking hidden → empty → removed（但在原始时间线上仍是边界）
       makeTextEvent('user', 'world'),
     ];
     const result = filterAndCollapse(events, { ...defaultFilter, showThinking: false, collapseConsecutive: true });
-    expect(result).toHaveLength(1);
-    expect(result[0].content[0]).toMatchObject({ text: 'world' });
+    // 被隐藏的 thinking 事件应作为边界，user "hello" 与 "world" 不应合并
+    expect(result).toHaveLength(2);
+    expect(result[0].content[0]).toMatchObject({ text: 'hello' });
+    expect(result[1].content[0]).toMatchObject({ text: 'world' });
   });
 
   it('真实混合场景：纯文本折叠，含工具不折叠', () => {

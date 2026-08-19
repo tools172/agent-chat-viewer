@@ -51,9 +51,31 @@ function shouldShowEvent(event: ChatEvent, config: FilterConfig): boolean {
  * 工具调用、思考、工具结果等结构化块，整组不折叠，避免丢失工具调用记录。
  *
  * 应在 content-block 过滤之后调用，此时已移除空事件。
+ *
+ * @param events 过滤后的事件列表（已按 block 级别过滤，空事件已移除）
+ * @param originalEvents 可选：过滤前的完整事件列表，用于判断两条事件在
+ *   原始时间线上是否真正相邻。过滤会隐藏中间的 thinking / tool_use /
+ *   tool_result / system 等事件，若只按过滤后的列表判断"连续"，会把被
+ *   隐藏事件隔开的消息误判为连发而合并、吞掉前面的消息。传入原始列表
+ *   后，只有中间没有任何事件的两条同角色消息才会被视为"连发"。
  */
-export function collapseConsecutiveEvents(events: ChatEvent[]): ChatEvent[] {
+export function collapseConsecutiveEvents(
+  events: ChatEvent[],
+  originalEvents?: ChatEvent[],
+): ChatEvent[] {
   if (events.length === 0) return [];
+
+  // 原始时间线上的序号映射（uuid → index），用于相邻判断。
+  // 仅记录首次出现，避免多个缺 uuid 的元数据事件（都映射到 "unknown"）互相覆盖。
+  const originalIndex = originalEvents
+    ? (() => {
+        const map = new Map<string, number>();
+        originalEvents.forEach((e, idx) => {
+          if (!map.has(e.uuid)) map.set(e.uuid, idx);
+        });
+        return map;
+      })()
+    : null;
 
   const collapsible = new Set(['user', 'assistant', 'developer', 'system']);
   const result: ChatEvent[] = [];
@@ -68,9 +90,15 @@ export function collapseConsecutiveEvents(events: ChatEvent[]): ChatEvent[] {
       continue;
     }
 
-    // 找到同一角色连续分组的末尾
+    // 找到同一角色连续分组的末尾。
+    // 只有原始时间线上真正相邻（中间没有被过滤隐藏的事件）才继续分组，
+    // 否则在此断开，避免把被隐藏的工具/思考隔开的消息误判为"连发"。
     let j = i;
-    while (j + 1 < events.length && events[j + 1].eventType === role) {
+    while (
+      j + 1 < events.length &&
+      events[j + 1].eventType === role &&
+      isOriginallyAdjacent(events[j], events[j + 1], originalIndex)
+    ) {
       j++;
     }
 
@@ -97,6 +125,25 @@ export function collapseConsecutiveEvents(events: ChatEvent[]): ChatEvent[] {
   }
 
   return result;
+}
+
+/**
+ * 判断两条事件在原始时间线上是否相邻（中间没有任何事件）。
+ * 未提供原始序列时（originalIndex 为 null）回退到过滤后列表的相邻判断，
+ * 保持对旧调用方的向后兼容。
+ */
+function isOriginallyAdjacent(
+  a: ChatEvent,
+  b: ChatEvent,
+  originalIndex: Map<string, number> | null,
+): boolean {
+  if (!originalIndex) return true;
+  const ia = originalIndex.get(a.uuid);
+  const ib = originalIndex.get(b.uuid);
+  // 任一事件在原始序列中找不到时，保守地视为不相邻（不折叠），
+  // 避免在异常情况下重新引入"吞消息"问题。
+  if (ia === undefined || ib === undefined) return false;
+  return ib === ia + 1;
 }
 
 function filterEventContent(

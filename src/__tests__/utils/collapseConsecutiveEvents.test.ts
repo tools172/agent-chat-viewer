@@ -264,4 +264,57 @@ describe('collapseConsecutiveEvents', () => {
     expect(result[0].content[0]).toMatchObject({ text: 'msg99' });
     expect(result[1].content[0]).toMatchObject({ text: 'reply' });
   });
+
+  // ======================== originalEvents 参数（隐藏边界回归） ========================
+
+  it('originalEvents：被隐藏的 thinking 事件作为边界，阻止误合并', () => {
+    const original = [
+      makeEvent('user', 'msg1'),
+      makeEvent('assistant', '', {
+        content: [{ blockType: 'thinking', thinking: 'hmm', signature: '' }],
+      }),
+      makeEvent('user', 'msg2'),
+    ];
+    // 过滤后 assistant 被移除，只剩两条 user
+    const filtered = [original[0], original[2]];
+    const result = collapseConsecutiveEvents(filtered, original);
+    expect(result).toHaveLength(2);
+    expect(result[0].content[0]).toMatchObject({ text: 'msg1' });
+    expect(result[1].content[0]).toMatchObject({ text: 'msg2' });
+  });
+
+  it('originalEvents：被隐藏的 tool_use 事件作为边界，阻止误合并', () => {
+    const original = [
+      makeEvent('assistant', 'reply1'),
+      makeEvent('assistant', '', {
+        content: [{ blockType: 'tool_use', toolId: 't1', toolName: 'read', toolInput: {} }],
+      }),
+      makeEvent('assistant', 'reply2'),
+    ];
+    const filtered = [original[0], original[2]];
+    const result = collapseConsecutiveEvents(filtered, original);
+    expect(result).toHaveLength(2);
+    expect(result[0].content[0]).toMatchObject({ text: 'reply1' });
+    expect(result[1].content[0]).toMatchObject({ text: 'reply2' });
+  });
+
+  it('originalEvents：中间无隐藏事件的两条同角色消息仍正常折叠', () => {
+    const original = [
+      makeEvent('user', 'u1'),
+      makeEvent('user', 'u2'),
+    ];
+    const result = collapseConsecutiveEvents(original, original);
+    expect(result).toHaveLength(1);
+    expect(result[0].content[0]).toMatchObject({ text: 'u2' });
+  });
+
+  it('未提供 originalEvents 时回退到旧行为（过滤后列表相邻即折叠）', () => {
+    const events = [
+      makeEvent('user', 'u1'),
+      makeEvent('user', 'u2'),
+    ];
+    const result = collapseConsecutiveEvents(events);
+    expect(result).toHaveLength(1);
+    expect(result[0].content[0]).toMatchObject({ text: 'u2' });
+  });
 });

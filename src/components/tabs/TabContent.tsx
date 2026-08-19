@@ -41,7 +41,7 @@ export const TabContent: React.FC<TabContentProps> = React.memo(
     if (!tab.sessionDetail) return [];
     const filtered = filterEvents(tab.sessionDetail.events, tab.filter);
     if (tab.filter.collapseConsecutive) {
-      return collapseConsecutiveEvents(filtered);
+      return collapseConsecutiveEvents(filtered, tab.sessionDetail.events);
     }
     return filtered;
   }, [tab.sessionDetail, tab.filter]);
