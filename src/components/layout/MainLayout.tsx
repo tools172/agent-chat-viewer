@@ -27,6 +27,7 @@ import { SettingsPanel } from '../settings/SettingsPanel';
 import { EmptyState } from '../common/EmptyState';
 import { LoadingOverlay } from '../common/LoadingOverlay';
 import * as tauri from '../../utils/tauri';
+import { CONTENT_ZOOM_DEFAULT, CONTENT_ZOOM_STEP } from '../../types';
 
 export const MainLayout: React.FC = () => {
   // 会话列表 store
@@ -181,6 +182,27 @@ export const MainLayout: React.FC = () => {
       }
     };
 
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // 全局快捷键：Ctrl+0 重置内容缩放；Ctrl+= / Ctrl+- 放大缩小聊天内容
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey || e.altKey || e.metaKey) return;
+      const store = useSettingsStore.getState();
+      const current = store.settings.contentZoom ?? CONTENT_ZOOM_DEFAULT;
+      if (e.key === '0') {
+        e.preventDefault();
+        store.updateContentZoom(CONTENT_ZOOM_DEFAULT);
+      } else if (e.key === '=' || e.key === '+') {
+        e.preventDefault();
+        store.updateContentZoom(current + CONTENT_ZOOM_STEP);
+      } else if (e.key === '-') {
+        e.preventDefault();
+        store.updateContentZoom(current - CONTENT_ZOOM_STEP);
+      }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);

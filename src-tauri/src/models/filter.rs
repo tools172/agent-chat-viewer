@@ -125,10 +125,17 @@ pub struct AppSettings {
     /// 会话列表时间基准：created | modified，默认 created
     #[serde(default = "default_time_base")]
     pub time_base: String,
+    /// 聊天内容区缩放比例（百分比），默认 100
+    #[serde(default = "default_content_zoom")]
+    pub content_zoom: u32,
 }
 
 fn default_time_base() -> String {
     "modified".to_string()
+}
+
+fn default_content_zoom() -> u32 {
+    100
 }
 
 fn default_theme() -> String {
@@ -182,6 +189,7 @@ impl Default for AppSettings {
             active_tab_index: 0,
             display_first_user_message: true,
             time_base: "modified".to_string(),
+            content_zoom: 100,
         }
     }
 }

@@ -22,6 +22,8 @@ import {
   SwatchBook,
   Highlighter,
   Keyboard,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -36,6 +38,10 @@ import {
   PANEL_OPACITY_MIN,
   PANEL_OPACITY_MAX,
   PANEL_OPACITY_DEFAULT,
+  CONTENT_ZOOM_MIN,
+  CONTENT_ZOOM_MAX,
+  CONTENT_ZOOM_DEFAULT,
+  CONTENT_ZOOM_STEP,
 } from '../../types';
 import * as tauri from '../../utils/tauri';
 import { getProviderEnabledColor } from '../../utils/providers';
@@ -77,6 +83,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
   const panelTransparencyPct = Math.round((1 - panelOpacity) * 100);
   // 毛玻璃开关：true 时面板背景叠加 backdrop-filter 磨砂模糊（缺省视为开启，与默认设置一致）
   const glass = settings.settingsPanelGlass ?? true;
+  const contentZoom = settings.contentZoom ?? CONTENT_ZOOM_DEFAULT;
   const [saveMessage, setSaveMessage] = useState('');
   const [newDir, setNewDir] = useState('');
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
@@ -492,6 +499,45 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   </div>
                 );
               })}
+            </div>
+
+            {/* 内容缩放 */}
+            <div className="flex items-center justify-between">
+              <div className="mr-4">
+                <span className="text-sm font-medium text-gray-700">内容缩放</span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  聊天内容区缩放，Ctrl + 滚轮 / Ctrl + 0 快速调节
+                </p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => store.updateContentZoom(contentZoom - CONTENT_ZOOM_STEP)}
+                  disabled={contentZoom <= CONTENT_ZOOM_MIN}
+                  className="p-1.5 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="缩小"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </button>
+                <span className="text-sm text-gray-700 tabular-nums w-12 text-center">
+                  {contentZoom}%
+                </span>
+                <button
+                  onClick={() => store.updateContentZoom(contentZoom + CONTENT_ZOOM_STEP)}
+                  disabled={contentZoom >= CONTENT_ZOOM_MAX}
+                  className="p-1.5 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="放大"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => store.updateContentZoom(CONTENT_ZOOM_DEFAULT)}
+                  disabled={contentZoom === CONTENT_ZOOM_DEFAULT}
+                  className="px-2 py-1.5 text-xs text-gray-500 hover:text-primary-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="重置为 100%"
+                >
+                  重置
+                </button>
+              </div>
             </div>
 
             {/* 自动保存拖拽宽度 */}

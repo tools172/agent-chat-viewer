@@ -10,6 +10,9 @@ import {
   PANEL_OPACITY_MIN,
   PANEL_OPACITY_MAX,
   PANEL_OPACITY_DEFAULT,
+  CONTENT_ZOOM_MIN,
+  CONTENT_ZOOM_MAX,
+  CONTENT_ZOOM_DEFAULT,
 } from '../types';
 import * as tauri from '../utils/tauri';
 
@@ -41,6 +44,7 @@ interface SettingsState {
   updateSettingsPanelOffset: (offset: number) => void;
   updateSettingsPanelOpacity: (opacity: number) => void;
   updateSettingsPanelGlass: (glass: boolean) => void;
+  updateContentZoom: (zoom: number) => void;
   setSetting: (partial: Partial<AppSettings>) => void;
   resetSearchColors: () => void;
   resetFilter: () => void;
@@ -83,6 +87,7 @@ const defaultSettings: AppSettings = {
   settingsPanelOpacity: PANEL_OPACITY_DEFAULT,
   // 毛玻璃默认勾选：面板带磨砂模糊质感
   settingsPanelGlass: true,
+  contentZoom: CONTENT_ZOOM_DEFAULT,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -118,6 +123,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       // 确保设置面板毛玻璃开关有默认值（兼容旧版本设置文件）
       if (settings.settingsPanelGlass == null) {
         settings.settingsPanelGlass = defaultSettings.settingsPanelGlass;
+      }
+      // 确保内容缩放有默认值（兼容旧版本设置文件）
+      if (settings.contentZoom == null) {
+        settings.contentZoom = defaultSettings.contentZoom;
       }
       // 合并默认 providerEnabled（兼容旧版本设置文件缺少新增 agent）
       settings.providerEnabled = {
@@ -279,6 +288,17 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         settingsPanelGlass: glass,
+      },
+    });
+  },
+
+  updateContentZoom: (zoom) => {
+    const { settings } = get();
+    set({
+      settings: {
+        ...settings,
+        // 钳制到 50~200，四舍五入到整数，避免浮点抖动
+        contentZoom: Math.round(Math.min(CONTENT_ZOOM_MAX, Math.max(CONTENT_ZOOM_MIN, zoom))),
       },
     });
   },

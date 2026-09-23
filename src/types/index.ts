@@ -14,6 +14,13 @@ export const PANEL_OPACITY_DEFAULT = 0.8;
 /** 拖动面板时临时采用的不透明度：比静止更透明，方便看清下方内容（0.4 = 透明度 60%） */
 export const PANEL_OPACITY_DRAG = 0.4;
 
+// ===== Content Zoom =====
+
+export const CONTENT_ZOOM_MIN = 50;
+export const CONTENT_ZOOM_MAX = 200;
+export const CONTENT_ZOOM_DEFAULT = 100;
+export const CONTENT_ZOOM_STEP = 10;
+
 // ===== View Modes =====
 
 export type ViewMode = 'flat' | 'by-project' | 'by-time' | 'search' | 'folder' | 'timeline';
@@ -179,6 +186,8 @@ export interface AppSettings {
   settingsPanelOpacity?: number;
   /** 设置面板毛玻璃模糊效果（backdrop-filter）：true 启用磨砂，false 纯透明，默认开启（true） */
   settingsPanelGlass?: boolean;
+  /** 聊天内容区缩放比例（百分比，50~200），默认 100 */
+  contentZoom?: number;
 }
 
 export interface ProviderInfo {

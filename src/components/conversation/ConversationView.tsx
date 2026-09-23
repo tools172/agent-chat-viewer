@@ -1,6 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import { MessageSquare } from 'lucide-react';
 import type { ChatEvent } from '../../types';
+import { CONTENT_ZOOM_DEFAULT, CONTENT_ZOOM_STEP } from '../../types';
 import type { EventMatch } from '../../utils/searchEvents';
 import { useConversation } from '../../hooks/useConversation';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -68,6 +69,7 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
   } = useConversation(events);
 
   const searchColors = useSettingsStore((s) => s.settings.searchColors);
+  const contentZoom = useSettingsStore((s) => s.settings.contentZoom ?? CONTENT_ZOOM_DEFAULT);
   const [findQuery, setFindQuery] = React.useState('');
   const [activeFindMatch, setActiveFindMatch] = React.useState<EventMatch | null>(null);
   const showFindBar = externalShowFindBar ?? false;
@@ -122,6 +124,21 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
     onStatsChange?.(stats);
   }, [stats, onStatsChange]);
 
+  // Ctrl + 滚轮：缩放聊天内容区（native listener 必须非 passive 才能 preventDefault）
+  React.useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const store = useSettingsStore.getState();
+      const current = store.settings.contentZoom ?? CONTENT_ZOOM_DEFAULT;
+      store.updateContentZoom(current + (e.deltaY < 0 ? CONTENT_ZOOM_STEP : -CONTENT_ZOOM_STEP));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [isLoading, events.length]);
+
   // Ctrl+F is intercepted globally in MainLayout — it opens this conversation find bar
 
   if (isLoading) {
@@ -155,29 +172,31 @@ export const ConversationView: React.FC<ConversationViewProps> = React.memo(({
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto relative"
       >
-        <div ref={topRef} />
-        {events.map((event, ei) => {
-          const isActiveEvent = activeFindMatch?.eventIdx === ei;
-          return (
-            <EventCard
-              key={event.uuid}
-              event={event}
-              expandedThinking={expandedThinking}
-              expandedToolCalls={expandedToolCalls}
-              expandedToolResults={expandedToolResults}
-              onToggleThinking={toggleThinking}
-              onToggleToolCall={toggleToolCall}
-              onToggleToolResult={toggleToolResult}
-              blockKey={blockKey}
-              searchHighlight={searchHighlight}
-              findHighlight={findQuery || undefined}
-              searchColors={searchColors}
-              activeFindBlockIdx={isActiveEvent ? activeFindMatch.blockIdx : undefined}
-              activeFindOccurrenceIdx={isActiveEvent ? activeFindMatch.occurrenceIdx : undefined}
-            />
-          );
-        })}
-        <div ref={bottomRef} data-bottom-sentinel="" />
+        <div style={{ zoom: contentZoom / 100 }}>
+          <div ref={topRef} />
+          {events.map((event, ei) => {
+            const isActiveEvent = activeFindMatch?.eventIdx === ei;
+            return (
+              <EventCard
+                key={event.uuid}
+                event={event}
+                expandedThinking={expandedThinking}
+                expandedToolCalls={expandedToolCalls}
+                expandedToolResults={expandedToolResults}
+                onToggleThinking={toggleThinking}
+                onToggleToolCall={toggleToolCall}
+                onToggleToolResult={toggleToolResult}
+                blockKey={blockKey}
+                searchHighlight={searchHighlight}
+                findHighlight={findQuery || undefined}
+                searchColors={searchColors}
+                activeFindBlockIdx={isActiveEvent ? activeFindMatch.blockIdx : undefined}
+                activeFindOccurrenceIdx={isActiveEvent ? activeFindMatch.occurrenceIdx : undefined}
+              />
+            );
+          })}
+          <div ref={bottomRef} data-bottom-sentinel="" />
+        </div>
 
         {/* 浮动滚动按钮 */}
         <div className="sticky bottom-3 flex flex-col items-end gap-0.5 pr-1.5 pointer-events-none">
