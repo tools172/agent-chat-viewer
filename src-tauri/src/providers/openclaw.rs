@@ -43,7 +43,7 @@ impl OpenClawProvider {
 
         match role {
             "user" => {
-                let content = Self::parse_user_content(content_arr, None);
+                let content = Self::parse_user_content(message.get("content"), None);
                 Ok(ChatEvent {
                     uuid: id.to_string(),
                     parent_uuid: parent_id,
@@ -93,12 +93,29 @@ impl OpenClawProvider {
     }
 
     /// Parse user message content blocks: text only (metadata prefix cleaned)
+    ///
+    /// OpenClaw user messages may carry `content` either as a plain string
+    /// (e.g. `"content": "讲两个冷笑话…"`) or as an array of content blocks
+    /// (e.g. `[{"type":"text","text":"…"}]`). Both forms are handled here.
     fn parse_user_content(
-        content_arr: Option<&Vec<serde_json::Value>>,
+        content: Option<&serde_json::Value>,
         _extra: Option<&serde_json::Value>,
     ) -> Vec<ContentBlock> {
         let mut blocks = Vec::new();
-        if let Some(items) = content_arr {
+        let Some(content) = content else {
+            return blocks;
+        };
+
+        // String form: the whole message text is a single plain string.
+        if let Some(text) = content.as_str() {
+            blocks.push(ContentBlock::Text {
+                text: clean_openclaw_user_text(text),
+            });
+            return blocks;
+        }
+
+        // Array form: iterate `{type:"text", text:"…"}` content blocks.
+        if let Some(items) = content.as_array() {
             for item in items {
                 let block_type = item["type"].as_str().unwrap_or("");
                 if block_type == "text" {
@@ -386,8 +403,15 @@ impl ChatProvider for OpenClawProvider {
     }
 
     fn extract_raw_user_text(&self, value: &serde_json::Value) -> Option<String> {
-        // OpenClaw user messages: message.content[0].text
-        if let Some(text) = value["message"]["content"][0]["text"].as_str() {
+        let content = &value["message"]["content"];
+        // Array form: message.content[0].text
+        if let Some(text) = content[0]["text"].as_str() {
+            if !text.is_empty() {
+                return Some(text.to_string());
+            }
+        }
+        // String form: message.content is a plain string
+        if let Some(text) = content.as_str() {
             if !text.is_empty() {
                 return Some(text.to_string());
             }
@@ -630,6 +654,37 @@ mod tests {
         let input = "Hello, Claude";
         let result = clean_openclaw_user_text(input);
         assert_eq!(result, "Hello, Claude");
+    }
+
+    #[test]
+    fn test_parse_user_message_string_content() {
+        // OpenClaw sometimes stores user `content` as a plain string, not an
+        // array of content blocks. See the real-world sessions that used to
+        // show up as "(Empty session)".
+        let line = r#"{"type":"message","id":"u1","parentId":"c1","timestamp":"2026-09-28T09:23:55.800Z","message":{"role":"user","content":"讲两个冷笑话，将其保存到word文件中","timestamp":1790587433172,"idempotencyKey":"02ca8714-2a42-47ca-8d8b-239cc728fa1d:user"}}"#;
+        let event = parse(line);
+        assert_eq!(event.uuid, "u1");
+        assert!(matches!(event.event_type, EventType::User));
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::Text { text } => {
+                assert_eq!(text, "讲两个冷笑话，将其保存到word文件中")
+            }
+            _ => panic!("Expected Text block"),
+        }
+    }
+
+    #[test]
+    fn test_extract_raw_user_text_string_content() {
+        let provider = OpenClawProvider::new();
+        let value: serde_json::Value = serde_json::from_str(
+            r#"{"type":"message","message":{"role":"user","content":"推荐2篇先秦文学的文献"}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            provider.extract_raw_user_text(&value),
+            Some("推荐2篇先秦文学的文献".to_string())
+        );
     }
 
     #[test]
