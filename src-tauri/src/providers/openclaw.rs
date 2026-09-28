@@ -141,9 +141,15 @@ impl OpenClawProvider {
                 match block_type {
                     "text" => {
                         if let Some(text) = item["text"].as_str() {
-                            blocks.push(ContentBlock::Text {
-                                text: text.to_string(),
-                            });
+                            // OpenClaw often emits whitespace-only text ("\n\n\n")
+                            // before a tool call; drop it so the conversation
+                            // doesn't render empty assistant bubbles.
+                            let trimmed = text.trim();
+                            if !trimmed.is_empty() {
+                                blocks.push(ContentBlock::Text {
+                                    text: trimmed.to_string(),
+                                });
+                            }
                         }
                     }
                     "toolCall" => {
@@ -532,6 +538,33 @@ mod tests {
                 assert_eq!(tool_input["path"], "/test/file.txt");
             }
             _ => panic!("Expected ToolUse block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_assistant_skips_whitespace_text() {
+        // OpenClaw emits "\n\n\n" text before tool calls; that whitespace-only
+        // block must be dropped so the conversation shows no empty bubble.
+        let line = r#"{"type":"message","id":"a3","parentId":"u1","timestamp":"2026-09-28T09:24:08.702Z","message":{"role":"assistant","content":[{"type":"text","text":"\n\n\n"},{"type":"toolCall","id":"call_5c512bfb2ec745849c3e1cc3","name":"exec","arguments":{"command":"python -c \"print('ok')\""}}]}}"#;
+        let event = parse(line);
+        assert!(matches!(event.event_type, EventType::Assistant));
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::ToolUse { tool_name, .. } => assert_eq!(tool_name, "exec"),
+            _ => panic!("Expected ToolUse block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_assistant_trims_surrounding_whitespace() {
+        let line = r#"{"type":"message","id":"a4","parentId":"u1","timestamp":"2026-09-28T09:23:58.644Z","message":{"role":"assistant","content":[{"type":"text","text":"\n\n我来创作两个冷笑话并保存到Word文件中。\n"}]}}"#;
+        let event = parse(line);
+        assert_eq!(event.content.len(), 1);
+        match &event.content[0] {
+            ContentBlock::Text { text } => {
+                assert_eq!(text, "我来创作两个冷笑话并保存到Word文件中。")
+            }
+            _ => panic!("Expected Text block"),
         }
     }
 
