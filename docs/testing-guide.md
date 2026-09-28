@@ -164,13 +164,19 @@ src-tauri/
 验证文本清理逻辑在 **parse 阶段**和 **display 阶段**均正确运行：
 
 ```
-OpenClaw:  clean_openclaw_user_text (6 个测试)
+OpenClaw:  clean_openclaw_user_text (4 个测试)
   ├── test_clean_ui_metadata_prefix        # UI 端 "Sender metadata" 前缀
   ├── test_clean_subagent_task              # Subagent task 格式
   ├── test_clean_timestamp_only             # 仅时间戳前缀
-  ├── test_clean_plain_text_passthrough     # 纯文本透传
-  ├── test_parse_user_message               # parse 阶段基础
-  └── test_parse_user_message_with_ui_metadata  # parse 阶段带 UI metadata
+  └── test_clean_plain_text_passthrough     # 纯文本透传
+
+OpenClaw:  content 解析 / 空白处理 (6 个测试)
+  ├── test_parse_user_message               # 数组形态 content（基础）
+  ├── test_parse_user_message_with_ui_metadata  # UI metadata 清理
+  ├── test_parse_user_message_string_content     # user content 纯字符串形态
+  ├── test_extract_raw_user_text_string_content  # extract_raw_user_text 字符串形态
+  ├── test_parse_assistant_skips_whitespace_text  # 丢弃助手纯空白 text 块
+  └── test_parse_assistant_trims_surrounding_whitespace # 裁剪助手 text 首尾空白
 
 Claude Code: clean_claude_code_user_text (7 个测试)
   ├── test_clean_ide_selection              # IDE 选择区

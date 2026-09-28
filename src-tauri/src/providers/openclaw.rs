@@ -16,8 +16,11 @@ use crate::providers::base::{ChatProvider, ParseError};
 /// - `thinking_level_change` — thinking on/off toggle
 /// - `custom` — internal metadata snapshots
 /// - `message` — actual chat messages with `message.role`:
-///   - `user` → user input
-///   - `assistant` → AI response (may embed `toolCall` content blocks)
+///   - `user` → user input; `content` may be a plain string or an array of
+///     `{type:"text",text:"…"}` blocks (both forms are handled)
+///   - `assistant` → AI response (may embed `toolCall` content blocks);
+///     whitespace-only text blocks are dropped and surrounding whitespace is
+///     trimmed from retained text
 ///   - `toolResult` → result of a tool execution
 pub struct OpenClawProvider {
     base_dir: PathBuf,
