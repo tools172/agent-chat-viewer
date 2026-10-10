@@ -214,3 +214,15 @@ export function extractUserText(
   const realBlock = textBlocks.find((b) => !isSystemAnnotation(b.text));
   return realBlock?.text || textBlocks[0].text;
 }
+
+/**
+ * 判断一条事件是否为「用户手动输入」的聊天内容 —— 即右侧轮次导航列表会收录的消息。
+ * 判定与 TurnNavigator.extractTurns 保持一致：user 事件且至少含一个 text 块。
+ * （工具结果虽然也解析为 user 事件，但只含 tool_result 块，因此不命中。）
+ */
+export function isUserTextTurn(event: ChatEvent): boolean {
+  return (
+    event.eventType === 'user' &&
+    event.content.some((b) => b.blockType === 'text')
+  );
+}

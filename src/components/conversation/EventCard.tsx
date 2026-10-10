@@ -6,6 +6,7 @@ import { ToolCallBlock } from './ToolCallBlock';
 import { ToolResultBlock } from './ToolResultBlock';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { highlightTextInDOM } from '../../utils/highlightDom';
+import { isUserTextTurn } from '../../utils/filterEvents';
 
 interface EventCardProps {
   event: ChatEvent;
@@ -117,6 +118,7 @@ export const EventCard: React.FC<EventCardProps> = React.memo(({
   const isUser = event.eventType === 'user';
   const isDeveloper = event.eventType === 'developer';
   const isSystem = event.eventType === 'system';
+  const isManualUserTurn = isUserTextTurn(event);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -244,7 +246,7 @@ export const EventCard: React.FC<EventCardProps> = React.memo(({
     <div
       data-event-uuid={event.uuid}
       className={`group flex gap-3 px-4 py-3 ${
-        isUser ? 'bg-blue-50/30' : 'bg-white'
+        isManualUserTurn ? 'msg-user-input' : isUser ? 'bg-blue-50/30' : 'bg-white'
       } hover:bg-gray-50/50 transition-colors`}
       onContextMenu={(e) => {
         e.preventDefault();

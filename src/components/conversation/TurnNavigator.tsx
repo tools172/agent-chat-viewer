@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { PanelRightClose, PanelRightOpen, GripVertical } from 'lucide-react';
 import type { ChatEvent } from '../../types';
-import { extractUserText } from '../../utils/filterEvents';
+import { extractUserText, isUserTextTurn } from '../../utils/filterEvents';
 
 /** 小尖括号 + 顶部横线：回到最顶部 */
 function ScrollTopIcon() {
@@ -50,9 +50,7 @@ function extractTurns(events: ChatEvent[]): Turn[] {
   const turns: Turn[] = [];
   let turnIndex = 0;
   for (const event of events) {
-    if (event.eventType !== 'user') continue;
-    const hasText = event.content.some((b) => b.blockType === 'text');
-    if (!hasText) continue;
+    if (!isUserTextTurn(event)) continue;
     turnIndex++;
     // 跳过系统注解块，取真实用户消息
     const fullText = extractUserText(event);

@@ -41,6 +41,7 @@
   --color-accent: #2563eb;
   --color-accent-hover: #1d4ed8;
   --color-accent-light: #eff6ff;
+  --color-user-input: #00bfff;  /* 用户手动输入高亮：深天蓝 · 荧光 */
   --color-scrollbar-thumb: #d1d5db;
   --color-scrollbar-thumb-hover: #9ca3af;
   --color-badge-success-bg: #dcfce7;
@@ -438,6 +439,16 @@
   .border-light   { border-color: var(--color-border-light); }
   .hover\:bg-hover:hover    { background-color: var(--color-bg-hover); }
   .hover\:text-link:hover   { color: var(--color-text-link); }
+
+  /* ---- 用户手动输入消息：发光边框（无底色，左右 4px 竖线 + 柔光晕 + 细全框） ---- */
+  /* box-shadow inset 零布局占用（不改宽高、不挤内容）；配色走 --color-user-input */
+  .msg-user-input {
+    box-shadow:
+      inset 4px 0 0 0 var(--color-user-input),
+      inset 4px 0 28px 0 color-mix(in srgb, var(--color-user-input) 65%, transparent),
+      inset -4px 0 0 0 var(--color-user-input),
+      inset 0 0 0 1px color-mix(in srgb, var(--color-user-input) 50%, transparent);
+  }
 
   /* ---- DockablePanel：滑板底色（随主题变量自动适配） ---- */
   /* 纯半透明背景：透明度由调用方经 --panel-opacity 注入（0~1），rgb 变量保证 WebView2 兼容。
