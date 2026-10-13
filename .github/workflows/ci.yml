@@ -15,10 +15,11 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   PNPM_VERSION: '9'
+  RUST_VERSION: '1.95.0'
 
 jobs:
   # ============================================================
-  # Frontend: TypeScript type-check, test, format
+  # Frontend: TypeScript type-check, lint, test, format
   # ============================================================
   frontend:
     name: Frontend (TS)
@@ -50,7 +51,7 @@ jobs:
         run: pnpm lint:eslint
 
       - name: Unit tests (vitest)
-        run: pnpm test -- --coverage
+        run: pnpm test
 
       - name: Format check (prettier)
         run: pnpm format:check
@@ -70,6 +71,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: ${{ env.RUST_VERSION }}
           components: clippy, rustfmt
 
       - name: Cache Rust dependencies
@@ -103,14 +105,17 @@ jobs:
         working-directory: src-tauri
 
   # ============================================================
-  # Build: Full Tauri build verification (Linux)
-  # Only runs after frontend + rust pass
+  # Build: full Tauri build on Linux + Windows
   # ============================================================
   build:
-    name: Build (Linux)
+    name: Build (${{ matrix.os }})
     needs: [frontend, rust]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -129,13 +134,16 @@ jobs:
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: 'src-tauri -> target'
 
-      - name: Install Tauri system dependencies
+      - name: Install Tauri system dependencies (Linux only)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
