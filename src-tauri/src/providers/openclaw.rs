@@ -26,6 +26,12 @@ pub struct OpenClawProvider {
     base_dir: PathBuf,
 }
 
+impl Default for OpenClawProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OpenClawProvider {
     pub fn new() -> Self {
         let home = home_dir();
@@ -68,17 +74,10 @@ impl OpenClawProvider {
                 })
             }
             "toolResult" => {
-                let tool_call_id = message["toolCallId"]
-                    .as_str()
-                    .unwrap_or("")
-                    .to_string();
+                let tool_call_id = message["toolCallId"].as_str().unwrap_or("").to_string();
                 let is_error = message["isError"].as_bool().unwrap_or(false);
 
-                let content = Self::parse_tool_result_content(
-                    &tool_call_id,
-                    is_error,
-                    content_arr,
-                );
+                let content = Self::parse_tool_result_content(&tool_call_id, is_error, content_arr);
                 Ok(ChatEvent {
                     uuid: id.to_string(),
                     parent_uuid: parent_id,
@@ -134,9 +133,7 @@ impl OpenClawProvider {
     }
 
     /// Parse assistant message content blocks: text + toolCall
-    fn parse_assistant_content(
-        content_arr: Option<&Vec<serde_json::Value>>,
-    ) -> Vec<ContentBlock> {
+    fn parse_assistant_content(content_arr: Option<&Vec<serde_json::Value>>) -> Vec<ContentBlock> {
         let mut blocks = Vec::new();
         if let Some(items) = content_arr {
             for item in items {
@@ -158,10 +155,7 @@ impl OpenClawProvider {
                     "toolCall" => {
                         blocks.push(ContentBlock::ToolUse {
                             tool_id: item["id"].as_str().unwrap_or("").to_string(),
-                            tool_name: item["name"]
-                                .as_str()
-                                .unwrap_or("")
-                                .to_string(),
+                            tool_name: item["name"].as_str().unwrap_or("").to_string(),
                             tool_input: item["arguments"].clone(),
                         });
                     }
@@ -242,9 +236,7 @@ impl OpenClawProvider {
             parent_uuid: parent_id,
             event_type: EventType::System,
             timestamp: timestamp.to_string(),
-            content: vec![ContentBlock::Text {
-                text: summary,
-            }],
+            content: vec![ContentBlock::Text { text: summary }],
             session_id: None,
         }
     }
@@ -314,9 +306,9 @@ impl ChatProvider for OpenClawProvider {
     fn parse_event(&self, line: &str) -> Result<ChatEvent, ParseError> {
         let value: serde_json::Value = serde_json::from_str(line)?;
 
-        let event_type_str = value["type"].as_str().ok_or_else(|| {
-            ParseError::MissingField("type".to_string())
-        })?;
+        let event_type_str = value["type"]
+            .as_str()
+            .ok_or_else(|| ParseError::MissingField("type".to_string()))?;
 
         let id = value["id"].as_str().unwrap_or("unknown").to_string();
         let parent_id = value["parentId"].as_str().map(String::from);
@@ -326,22 +318,13 @@ impl ChatProvider for OpenClawProvider {
             "message" => {
                 let message = &value["message"];
                 if message.is_null() {
-                    return Err(ParseError::MissingField(
-                        "message".to_string(),
-                    ));
+                    return Err(ParseError::MissingField("message".to_string()));
                 }
                 Self::parse_message_event(&id, parent_id, &timestamp, message)
             }
-            "session"
-            | "model_change"
-            | "thinking_level_change"
-            | "custom" => Ok(Self::parse_metadata_event(
-                &id,
-                parent_id,
-                &timestamp,
-                event_type_str,
-                &value,
-            )),
+            "session" | "model_change" | "thinking_level_change" | "custom" => Ok(
+                Self::parse_metadata_event(&id, parent_id, &timestamp, event_type_str, &value),
+            ),
             other => Err(ParseError::UnknownEventType(other.to_string())),
         }
     }

@@ -83,17 +83,22 @@ fn render_block_to_markdown(block: &ContentBlock, md: &mut String) {
             tool_input,
             ..
         } => {
-            md.push_str(&format!("<details>\n<summary>🔧 Tool Call: **{}**</summary>\n\n", tool_name));
+            md.push_str(&format!(
+                "<details>\n<summary>🔧 Tool Call: **{}**</summary>\n\n",
+                tool_name
+            ));
             md.push_str("```json\n");
             md.push_str(&serde_json::to_string_pretty(tool_input).unwrap_or_default());
             md.push_str("\n```\n\n</details>\n\n");
         }
         ContentBlock::ToolResult {
-            content,
-            is_error,
-            ..
+            content, is_error, ..
         } => {
-            let label = if *is_error { "❌ Error" } else { "📋 Result" };
+            let label = if *is_error {
+                "❌ Error"
+            } else {
+                "📋 Result"
+            };
             md.push_str(&format!(
                 "<details>\n<summary>{} Tool Result</summary>\n\n",
                 label

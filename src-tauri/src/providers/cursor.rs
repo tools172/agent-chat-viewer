@@ -31,6 +31,12 @@ use crate::providers::base::{ChatProvider, ParseError};
 /// - `type: cursor_tool_result` → User event (paired with tool use bubble)
 pub struct CursorProvider {}
 
+impl Default for CursorProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CursorProvider {
     pub fn new() -> Self {
         Self {}
@@ -76,9 +82,7 @@ impl CursorProvider {
         #[cfg(target_os = "linux")]
         {
             let config = std::env::var("XDG_CONFIG_HOME")
-                .or_else(|_| {
-                    std::env::var("HOME").map(|h| format!("{}/.config", h))
-                })
+                .or_else(|_| std::env::var("HOME").map(|h| format!("{}/.config", h)))
                 .ok()?;
             Some(
                 PathBuf::from(config)
@@ -160,7 +164,7 @@ impl CursorProvider {
         if let Ok(entries) = std::fs::read_dir(&cache_dir) {
             for entry in entries.flatten() {
                 let p = entry.path();
-                if p.extension().map_or(false, |e| e == "jsonl") {
+                if p.extension().is_some_and(|e| e == "jsonl") {
                     let _ = std::fs::remove_file(&p);
                 }
             }
@@ -171,9 +175,7 @@ impl CursorProvider {
 
         // Read all composerData entries
         let mut stmt = conn
-            .prepare(
-                "SELECT key, value FROM cursorDiskKV WHERE key LIKE 'composerData:%'",
-            )
+            .prepare("SELECT key, value FROM cursorDiskKV WHERE key LIKE 'composerData:%'")
             .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
         let composer_rows: Vec<(String, String)> = stmt
@@ -190,8 +192,7 @@ impl CursorProvider {
         let mut cached_files = Vec::new();
 
         for (_key, value) in &composer_rows {
-            let composer_data: serde_json::Value =
-                serde_json::from_str(value).unwrap_or_default();
+            let composer_data: serde_json::Value = serde_json::from_str(value).unwrap_or_default();
             let composer_id = composer_data["composerId"]
                 .as_str()
                 .unwrap_or("unknown")
@@ -202,16 +203,12 @@ impl CursorProvider {
 
             // Skip empty/draft composers with no bubbles
             let headers = composer_data["fullConversationHeadersOnly"].as_array();
-            if headers.map_or(true, |h| h.is_empty()) {
+            if headers.is_none_or(|h| h.is_empty()) {
                 continue;
             }
 
-            let workspace_project_dir = Self::resolve_workspace_dir(
-                &conn,
-                &composer_data,
-                &composer_id,
-                headers,
-            );
+            let workspace_project_dir =
+                Self::resolve_workspace_dir(&conn, &composer_data, &composer_id, headers);
 
             let timestamp = composer_data["createdAt"]
                 .as_u64()
@@ -219,9 +216,7 @@ impl CursorProvider {
                     // Convert unix ms to RFC3339
                     let secs = ts / 1000;
                     let nsecs = ((ts % 1000) * 1_000_000) as u32;
-                    if let Some(dt) =
-                        chrono::DateTime::from_timestamp(secs as i64, nsecs)
-                    {
+                    if let Some(dt) = chrono::DateTime::from_timestamp(secs as i64, nsecs) {
                         dt.to_rfc3339()
                     } else {
                         String::new()
@@ -263,24 +258,13 @@ impl CursorProvider {
                         .and_then(|v| serde_json::from_str(&v).ok())
                         .unwrap_or_default();
 
-                    Self::push_bubble_line(
-                        &mut jsonl,
-                        &composer_id,
-                        header,
-                        &bdata,
-                    );
-                    Self::push_tool_result_line(
-                        &mut jsonl,
-                        &composer_id,
-                        header,
-                        &bdata,
-                    );
+                    Self::push_bubble_line(&mut jsonl, &composer_id, header, &bdata);
+                    Self::push_tool_result_line(&mut jsonl, &composer_id, header, &bdata);
                 }
             }
 
             // Write to cache file
-            let cache_file =
-                cache_dir.join(format!("{}.jsonl", composer_id));
+            let cache_file = cache_dir.join(format!("{}.jsonl", composer_id));
             std::fs::write(&cache_file, &jsonl)
                 .map_err(|e| format!("Failed to write cache file: {}", e))?;
             cached_files.push(cache_file);
@@ -300,16 +284,13 @@ impl CursorProvider {
     /// On other platforms, leading "/" is stripped if the path starts
     /// with a drive-letter pattern.
     fn to_native_path(uri_path: &str) -> String {
-        let path = if cfg!(windows) && uri_path.starts_with('/') {
+        if cfg!(windows) && uri_path.starts_with('/') {
             // /X:/foo/bar → X:\foo\bar
             let stripped = &uri_path[1..]; // X:/foo/bar
             stripped.replace('/', "\\")
-        } else if uri_path.starts_with('/') {
-            uri_path.to_string()
         } else {
             uri_path.to_string()
-        };
-        path
+        }
     }
 
     /// Resolve workspace directory from composer/bubble data with 4 fallbacks.
@@ -327,9 +308,7 @@ impl CursorProvider {
 
         // 2. composerData["workspaceIdentifier"]["uri"]["fsPath"] (new format)
         if dir.is_empty() {
-            if let Some(fs) = composer_data["workspaceIdentifier"]["uri"]["fsPath"]
-                .as_str()
-            {
+            if let Some(fs) = composer_data["workspaceIdentifier"]["uri"]["fsPath"].as_str() {
                 dir = fs.to_string();
             }
         }
@@ -470,12 +449,8 @@ impl CursorProvider {
     /// Parse a cursor_bubble line into a ChatEvent (exactly one event per call)
     fn parse_bubble(value: &serde_json::Value) -> Result<ChatEvent, ParseError> {
         let bubble_type = value["bubbleType"].as_u64().unwrap_or(0);
-        let bubble_id = value["bubbleId"]
-            .as_str()
-            .unwrap_or("unknown")
-            .to_string();
-        let parent_composer_id =
-            value["parentComposerId"].as_str().unwrap_or("");
+        let bubble_id = value["bubbleId"].as_str().unwrap_or("unknown").to_string();
+        let parent_composer_id = value["parentComposerId"].as_str().unwrap_or("");
         let timestamp = value["createdAt"].as_str().unwrap_or("").to_string();
         let text = value["text"].as_str().unwrap_or("").to_string();
 
@@ -515,24 +490,13 @@ impl CursorProvider {
                 }
 
                 // Tool use block (toolFormerData with name/params)
-                if let Some(tool_name_str) =
-                    tool_former["name"].as_str().map(|s| s.to_string())
-                {
-                    let tool_id = tool_former["toolCallId"]
-                        .as_str()
-                        .unwrap_or("")
-                        .to_string();
-                    let tool_params =
-                        tool_former["params"].as_str().unwrap_or("{}");
+                if let Some(tool_name_str) = tool_former["name"].as_str().map(|s| s.to_string()) {
+                    let tool_id = tool_former["toolCallId"].as_str().unwrap_or("").to_string();
+                    let tool_params = tool_former["params"].as_str().unwrap_or("{}");
 
                     // Try to parse params as JSON, fall back to raw string
-                    let tool_input: serde_json::Value =
-                        serde_json::from_str(tool_params)
-                            .unwrap_or_else(|_| {
-                                serde_json::Value::String(
-                                    tool_params.to_string(),
-                                )
-                            });
+                    let tool_input: serde_json::Value = serde_json::from_str(tool_params)
+                        .unwrap_or_else(|_| serde_json::Value::String(tool_params.to_string()));
 
                     content_blocks.push(ContentBlock::ToolUse {
                         tool_id,
@@ -575,10 +539,7 @@ impl CursorProvider {
 
     /// Parse a cursor_tool_result line into a User event with ToolResult block
     fn parse_tool_result(value: &serde_json::Value) -> Result<ChatEvent, ParseError> {
-        let bubble_id = value["bubbleId"]
-            .as_str()
-            .unwrap_or("unknown")
-            .to_string();
+        let bubble_id = value["bubbleId"].as_str().unwrap_or("unknown").to_string();
         let parent_composer_id = value["parentComposerId"].as_str().unwrap_or("");
         let timestamp = value["createdAt"].as_str().unwrap_or("").to_string();
         let tool_call_id = value["toolCallId"].as_str().unwrap_or("").to_string();
@@ -623,9 +584,9 @@ impl ChatProvider for CursorProvider {
 
     fn parse_event(&self, line: &str) -> Result<ChatEvent, ParseError> {
         let value: serde_json::Value = serde_json::from_str(line)?;
-        let event_type = value["type"].as_str().ok_or_else(|| {
-            ParseError::MissingField("type".to_string())
-        })?;
+        let event_type = value["type"]
+            .as_str()
+            .ok_or_else(|| ParseError::MissingField("type".to_string()))?;
 
         match event_type {
             "session_meta" => Self::parse_session_meta(&value),
@@ -673,8 +634,7 @@ impl ChatProvider for CursorProvider {
         if let Some(first_line) = first_lines.lines().find(|l| !l.trim().is_empty()) {
             if let Ok(value) = serde_json::from_str::<serde_json::Value>(first_line) {
                 if let Some(event_type) = value["type"].as_str() {
-                    return event_type == "session_meta"
-                        && value["composerId"].as_str().is_some();
+                    return event_type == "session_meta" && value["composerId"].as_str().is_some();
                 }
             }
         }
@@ -696,9 +656,7 @@ impl ChatProvider for CursorProvider {
         let mut first_line = String::new();
         reader.read_line(&mut first_line).ok()?;
         let value: serde_json::Value = serde_json::from_str(&first_line).ok()?;
-        value["workspaceProjectDir"]
-            .as_str()
-            .map(String::from)
+        value["workspaceProjectDir"].as_str().map(String::from)
     }
 
     fn extract_cwd(&self, value: &serde_json::Value) -> Option<String> {
@@ -799,7 +757,10 @@ mod tests {
         assert!(matches!(event.event_type, EventType::Assistant));
         assert_eq!(event.content.len(), 1);
         match &event.content[0] {
-            ContentBlock::Thinking { thinking, signature } => {
+            ContentBlock::Thinking {
+                thinking,
+                signature,
+            } => {
                 assert!(thinking.contains("calculator"));
                 assert!(signature.is_empty());
             }
@@ -812,8 +773,10 @@ mod tests {
         let line = r#"{"type":"cursor_bubble","parentComposerId":"comp-1","bubbleId":"bub-4","bubbleType":2,"text":"","createdAt":"2026-07-02T09:46:56.991Z","allThinkingBlocks":[],"toolFormerData":{"tool":38,"toolIndex":0,"toolCallId":"tool_test123","status":"completed","name":"edit_file_v2","params":"{\"relativeWorkspacePath\":\"test.html\"}","result":"{\"beforeContentId\":\"abc\",\"afterContentId\":\"def\"}"},"codeBlocks":[],"modelInfo":{}}"#;
         let event = parse(line);
         assert!(matches!(event.event_type, EventType::Assistant));
-        let has_tool_use =
-            event.content.iter().any(|b| matches!(b, ContentBlock::ToolUse { .. }));
+        let has_tool_use = event
+            .content
+            .iter()
+            .any(|b| matches!(b, ContentBlock::ToolUse { .. }));
         assert!(has_tool_use, "Expected ToolUse block");
     }
 
@@ -890,9 +853,7 @@ mod tests {
     #[test]
     fn test_extract_session_id() {
         let provider = CursorProvider::new();
-        let path = Path::new(
-            "/home/user/.agent-chat-viewer/cursor_sessions/test-uuid.jsonl",
-        );
+        let path = Path::new("/home/user/.agent-chat-viewer/cursor_sessions/test-uuid.jsonl");
         assert_eq!(
             provider.extract_session_id(path),
             Some("test-uuid".to_string())
@@ -936,10 +897,9 @@ mod tests {
     #[test]
     fn test_extract_raw_user_text_not_user_bubble() {
         let provider = CursorProvider::new();
-        let value: serde_json::Value = serde_json::from_str(
-            r#"{"type":"cursor_bubble","bubbleType":2,"text":"Response"}"#,
-        )
-        .unwrap();
+        let value: serde_json::Value =
+            serde_json::from_str(r#"{"type":"cursor_bubble","bubbleType":2,"text":"Response"}"#)
+                .unwrap();
         assert_eq!(provider.extract_raw_user_text(&value), None);
     }
 
@@ -998,7 +958,8 @@ mod tests {
     #[test]
     fn test_push_bubble_line_user() {
         let mut jsonl = String::new();
-        let header = serde_json::json!({"bubbleId": "b1", "type": 1, "createdAt": "2026-07-01T00:00:00Z"});
+        let header =
+            serde_json::json!({"bubbleId": "b1", "type": 1, "createdAt": "2026-07-01T00:00:00Z"});
         let bdata = serde_json::json!({"text": "Hello Cursor", "allThinkingBlocks": [], "toolFormerData": null, "codeBlocks": null, "modelInfo": {"modelName": "gpt-5"}});
         CursorProvider::push_bubble_line(&mut jsonl, "comp-1", &header, &bdata);
         let parsed: serde_json::Value = serde_json::from_str(jsonl.trim()).unwrap();
@@ -1011,7 +972,8 @@ mod tests {
     #[test]
     fn test_push_bubble_line_tool_call() {
         let mut jsonl = String::new();
-        let header = serde_json::json!({"bubbleId": "b2", "type": 2, "createdAt": "2026-07-01T00:00:01Z"});
+        let header =
+            serde_json::json!({"bubbleId": "b2", "type": 2, "createdAt": "2026-07-01T00:00:01Z"});
         let bdata = serde_json::json!({"text": "", "allThinkingBlocks": [], "toolFormerData": {"name": "edit_file_v2", "toolCallId": "t1"}, "codeBlocks": [], "modelInfo": null});
         CursorProvider::push_bubble_line(&mut jsonl, "comp-1", &header, &bdata);
         let parsed: serde_json::Value = serde_json::from_str(jsonl.trim()).unwrap();
@@ -1063,7 +1025,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let db_path = dir.path().join("test.db");
         let conn = rusqlite::Connection::open(&db_path).unwrap();
-        conn.execute("CREATE TABLE IF NOT EXISTS cursorDiskKV (key TEXT, value TEXT)", []).unwrap();
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS cursorDiskKV (key TEXT, value TEXT)",
+            [],
+        )
+        .unwrap();
 
         let composer = serde_json::json!({
             "workspaceIdentifier": {
@@ -1079,7 +1045,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let db_path = dir.path().join("test.db");
         let conn = rusqlite::Connection::open(&db_path).unwrap();
-        conn.execute("CREATE TABLE IF NOT EXISTS cursorDiskKV (key TEXT, value TEXT)", []).unwrap();
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS cursorDiskKV (key TEXT, value TEXT)",
+            [],
+        )
+        .unwrap();
 
         let composer = serde_json::json!({
             "workspaceProjectDir": "C:\\old\\format"
@@ -1093,7 +1063,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let db_path = dir.path().join("test.db");
         let conn = rusqlite::Connection::open(&db_path).unwrap();
-        conn.execute("CREATE TABLE IF NOT EXISTS cursorDiskKV (key TEXT, value TEXT)", []).unwrap();
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS cursorDiskKV (key TEXT, value TEXT)",
+            [],
+        )
+        .unwrap();
 
         let composer = serde_json::json!({
             "newlyCreatedFiles": [{
@@ -1113,7 +1087,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let db_path = dir.path().join("test.db");
         let conn = rusqlite::Connection::open(&db_path).unwrap();
-        conn.execute("CREATE TABLE IF NOT EXISTS cursorDiskKV (key TEXT, value TEXT)", []).unwrap();
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS cursorDiskKV (key TEXT, value TEXT)",
+            [],
+        )
+        .unwrap();
 
         let composer = serde_json::json!({});
         let result = CursorProvider::resolve_workspace_dir(&conn, &composer, "c1", None);
@@ -1140,11 +1118,8 @@ mod tests {
         file.write_all(content.as_bytes()).unwrap();
 
         let provider: Arc<dyn ChatProvider> = Arc::new(CursorProvider::new());
-        let polished = crate::services::parser::polish_session(
-            &file_path,
-            &provider,
-        )
-        .expect("polish should succeed for Cursor session");
+        let polished = crate::services::parser::polish_session(&file_path, &provider)
+            .expect("polish should succeed for Cursor session");
 
         assert_eq!(polished.display, "Hello Cursor");
         assert_eq!(polished.message_count, 2); // 1 user + 1 assistant
@@ -1180,10 +1155,7 @@ mod tests {
 
         // Cursor 的 data_dir() 返回数据库所在目录，不应等于临时文件父目录
         let temp_parent = dir.path().to_string_lossy().to_string();
-        assert!(
-            !summary.storage_path.is_empty(),
-            "storage_path 不应为空"
-        );
+        assert!(!summary.storage_path.is_empty(), "storage_path 不应为空");
         assert_ne!(
             summary.storage_path, temp_parent,
             "Cursor 的 storage_path 应为数据库目录，而非缓存文件父目录"

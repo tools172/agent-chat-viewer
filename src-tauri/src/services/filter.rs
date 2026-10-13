@@ -34,11 +34,7 @@ fn should_show_event(event: &ChatEvent, config: &FilterConfig) -> bool {
 }
 
 /// Determine if a content block should be shown
-fn should_show_block(
-    block: &ContentBlock,
-    config: &FilterConfig,
-    _event_type: &EventType,
-) -> bool {
+fn should_show_block(block: &ContentBlock, config: &FilterConfig, _event_type: &EventType) -> bool {
     match block {
         ContentBlock::Text { .. } => true, // Always show text
         ContentBlock::Thinking { .. } => config.show_thinking,
@@ -212,7 +208,10 @@ mod tests {
         // Tool call event should survive, tool result should be hidden
         assert_eq!(filtered.len(), 1);
         assert!(matches!(filtered[0].event_type, EventType::Assistant));
-        assert!(matches!(filtered[0].content[0], ContentBlock::ToolUse { .. }));
+        assert!(matches!(
+            filtered[0].content[0],
+            ContentBlock::ToolUse { .. }
+        ));
     }
 
     #[test]
@@ -246,6 +245,9 @@ mod tests {
         // Tool result event should survive, tool call should be hidden
         assert_eq!(filtered.len(), 1);
         assert!(matches!(filtered[0].event_type, EventType::User));
-        assert!(matches!(filtered[0].content[0], ContentBlock::ToolResult { .. }));
+        assert!(matches!(
+            filtered[0].content[0],
+            ContentBlock::ToolResult { .. }
+        ));
     }
 }

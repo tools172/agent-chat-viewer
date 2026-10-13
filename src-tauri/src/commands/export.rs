@@ -2,8 +2,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::models::FilterConfig;
-use crate::services::{export_to_markdown, filter_events, parse_session_detail};
 use crate::providers::ProviderRegistry;
+use crate::services::{export_to_markdown, filter_events, parse_session_detail};
 
 /// 导出会话为 Markdown（异步）
 #[tauri::command]
@@ -66,8 +66,7 @@ pub async fn export_json(
             return Err(format!("File not found: {}", session_path));
         }
         let detail = parse_session_detail(&file_path, &provider)?;
-        serde_json::to_string_pretty(&detail)
-            .map_err(|e| format!("序列化失败: {}", e))
+        serde_json::to_string_pretty(&detail).map_err(|e| format!("序列化失败: {}", e))
     })
     .await
     .map_err(|e| format!("导出失败: {}", e))?
@@ -80,12 +79,10 @@ pub fn write_text_file(file_path: String, content: String) -> Result<(), String>
     // 确保父目录存在
     if let Some(parent) = path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("创建目录失败: {}", e))?;
+            fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;
         }
     }
-    fs::write(&path, &content)
-        .map_err(|e| format!("写入文件失败: {}", e))
+    fs::write(&path, &content).map_err(|e| format!("写入文件失败: {}", e))
 }
 
 /// 在文件管理器中打开文件所在文件夹（并选中文件）

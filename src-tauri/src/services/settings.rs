@@ -49,8 +49,8 @@ pub fn load_settings() -> Result<AppSettings, String> {
 pub fn save_settings(settings: &AppSettings) -> Result<(), String> {
     let path = settings_path();
 
-    let json =
-        serde_json::to_string_pretty(settings).map_err(|e| format!("Failed to serialize: {}", e))?;
+    let json = serde_json::to_string_pretty(settings)
+        .map_err(|e| format!("Failed to serialize: {}", e))?;
 
     std::fs::write(&path, json).map_err(|e| format!("Failed to write settings: {}", e))?;
 
@@ -84,6 +84,6 @@ mod tests {
 
         let content = std::fs::read_to_string(&settings_path).unwrap();
         let loaded: AppSettings = serde_json::from_str(&content).unwrap();
-        assert_eq!(loaded.default_filter.show_thinking, false);
+        assert!(!loaded.default_filter.show_thinking);
     }
 }

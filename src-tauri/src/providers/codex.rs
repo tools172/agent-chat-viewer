@@ -25,6 +25,12 @@ pub struct CodexProvider {
     base_dir: PathBuf,
 }
 
+impl Default for CodexProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CodexProvider {
     pub fn new() -> Self {
         let home = home_dir();
@@ -34,9 +40,9 @@ impl CodexProvider {
 
     /// Parse a response_item line into a ChatEvent
     fn parse_response_item(value: &serde_json::Value) -> Result<ChatEvent, ParseError> {
-        let payload = value.get("payload").ok_or_else(|| {
-            ParseError::MissingField("payload".to_string())
-        })?;
+        let payload = value
+            .get("payload")
+            .ok_or_else(|| ParseError::MissingField("payload".to_string()))?;
 
         let item_type = payload["type"].as_str().unwrap_or("");
 
@@ -110,16 +116,11 @@ impl CodexProvider {
             .as_str()
             .and_then(|s| serde_json::from_str(s).ok())
             .unwrap_or_else(|| {
-                serde_json::Value::String(
-                    payload["arguments"].as_str().unwrap_or("").to_string(),
-                )
+                serde_json::Value::String(payload["arguments"].as_str().unwrap_or("").to_string())
             });
 
         let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
-        let uuid = format!(
-            "codex-tool-{}",
-            timestamp.replace([':', '.', '-'], "")
-        );
+        let uuid = format!("codex-tool-{}", timestamp.replace([':', '.', '-'], ""));
 
         Ok(ChatEvent {
             uuid,
@@ -150,10 +151,7 @@ impl CodexProvider {
             || output.contains("FullyQualifiedErrorId");
 
         let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
-        let uuid = format!(
-            "codex-result-{}",
-            timestamp.replace([':', '.', '-'], "")
-        );
+        let uuid = format!("codex-result-{}", timestamp.replace([':', '.', '-'], ""));
 
         Ok(ChatEvent {
             uuid,
@@ -162,7 +160,11 @@ impl CodexProvider {
             timestamp,
             content: vec![ContentBlock::ToolResult {
                 tool_use_id: call_id,
-                content: if output.is_empty() { None } else { Some(output) },
+                content: if output.is_empty() {
+                    None
+                } else {
+                    Some(output)
+                },
                 is_error,
             }],
             session_id: None,
@@ -200,19 +202,14 @@ impl CodexProvider {
 
     /// Parse a user_message event_msg into a ChatEvent
     fn parse_user_message_event(value: &serde_json::Value) -> Result<ChatEvent, ParseError> {
-        let payload = value.get("payload").ok_or_else(|| {
-            ParseError::MissingField("payload".to_string())
-        })?;
+        let payload = value
+            .get("payload")
+            .ok_or_else(|| ParseError::MissingField("payload".to_string()))?;
 
-        let message = clean_codex_user_text(
-            payload["message"].as_str().unwrap_or("")
-        );
+        let message = clean_codex_user_text(payload["message"].as_str().unwrap_or(""));
 
         let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
-        let uuid = format!(
-            "codex-msg-{}",
-            timestamp.replace([':', '.', '-'], "")
-        );
+        let uuid = format!("codex-msg-{}", timestamp.replace([':', '.', '-'], ""));
 
         Ok(ChatEvent {
             uuid,
@@ -226,9 +223,9 @@ impl CodexProvider {
 
     /// Parse a session_meta line into a ChatEvent (treated as System)
     fn parse_session_meta(value: &serde_json::Value) -> Result<ChatEvent, ParseError> {
-        let payload = value.get("payload").ok_or_else(|| {
-            ParseError::MissingField("payload".to_string())
-        })?;
+        let payload = value
+            .get("payload")
+            .ok_or_else(|| ParseError::MissingField("payload".to_string()))?;
 
         let session_id = payload["id"].as_str().unwrap_or("unknown").to_string();
         let cwd = payload["cwd"].as_str().unwrap_or("").to_string();
@@ -252,9 +249,9 @@ impl CodexProvider {
     }
     /// Parse an agent_message event_msg into a ChatEvent (assistant response)
     fn parse_agent_message_event(value: &serde_json::Value) -> Result<ChatEvent, ParseError> {
-        let payload = value.get("payload").ok_or_else(|| {
-            ParseError::MissingField("payload".to_string())
-        })?;
+        let payload = value
+            .get("payload")
+            .ok_or_else(|| ParseError::MissingField("payload".to_string()))?;
 
         let message = payload["message"].as_str().unwrap_or("").to_string();
         let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
@@ -272,9 +269,9 @@ impl CodexProvider {
 
     /// Parse an agent_reasoning event_msg into a ChatEvent (thinking/reasoning)
     fn parse_agent_reasoning_event(value: &serde_json::Value) -> Result<ChatEvent, ParseError> {
-        let payload = value.get("payload").ok_or_else(|| {
-            ParseError::MissingField("payload".to_string())
-        })?;
+        let payload = value
+            .get("payload")
+            .ok_or_else(|| ParseError::MissingField("payload".to_string()))?;
 
         let text = payload["text"].as_str().unwrap_or("").to_string();
         let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
@@ -305,9 +302,14 @@ impl CodexProvider {
 /// - `<collaboration_mode>...</collaboration_mode>` — collaboration mode config
 fn clean_codex_user_text(text: &str) -> String {
     let mut result = text;
-    for tag in &["</environment_context>", "</app-context>",
-                  "</permissions instructions>", "</skills_instructions>",
-                  "</plugins_instructions>", "</collaboration_mode>"] {
+    for tag in &[
+        "</environment_context>",
+        "</app-context>",
+        "</permissions instructions>",
+        "</skills_instructions>",
+        "</plugins_instructions>",
+        "</collaboration_mode>",
+    ] {
         if let Some(end) = result.find(tag) {
             result = result[end + tag.len()..].trim_start();
         }
@@ -346,9 +348,7 @@ impl ChatProvider for CodexProvider {
                     "user_message" => Self::parse_user_message_event(&value),
                     "agent_message" => Self::parse_agent_message_event(&value),
                     "agent_reasoning" => Self::parse_agent_reasoning_event(&value),
-                    "task_started" | "task_complete" | "token_count"
-                    | "turn_aborted" =>
-                    {
+                    "task_started" | "task_complete" | "token_count" | "turn_aborted" => {
                         Err(ParseError::UnknownEventType(format!(
                             "event_msg: {} (skipped)",
                             payload_type
@@ -415,10 +415,7 @@ impl ChatProvider for CodexProvider {
         if let Some(first_line) = first_lines.lines().find(|l| !l.trim().is_empty()) {
             if let Ok(value) = serde_json::from_str::<serde_json::Value>(first_line) {
                 if let Some(event_type) = value["type"].as_str() {
-                    return matches!(
-                        event_type,
-                        "session_meta" | "response_item" | "event_msg"
-                    );
+                    return matches!(event_type, "session_meta" | "response_item" | "event_msg");
                 }
             }
         }
@@ -429,12 +426,8 @@ impl ChatProvider for CodexProvider {
         clean_codex_user_text(text)
     }
 
-    fn detect_client_from_text(&self, text: &str) -> &'static str {
-        if text.contains("<environment_context>") || text.contains("<app-context>") {
-            "desktop"
-        } else {
-            "desktop"
-        }
+    fn detect_client_from_text(&self, _text: &str) -> &'static str {
+        "desktop"
     }
 
     /// Codex nests cwd inside payload.cwd
@@ -620,7 +613,9 @@ mod tests {
         let event = provider.parse_event(line).unwrap();
         assert_eq!(event.event_type, EventType::Assistant);
         match &event.content[0] {
-            ContentBlock::Thinking { thinking, .. } => assert_eq!(thinking, "The user is asking what model I am."),
+            ContentBlock::Thinking { thinking, .. } => {
+                assert_eq!(thinking, "The user is asking what model I am.")
+            }
             _ => panic!("Expected Thinking block"),
         }
     }
@@ -703,7 +698,9 @@ mod tests {
 
         let event = provider.parse_event(line).unwrap();
         match &event.content[0] {
-            ContentBlock::ToolResult { content, is_error, .. } => {
+            ContentBlock::ToolResult {
+                content, is_error, ..
+            } => {
                 assert!(content.is_none());
                 assert!(!is_error);
             }
@@ -756,11 +753,8 @@ mod tests {
         file.write_all(content.as_bytes()).unwrap();
 
         let provider: std::sync::Arc<dyn ChatProvider> = std::sync::Arc::new(provider);
-        let polished = crate::services::parser::polish_session(
-            &file_path,
-            &provider,
-        )
-        .expect("polish should succeed for Codex session");
+        let polished = crate::services::parser::polish_session(&file_path, &provider)
+            .expect("polish should succeed for Codex session");
 
         assert_eq!(polished.display, "你好，请帮我写代码");
         assert_eq!(polished.message_count, 2); // 1 user + 1 assistant

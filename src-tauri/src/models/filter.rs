@@ -232,9 +232,6 @@ impl AppSettings {
     /// 检查指定 provider 是否已启用。
     /// 未在配置中的 provider 默认视为启用（向后兼容）。
     pub fn is_provider_enabled(&self, name: &str) -> bool {
-        self.provider_enabled
-            .get(name)
-            .copied()
-            .unwrap_or(true)
+        self.provider_enabled.get(name).copied().unwrap_or(true)
     }
 }

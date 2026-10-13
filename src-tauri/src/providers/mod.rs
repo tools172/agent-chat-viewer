@@ -5,7 +5,7 @@ pub mod cursor;
 pub mod openclaw;
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Arc;
 
 use base::ChatProvider;
@@ -41,8 +41,7 @@ impl ProviderRegistry {
 
     /// Register a provider
     pub fn register(&mut self, provider: Arc<dyn ChatProvider>) {
-        self.providers
-            .insert(provider.name().to_string(), provider);
+        self.providers.insert(provider.name().to_string(), provider);
     }
 
     /// Get a provider by name
@@ -56,10 +55,8 @@ impl ProviderRegistry {
     }
 
     /// Detect which provider handles a given path
-    pub fn detect_provider(&self, path: &PathBuf) -> Option<&Arc<dyn ChatProvider>> {
-        self.providers
-            .values()
-            .find(|p| p.detect_format(path))
+    pub fn detect_provider(&self, path: &Path) -> Option<&Arc<dyn ChatProvider>> {
+        self.providers.values().find(|p| p.detect_format(path))
     }
 
     /// Detect which provider handles the given file content (first lines of a JSONL file).
@@ -77,10 +74,7 @@ impl ProviderRegistry {
             .map(|(name, provider)| {
                 (
                     name.clone(),
-                    provider
-                        .default_base_dir()
-                        .to_string_lossy()
-                        .to_string(),
+                    provider.default_base_dir().to_string_lossy().to_string(),
                 )
             })
             .collect()

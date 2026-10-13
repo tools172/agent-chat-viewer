@@ -24,7 +24,12 @@ fn test_parse_minimal_session() {
         .collect();
     let assistant_events: Vec<_> = events
         .iter()
-        .filter(|e| matches!(e.event_type, agent_chat_viewer_lib::models::EventType::Assistant))
+        .filter(|e| {
+            matches!(
+                e.event_type,
+                agent_chat_viewer_lib::models::EventType::Assistant
+            )
+        })
         .collect();
 
     assert_eq!(user_events.len(), 1);
@@ -48,7 +53,10 @@ fn test_parse_session_with_tools() {
     // Check that tool_use is parsed
     let has_tool_use = events.iter().any(|e| {
         e.content.iter().any(|b| {
-            matches!(b, agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. })
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. }
+            )
         })
     });
     assert!(has_tool_use);
@@ -56,7 +64,10 @@ fn test_parse_session_with_tools() {
     // Check that tool_result is parsed
     let has_tool_result = events.iter().any(|e| {
         e.content.iter().any(|b| {
-            matches!(b, agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. })
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. }
+            )
         })
     });
     assert!(has_tool_result);
@@ -64,7 +75,10 @@ fn test_parse_session_with_tools() {
     // Check thinking exists
     let has_thinking = events.iter().any(|e| {
         e.content.iter().any(|b| {
-            matches!(b, agent_chat_viewer_lib::models::ContentBlock::Thinking { .. })
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::Thinking { .. }
+            )
         })
     });
     assert!(has_thinking);
@@ -104,7 +118,10 @@ fn test_filter_hides_thinking() {
     for event in &filtered {
         for block in &event.content {
             assert!(
-                !matches!(block, agent_chat_viewer_lib::models::ContentBlock::Thinking { .. }),
+                !matches!(
+                    block,
+                    agent_chat_viewer_lib::models::ContentBlock::Thinking { .. }
+                ),
                 "Thinking block should be filtered out by default"
             );
         }
@@ -130,7 +147,10 @@ fn test_filter_with_thinking_enabled() {
 
     let has_thinking = filtered.iter().any(|e| {
         e.content.iter().any(|b| {
-            matches!(b, agent_chat_viewer_lib::models::ContentBlock::Thinking { .. })
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::Thinking { .. }
+            )
         })
     });
     assert!(has_thinking, "Thinking should be visible when enabled");
@@ -157,7 +177,10 @@ fn test_export_markdown() {
 #[test]
 fn test_app_settings_default() {
     let settings = AppSettings::default();
-    assert!(settings.provider_enabled.get("claude_code").unwrap_or(&false));
+    assert!(settings
+        .provider_enabled
+        .get("claude_code")
+        .unwrap_or(&false));
     assert!(!settings.default_filter.show_thinking);
     assert!(settings.default_filter.show_tool_calls);
     assert!(settings.default_filter.hide_empty_tool_results);
@@ -189,9 +212,7 @@ fn count_blocks(
                 agent_chat_viewer_lib::models::ContentBlock::Text { .. } => text += 1,
                 agent_chat_viewer_lib::models::ContentBlock::Thinking { .. } => thinking += 1,
                 agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. } => tool_use += 1,
-                agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. } => {
-                    tool_result += 1
-                }
+                agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. } => tool_result += 1,
             }
         }
     }
@@ -215,7 +236,12 @@ fn test_filter_show_thinking() {
     let raw_thinking: usize = events
         .iter()
         .flat_map(|e| &e.content)
-        .filter(|b| matches!(b, agent_chat_viewer_lib::models::ContentBlock::Thinking { .. }))
+        .filter(|b| {
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::Thinking { .. }
+            )
+        })
         .count();
 
     let filter = FilterConfig {
@@ -239,7 +265,12 @@ fn test_filter_hide_tool_calls() {
     let raw_tool_use: usize = events
         .iter()
         .flat_map(|e| &e.content)
-        .filter(|b| matches!(b, agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. }))
+        .filter(|b| {
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. }
+            )
+        })
         .count();
 
     let filter = FilterConfig {
@@ -325,9 +356,7 @@ fn test_filter_metadata_events_hidden() {
     let metadata_types: Vec<String> = events
         .iter()
         .map(|e| e.event_type.to_string())
-        .filter(|t| {
-            t != "user" && t != "assistant" && t != "system" && t != "attachment"
-        })
+        .filter(|t| t != "user" && t != "assistant" && t != "system" && t != "attachment")
         .collect();
     assert!(
         !metadata_types.is_empty(),
@@ -413,11 +442,21 @@ fn test_openclaw_parse_minimal_session() {
         .collect();
     let assistant_events: Vec<_> = events
         .iter()
-        .filter(|e| matches!(e.event_type, agent_chat_viewer_lib::models::EventType::Assistant))
+        .filter(|e| {
+            matches!(
+                e.event_type,
+                agent_chat_viewer_lib::models::EventType::Assistant
+            )
+        })
         .collect();
     let system_events: Vec<_> = events
         .iter()
-        .filter(|e| matches!(e.event_type, agent_chat_viewer_lib::models::EventType::System))
+        .filter(|e| {
+            matches!(
+                e.event_type,
+                agent_chat_viewer_lib::models::EventType::System
+            )
+        })
         .collect();
 
     assert_eq!(user_events.len(), 1);
@@ -442,7 +481,10 @@ fn test_openclaw_parse_session_with_tools() {
     // Check tool_use is parsed from toolCall
     let has_tool_use = events.iter().any(|e| {
         e.content.iter().any(|b| {
-            matches!(b, agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. })
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. }
+            )
         })
     });
     assert!(has_tool_use, "OpenClaw toolCall should map to ToolUse");
@@ -450,10 +492,16 @@ fn test_openclaw_parse_session_with_tools() {
     // Check tool_result is parsed
     let has_tool_result = events.iter().any(|e| {
         e.content.iter().any(|b| {
-            matches!(b, agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. })
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. }
+            )
         })
     });
-    assert!(has_tool_result, "OpenClaw toolResult should map to ToolResult");
+    assert!(
+        has_tool_result,
+        "OpenClaw toolResult should map to ToolResult"
+    );
 }
 
 #[test]
@@ -490,11 +538,14 @@ fn test_openclaw_filter_default() {
     let filtered = services::filter::filter_events(&events, &default_filter);
 
     // 默认过滤后应仍包含 user/assistant 事件
-    let has_user = filtered.iter().any(|e| {
-        matches!(e.event_type, agent_chat_viewer_lib::models::EventType::User)
-    });
+    let has_user = filtered
+        .iter()
+        .any(|e| matches!(e.event_type, agent_chat_viewer_lib::models::EventType::User));
     let has_assistant = filtered.iter().any(|e| {
-        matches!(e.event_type, agent_chat_viewer_lib::models::EventType::Assistant)
+        matches!(
+            e.event_type,
+            agent_chat_viewer_lib::models::EventType::Assistant
+        )
     });
 
     assert!(has_user, "过滤后应包含 user 事件");
@@ -503,7 +554,10 @@ fn test_openclaw_filter_default() {
     // 默认条件下 System 事件应被过滤
     for event in &filtered {
         assert!(
-            !matches!(event.event_type, agent_chat_viewer_lib::models::EventType::System),
+            !matches!(
+                event.event_type,
+                agent_chat_viewer_lib::models::EventType::System
+            ),
             "默认过滤应隐藏 System 事件"
         );
     }
@@ -542,7 +596,10 @@ fn test_openclaw_app_settings_default() {
     // openclaw 默认禁用
     assert!(!settings.provider_enabled.get("openclaw").unwrap_or(&true));
     // claude_code 默认启用
-    assert!(settings.provider_enabled.get("claude_code").unwrap_or(&false));
+    assert!(settings
+        .provider_enabled
+        .get("claude_code")
+        .unwrap_or(&false));
 }
 
 // ============================================================
@@ -552,7 +609,10 @@ fn test_openclaw_app_settings_default() {
 #[test]
 fn test_filter_config_default_collapse_consecutive() {
     let config = FilterConfig::default();
-    assert!(!config.collapse_consecutive, "collapse_consecutive 默认应为 false");
+    assert!(
+        !config.collapse_consecutive,
+        "collapse_consecutive 默认应为 false"
+    );
 }
 
 #[test]
@@ -585,7 +645,10 @@ fn test_deserialize_old_filter_config_without_collapse_consecutive() {
     assert!(!config.show_system_messages);
     assert!(!config.show_file_snapshots);
     // 关键：缺少的字段应为默认值 false
-    assert!(!config.collapse_consecutive, "旧版配置缺少 collapseConsecutive 字段时应默认为 false");
+    assert!(
+        !config.collapse_consecutive,
+        "旧版配置缺少 collapseConsecutive 字段时应默认为 false"
+    );
 }
 
 /// 验证新版配置（含 collapseConsecutive: true）可以正确序列化和反序列化

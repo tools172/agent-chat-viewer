@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use serde_json::Value;
 use crate::models::ChatEvent;
+use serde_json::Value;
 
 /// Errors that can occur during parsing
 #[derive(Debug, thiserror::Error)]
@@ -72,7 +72,7 @@ pub trait ChatProvider: Send + Sync {
     /// Check if a given file is a session file of this provider.
     fn is_session_file(&self, path: &Path) -> bool {
         path.extension()
-            .map_or(false, |ext| ext.eq_ignore_ascii_case(self.session_extension()))
+            .is_some_and(|ext| ext.eq_ignore_ascii_case(self.session_extension()))
     }
 
     /// Detect if the given content (first lines of a JSONL file) matches

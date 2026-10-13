@@ -103,15 +103,15 @@ pub fn create_skeleton_summary(
         id: id.clone(),
         project_name: project_name.to_string(),
         project_path: project_path.to_string(),
-        display: id, // 骨架阶段用文件名作为占位标题，polish 后替换
+        display: id,                   // 骨架阶段用文件名作为占位标题，polish 后替换
         timestamp: file_mtime.clone(), // 用文件修改时间作为初始时间戳，polish 后用真实时间戳替换
-        message_count: 0, // polish 后填充
+        message_count: 0,              // polish 后填充
         file_size,
         cwd: String::new(), // polish 后填充
         file_path: file_path.to_string_lossy().to_string(),
         provider_name: provider_name.to_string(),
         file_mtime,
-        client_type: String::new(), // polish 后填充
+        client_type: String::new(),    // polish 后填充
         last_user_text: String::new(), // polish 后填充
         storage_path: file_path
             .parent()
@@ -167,9 +167,7 @@ pub fn create_session_summary(
 
             // Try to get cwd from any event
             if cwd.is_empty() {
-                if let Ok(value) =
-                    serde_json::from_str::<serde_json::Value>(trimmed)
-                {
+                if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
                     if let Some(raw_cwd) = provider.extract_cwd(&value) {
                         cwd = raw_cwd;
                     }
@@ -210,7 +208,8 @@ pub fn create_session_summary(
                             } else {
                                 // 完整模式：检测类型 + 清理显示文本
                                 if !client_detected {
-                                    client_type = provider.detect_client_from_text(text).to_string();
+                                    client_type =
+                                        provider.detect_client_from_text(text).to_string();
                                     client_detected = true;
                                 }
                                 let cleaned = provider.clean_display_text(text);
@@ -280,10 +279,7 @@ pub struct SessionPolish {
 }
 
 /// 对单个会话文件执行内容解析，返回 polish 结果。
-pub fn polish_session(
-    file_path: &Path,
-    provider: &Arc<dyn ChatProvider>,
-) -> Option<SessionPolish> {
+pub fn polish_session(file_path: &Path, provider: &Arc<dyn ChatProvider>) -> Option<SessionPolish> {
     let content = std::fs::read_to_string(file_path).ok()?;
     let mut display = String::from("(Empty session)");
     let mut last_user_text = String::new();
@@ -423,7 +419,10 @@ mod tests {
         let provider = ClaudeCodeProvider::new();
         let text = "<ide_selection>The user selected lines 13 to 13 from file.ts:\nTomlConfig\n\nThis may or may not be related to the current task.</ide_selection>\n现在我在config.toml文件中增加local_frontend_res = 1";
         let cleaned = provider.clean_display_text(text);
-        assert_eq!(cleaned, "现在我在config.toml文件中增加local_frontend_res = 1");
+        assert_eq!(
+            cleaned,
+            "现在我在config.toml文件中增加local_frontend_res = 1"
+        );
     }
 
     #[test]
@@ -485,7 +484,8 @@ mod tests {
     #[test]
     fn test_clean_codex_display_strips_tags_preserves_user_message() {
         let provider = CodexProvider::new();
-        let text = "<environment_context>\n  <cwd>/test</cwd>\n</environment_context>\n今天几号了？";
+        let text =
+            "<environment_context>\n  <cwd>/test</cwd>\n</environment_context>\n今天几号了？";
         let cleaned = provider.clean_display_text(text);
         assert_eq!(cleaned, "今天几号了？");
     }
@@ -495,7 +495,8 @@ mod tests {
     #[test]
     fn test_detect_openclaw_ui_client() {
         let provider = OpenClawProvider::new();
-        let content = "Sender (untrusted metadata):\n```json\n{}\n```\n\n[Tue 2026-06-09 11:21 GMT+8] test";
+        let content =
+            "Sender (untrusted metadata):\n```json\n{}\n```\n\n[Tue 2026-06-09 11:21 GMT+8] test";
         assert_eq!(provider.detect_client_from_text(content), "ui");
     }
 
@@ -584,13 +585,8 @@ mod tests {
         let (dir, file_path) = create_temp_jsonl(
             r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u1","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#,
         );
-        let summary = create_skeleton_summary(
-            &file_path,
-            "test-proj",
-            "/test/proj",
-            "claude_code",
-        )
-        .unwrap();
+        let summary =
+            create_skeleton_summary(&file_path, "test-proj", "/test/proj", "claude_code").unwrap();
 
         assert_eq!(summary.project_name, "test-proj");
         assert_eq!(summary.provider_name, "claude_code");

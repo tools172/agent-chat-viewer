@@ -27,7 +27,7 @@ pub fn home_dir() -> PathBuf {
 /// Check if a path has a JSONL extension
 pub fn is_jsonl_file(path: &Path) -> bool {
     path.extension()
-        .map_or(false, |ext| ext.eq_ignore_ascii_case("jsonl"))
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("jsonl"))
 }
 
 /// Extract the project name from a path

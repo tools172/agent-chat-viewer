@@ -85,11 +85,13 @@ impl ContentBlock {
             ContentBlock::Text { text } => !text.trim().is_empty(),
             ContentBlock::Thinking { thinking, .. } => !thinking.trim().is_empty(),
             ContentBlock::ToolUse { .. } => true, // tool use always has name+input
-            ContentBlock::ToolResult { content, is_error, .. } => {
-                if *is_error && content.as_ref().map_or(true, |c| c.trim().is_empty()) {
+            ContentBlock::ToolResult {
+                content, is_error, ..
+            } => {
+                if *is_error && content.as_ref().is_none_or(|c| c.trim().is_empty()) {
                     false // empty error results have no content
                 } else {
-                    content.as_ref().map_or(false, |c| !c.trim().is_empty())
+                    content.as_ref().is_some_and(|c| !c.trim().is_empty())
                 }
             }
         }
@@ -98,7 +100,7 @@ impl ContentBlock {
     /// Returns true if this is a tool result with no meaningful content
     pub fn is_empty_tool_result(&self) -> bool {
         matches!(self, ContentBlock::ToolResult { content, .. }
-            if content.as_ref().map_or(true, |c| c.trim().is_empty()))
+            if content.as_ref().is_none_or(|c| c.trim().is_empty()))
     }
 
     /// Returns the block type as a string

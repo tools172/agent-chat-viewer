@@ -13,6 +13,12 @@ pub struct ClaudeCodeProvider {
     base_dir: PathBuf,
 }
 
+impl Default for ClaudeCodeProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ClaudeCodeProvider {
     pub fn new() -> Self {
         let home = dirs_next().unwrap_or_else(|| PathBuf::from("."));
@@ -45,17 +51,11 @@ impl ClaudeCodeProvider {
             other => EventType::Unknown(other.to_string()),
         };
 
-        let uuid = value["uuid"]
-            .as_str()
-            .unwrap_or("unknown")
-            .to_string();
+        let uuid = value["uuid"].as_str().unwrap_or("unknown").to_string();
 
         let parent_uuid = value["parentUuid"].as_str().map(|s| s.to_string());
 
-        let timestamp = value["timestamp"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let timestamp = value["timestamp"].as_str().unwrap_or("").to_string();
 
         let session_id = value["sessionId"].as_str().map(|s| s.to_string());
 
@@ -109,10 +109,7 @@ impl ClaudeCodeProvider {
                         if let Some(thinking) = item["thinking"].as_str() {
                             blocks.push(ContentBlock::Thinking {
                                 thinking: thinking.to_string(),
-                                signature: item["signature"]
-                                    .as_str()
-                                    .unwrap_or("")
-                                    .to_string(),
+                                signature: item["signature"].as_str().unwrap_or("").to_string(),
                             });
                         }
                     }
@@ -136,10 +133,7 @@ impl ClaudeCodeProvider {
                         };
 
                         blocks.push(ContentBlock::ToolResult {
-                            tool_use_id: item["tool_use_id"]
-                                .as_str()
-                                .unwrap_or("")
-                                .to_string(),
+                            tool_use_id: item["tool_use_id"].as_str().unwrap_or("").to_string(),
                             content: content_str,
                             is_error: item["is_error"].as_bool().unwrap_or(false),
                         });
@@ -177,9 +171,14 @@ fn clean_claude_code_user_text(text: &str) -> String {
     let mut result = text;
     loop {
         let mut changed = false;
-        for tag in &["</ide_selection>", "</ide_opened_file>",
-                      "</local-command-caveat>", "</command-name>",
-                      "</command-message>", "</command-args>"] {
+        for tag in &[
+            "</ide_selection>",
+            "</ide_opened_file>",
+            "</local-command-caveat>",
+            "</command-name>",
+            "</command-message>",
+            "</command-args>",
+        ] {
             if let Some(end) = result.find(tag) {
                 result = result[end + tag.len()..].trim_start();
                 changed = true;
@@ -304,7 +303,10 @@ mod tests {
         assert_eq!(event.content.len(), 2);
 
         match &event.content[0] {
-            ContentBlock::Thinking { thinking, signature } => {
+            ContentBlock::Thinking {
+                thinking,
+                signature,
+            } => {
                 assert_eq!(thinking, "The user says hello.");
                 assert_eq!(signature, "sig1");
             }
@@ -387,7 +389,10 @@ mod tests {
     fn test_clean_ide_selection() {
         let input = "<ide_selection>The user selected lines 13 to 13 from file.ts:\nTomlConfig\n\nThis may or may not be related to the current task.</ide_selection>\n现在我在config.toml文件中增加local_frontend_res = 1";
         let result = clean_claude_code_user_text(input);
-        assert_eq!(result, "现在我在config.toml文件中增加local_frontend_res = 1");
+        assert_eq!(
+            result,
+            "现在我在config.toml文件中增加local_frontend_res = 1"
+        );
     }
 
     #[test]

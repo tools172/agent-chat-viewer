@@ -90,11 +90,7 @@ pub(crate) fn discover_session_files(dir: &Path, depth: u32) -> HashMap<PathBuf,
     // 递归进入子目录（跳过 sessions 避免重复）
     for entry in entries {
         let path = entry.path();
-        if path.is_dir()
-            && path
-                .file_name()
-                .map_or(false, |n| n != "sessions")
-        {
+        if path.is_dir() && path.file_name().is_some_and(|n| n != "sessions") {
             let sub = discover_session_files(&path, depth + 1);
             for (proj_dir, files) in sub {
                 projects.entry(proj_dir).or_default().extend(files);
@@ -189,38 +185,31 @@ fn scan_projects(
                     for year_entry in year_entries.flatten() {
                         let year_path = year_entry.path();
                         if year_path.is_dir() {
-                            session_files.extend(
-                                provider.enumerate_session_files(&year_path),
-                            );
+                            session_files.extend(provider.enumerate_session_files(&year_path));
                         }
                     }
                 }
                 // Fallback: flat directory (e.g., Cursor cached JSONL)
                 if session_files.is_empty() {
-                    session_files =
-                        provider.enumerate_session_files(base_path);
+                    session_files = provider.enumerate_session_files(base_path);
                 }
 
-                let mut cwd_groups: HashMap<String, (u32, String)> =
-                    HashMap::new();
+                let mut cwd_groups: HashMap<String, (u32, String)> = HashMap::new();
 
                 for file_path in &session_files {
-                    let cwd =
-                        provider.read_session_cwd_from_file(file_path)
-                            .unwrap_or_else(|| "(Unknown)".to_string());
+                    let cwd = provider
+                        .read_session_cwd_from_file(file_path)
+                        .unwrap_or_else(|| "(Unknown)".to_string());
 
                     let mut mtime = String::new();
                     if let Ok(metadata) = file_path.metadata() {
                         if let Ok(modified) = metadata.modified() {
-                            let dt: chrono::DateTime<chrono::Utc> =
-                                modified.into();
+                            let dt: chrono::DateTime<chrono::Utc> = modified.into();
                             mtime = dt.to_rfc3339();
                         }
                     }
 
-                    let entry = cwd_groups
-                        .entry(cwd.clone())
-                        .or_insert((0, String::new()));
+                    let entry = cwd_groups.entry(cwd.clone()).or_insert((0, String::new()));
                     entry.0 += 1;
                     if mtime > entry.1 {
                         entry.1 = mtime;
@@ -255,17 +244,14 @@ fn scan_projects(
                                 .file_name()
                                 .map(|n| n.to_string_lossy().to_string())
                                 .unwrap_or_default();
-                            let project_key =
-                                format!("{}:{}", provider_name, project_name);
-                            let session_files =
-                                provider.enumerate_session_files(&entry_path);
+                            let project_key = format!("{}:{}", provider_name, project_name);
+                            let session_files = provider.enumerate_session_files(&entry_path);
                             let session_count = session_files.len() as u32;
                             let mut last_activity = String::new();
                             for session_path in &session_files {
                                 if let Ok(metadata) = session_path.metadata() {
                                     if let Ok(modified) = metadata.modified() {
-                                        let dt: chrono::DateTime<chrono::Utc> =
-                                            modified.into();
+                                        let dt: chrono::DateTime<chrono::Utc> = modified.into();
                                         let ts = dt.to_rfc3339();
                                         if ts > last_activity {
                                             last_activity = ts;
@@ -278,9 +264,7 @@ fn scan_projects(
                                     project_key,
                                     Project {
                                         name: project_name,
-                                        path: entry_path
-                                            .to_string_lossy()
-                                            .to_string(),
+                                        path: entry_path.to_string_lossy().to_string(),
                                         session_count,
                                         last_activity,
                                         provider_name: provider_name.clone(),
@@ -343,23 +327,18 @@ pub async fn list_sessions(
                 for year_entry in year_entries.flatten() {
                     let year_path = year_entry.path();
                     if year_path.is_dir() {
-                        session_files.extend(
-                            provider.enumerate_session_files(&year_path),
-                        );
+                        session_files.extend(provider.enumerate_session_files(&year_path));
                     }
                 }
             }
             // Fallback: flat directory (e.g., Cursor cached JSONL)
             if session_files.is_empty() {
-                session_files =
-                    provider.enumerate_session_files(&base_dir);
+                session_files = provider.enumerate_session_files(&base_dir);
             }
             let mut sessions: Vec<SessionSummary> = session_files
                 .iter()
                 .filter(|file_path| {
-                    provider.read_session_cwd_from_file(file_path)
-                        .as_deref()
-                        == Some(&project_path)
+                    provider.read_session_cwd_from_file(file_path).as_deref() == Some(&project_path)
                 })
                 .filter_map(|file_path| {
                     crate::services::parser::create_skeleton_summary(
@@ -448,14 +427,12 @@ pub async fn list_all_sessions(
                         continue;
                     }
                     for file_path in files {
-                        if let Some(summary) =
-                            crate::services::parser::create_skeleton_summary(
-                                file_path,
-                                &project_name,
-                                &project_path_str,
-                                &detected_provider,
-                            )
-                        {
+                        if let Some(summary) = crate::services::parser::create_skeleton_summary(
+                            file_path,
+                            &project_name,
+                            &project_path_str,
+                            &detected_provider,
+                        ) {
                             all.push(summary);
                         }
                     }
@@ -473,38 +450,30 @@ pub async fn list_all_sessions(
                         for year_entry in year_entries.flatten() {
                             let year_path = year_entry.path();
                             if year_path.is_dir() {
-                                session_files.extend(
-                                    provider.enumerate_session_files(&year_path),
-                                );
+                                session_files.extend(provider.enumerate_session_files(&year_path));
                             }
                         }
                     }
                     // Fallback: flat directory (e.g., Cursor cached JSONL)
                     if session_files.is_empty() {
-                        session_files =
-                            provider.enumerate_session_files(base_path);
+                        session_files = provider.enumerate_session_files(base_path);
                     }
                     for file_path in &session_files {
-                        let cwd =
-                            provider.read_session_cwd_from_file(
-                                file_path,
-                            )
+                        let cwd = provider
+                            .read_session_cwd_from_file(file_path)
                             .unwrap_or_else(|| "(Unknown)".to_string());
                         let project_name = std::path::Path::new(&cwd)
                             .file_name()
                             .map(|n| n.to_string_lossy().to_string())
                             .unwrap_or_else(|| cwd.clone());
-                        if let Some(mut summary) =
-                            crate::services::parser::create_skeleton_summary(
-                                file_path,
-                                &project_name,
-                                &cwd,
-                                provider_name,
-                            )
-                        {
+                        if let Some(mut summary) = crate::services::parser::create_skeleton_summary(
+                            file_path,
+                            &project_name,
+                            &cwd,
+                            provider_name,
+                        ) {
                             if let Some(dir) = provider.data_dir() {
-                                summary.storage_path =
-                                    dir.to_string_lossy().to_string();
+                                summary.storage_path = dir.to_string_lossy().to_string();
                             }
                             all.push(summary);
                         }
@@ -520,9 +489,7 @@ pub async fn list_all_sessions(
                                 .file_name()
                                 .map(|n| n.to_string_lossy().to_string())
                                 .unwrap_or_default();
-                            for file_path in
-                                provider.enumerate_session_files(&project_path)
-                            {
+                            for file_path in provider.enumerate_session_files(&project_path) {
                                 if let Some(mut summary) =
                                     crate::services::parser::create_skeleton_summary(
                                         &file_path,
@@ -532,8 +499,7 @@ pub async fn list_all_sessions(
                                     )
                                 {
                                     if let Some(dir) = provider.data_dir() {
-                                        summary.storage_path =
-                                            dir.to_string_lossy().to_string();
+                                        summary.storage_path = dir.to_string_lossy().to_string();
                                     }
                                     all.push(summary);
                                 }
@@ -571,10 +537,9 @@ pub async fn polish_sessions(
             handles.push(std::thread::spawn(move || {
                 for (file_path, provider_name) in &chunk {
                     if let Some(provider) = reg.get(provider_name) {
-                        if let Some(polish) = crate::services::parser::polish_session(
-                            Path::new(&file_path),
-                            provider,
-                        ) {
+                        if let Some(polish) =
+                            crate::services::parser::polish_session(Path::new(&file_path), provider)
+                        {
                             results.lock().unwrap().push(polish);
                         }
                     }
@@ -658,11 +623,11 @@ pub async fn search_sessions(
                         None => continue,
                     };
                     for file_path in files {
-                        if let Ok(content) = std::fs::read_to_string(&file_path) {
+                        if let Ok(content) = std::fs::read_to_string(file_path) {
                             if content.to_lowercase().contains(&query_lower) {
                                 if let Some(summary) =
                                     crate::services::parser::create_session_summary(
-                                        &file_path,
+                                        file_path,
                                         &project_name,
                                         &project_path_str,
                                         &provider,
@@ -688,40 +653,27 @@ pub async fn search_sessions(
                         for year_entry in year_entries.flatten() {
                             let year_path = year_entry.path();
                             if year_path.is_dir() {
-                                session_files.extend(
-                                    provider.enumerate_session_files(&year_path),
-                                );
+                                session_files.extend(provider.enumerate_session_files(&year_path));
                             }
                         }
                     }
                     // Fallback: flat directory (e.g., Cursor cached JSONL)
                     if session_files.is_empty() {
-                        session_files =
-                            provider.enumerate_session_files(base_path);
+                        session_files = provider.enumerate_session_files(base_path);
                     }
                     for file_path in &session_files {
-                        if let Ok(content) =
-                            std::fs::read_to_string(&file_path)
-                        {
-                            if content
-                                .to_lowercase()
-                                .contains(&query_lower)
-                            {
-                                let cwd =
-                                    provider.read_session_cwd_from_file(
-                                        file_path,
-                                    )
-                                    .unwrap_or_else(|| {
-                                        "(Unknown)".to_string()
-                                    });
-                                let project_name =
-                                    std::path::Path::new(&cwd)
-                                        .file_name()
-                                        .map(|n| n.to_string_lossy().to_string())
-                                        .unwrap_or_else(|| cwd.clone());
+                        if let Ok(content) = std::fs::read_to_string(file_path) {
+                            if content.to_lowercase().contains(&query_lower) {
+                                let cwd = provider
+                                    .read_session_cwd_from_file(file_path)
+                                    .unwrap_or_else(|| "(Unknown)".to_string());
+                                let project_name = std::path::Path::new(&cwd)
+                                    .file_name()
+                                    .map(|n| n.to_string_lossy().to_string())
+                                    .unwrap_or_else(|| cwd.clone());
                                 if let Some(summary) =
                                     crate::services::parser::create_session_summary(
-                                        &file_path,
+                                        file_path,
                                         &project_name,
                                         &cwd,
                                         &provider,
@@ -744,16 +696,9 @@ pub async fn search_sessions(
                                 .file_name()
                                 .map(|n| n.to_string_lossy().to_string())
                                 .unwrap_or_default();
-                            for file_path in
-                                provider.enumerate_session_files(&project_path)
-                            {
-                                if let Ok(content) =
-                                    std::fs::read_to_string(&file_path)
-                                {
-                                    if content
-                                        .to_lowercase()
-                                        .contains(&query_lower)
-                                    {
+                            for file_path in provider.enumerate_session_files(&project_path) {
+                                if let Ok(content) = std::fs::read_to_string(&file_path) {
+                                    if content.to_lowercase().contains(&query_lower) {
                                         if let Some(summary) =
                                             crate::services::parser::create_session_summary(
                                                 &file_path,
@@ -987,10 +932,7 @@ mod tests {
 
         // 自定义目录应被包含（provider 名称为空，表示自动检测）
         let has_custom = paths.iter().any(|(name, _)| name.is_empty());
-        assert!(
-            has_custom,
-            "自定义监控目录不应受 provider_enabled 限制"
-        );
+        assert!(has_custom, "自定义监控目录不应受 provider_enabled 限制");
     }
 
     #[test]
