@@ -5,7 +5,7 @@
  * 因为操作的是最终渲染的 DOM，所以 Markdown 代码块内的文本也能正确高亮。
  */
 
-import { regexFlags } from './searchEvents';
+import { regexFlags } from "./searchEvents";
 
 interface HighlightColors {
   search: string;
@@ -16,7 +16,7 @@ interface Match {
   start: number;
   end: number;
   text: string;
-  type: 'search' | 'find';
+  type: "search" | "find";
 }
 
 /**
@@ -35,20 +35,16 @@ export function highlightTextInDOM(
   if (!searchTerm && !findTerm) return;
 
   // 收集所有文本节点（跳过已有的 <mark>，避免重复包裹）
-  const walker = document.createTreeWalker(
-    container,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode(node) {
-        // 跳过已高亮的 <mark> 内的文本
-        const parent = node.parentElement;
-        if (parent && parent.tagName === 'MARK') {
-          return NodeFilter.FILTER_REJECT;
-        }
-        return NodeFilter.FILTER_ACCEPT;
-      },
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      // 跳过已高亮的 <mark> 内的文本
+      const parent = node.parentElement;
+      if (parent && parent.tagName === "MARK") {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
     },
-  );
+  });
 
   const textNodes: Text[] = [];
   while (walker.nextNode()) {
@@ -58,12 +54,12 @@ export function highlightTextInDOM(
   let findOccurrence = 0;
 
   for (const textNode of textNodes) {
-    const text = textNode.textContent || '';
+    const text = textNode.textContent || "";
     const matches = collectMatches(text, searchTerm, findTerm);
     if (matches.length === 0) continue;
 
     // 按位置排序，重叠时 find 优先
-    matches.sort((a, b) => a.start - b.start || (a.type === 'find' ? -1 : 1));
+    matches.sort((a, b) => a.start - b.start || (a.type === "find" ? -1 : 1));
     const filtered = removeOverlaps(matches);
 
     const fragment = document.createDocumentFragment();
@@ -77,25 +73,25 @@ export function highlightTextInDOM(
         );
       }
 
-      const mark = document.createElement('mark');
+      const mark = document.createElement("mark");
       mark.textContent = match.text;
-      mark.style.borderRadius = '3px';
-      mark.style.padding = '0 2px';
+      mark.style.borderRadius = "3px";
+      mark.style.padding = "0 2px";
 
-      if (match.type === 'search') {
+      if (match.type === "search") {
         mark.style.backgroundColor = colors.search;
       } else {
         mark.style.backgroundColor = colors.find;
-        mark.setAttribute('data-find-occurrence', String(findOccurrence));
+        mark.setAttribute("data-find-occurrence", String(findOccurrence));
         if (blockIdx !== undefined) {
-          mark.setAttribute('data-find-block', String(blockIdx));
+          mark.setAttribute("data-find-block", String(blockIdx));
         }
         if (
           activeFindOccurrence !== undefined &&
           findOccurrence === activeFindOccurrence
         ) {
-          mark.style.outline = '2px solid #f97316';
-          mark.style.outlineOffset = '1px';
+          mark.style.outline = "2px solid #f97316";
+          mark.style.outlineOffset = "1px";
         }
         findOccurrence++;
       }
@@ -106,9 +102,7 @@ export function highlightTextInDOM(
 
     // 剩余文本
     if (lastIdx < text.length) {
-      fragment.appendChild(
-        document.createTextNode(text.slice(lastIdx)),
-      );
+      fragment.appendChild(document.createTextNode(text.slice(lastIdx)));
     }
 
     textNode.parentNode?.replaceChild(fragment, textNode);
@@ -124,7 +118,7 @@ function collectMatches(
   const matches: Match[] = [];
 
   if (searchTerm) {
-    const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const flags = regexFlags(searchTerm);
     const regex = new RegExp(escaped, flags);
     let m: RegExpExecArray | null;
@@ -133,13 +127,13 @@ function collectMatches(
         start: m.index,
         end: m.index + m[0].length,
         text: m[0],
-        type: 'search',
+        type: "search",
       });
     }
   }
 
   if (findTerm) {
-    const escaped = findTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = findTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const flags = regexFlags(findTerm);
     const regex = new RegExp(escaped, flags);
     let m: RegExpExecArray | null;
@@ -148,7 +142,7 @@ function collectMatches(
         start: m.index,
         end: m.index + m[0].length,
         text: m[0],
-        type: 'find',
+        type: "find",
       });
     }
   }
@@ -160,9 +154,7 @@ function collectMatches(
 function removeOverlaps(matches: Match[]): Match[] {
   const result: Match[] = [];
   for (const m of matches) {
-    const overlaps = result.some(
-      (r) => r.start < m.end && m.start < r.end,
-    );
+    const overlaps = result.some((r) => r.start < m.end && m.start < r.end);
     if (!overlaps) result.push(m);
   }
   return result;

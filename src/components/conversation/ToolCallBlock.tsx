@@ -1,6 +1,6 @@
-import React from 'react';
-import { Wrench, ChevronDown, ChevronRight } from 'lucide-react';
-import { highlightDual } from '../../utils/highlight';
+import React from "react";
+import { Wrench, ChevronDown, ChevronRight } from "lucide-react";
+import { highlightDual } from "../../utils/highlight";
 
 interface ToolCallBlockProps {
   toolName: string;
@@ -31,19 +31,37 @@ export const ToolCallBlock: React.FC<ToolCallBlockProps> = ({
         onClick={onToggle}
         className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100/50 transition-colors"
       >
-        {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        {isExpanded ? (
+          <ChevronDown className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5" />
+        )}
         <Wrench className="h-3.5 w-3.5" />
-        <span>{highlightDual(label, searchHighlight, findHighlight, searchColors)}</span>
+        <span>
+          {highlightDual(label, searchHighlight, findHighlight, searchColors)}
+        </span>
         {!isExpanded && (
           <span className="text-purple-500 ml-2 truncate max-w-[200px] font-mono">
-            {highlightDual(preview, searchHighlight, findHighlight, searchColors)}
+            {highlightDual(
+              preview,
+              searchHighlight,
+              findHighlight,
+              searchColors,
+            )}
           </span>
         )}
       </button>
       {isExpanded && (
         <div className="px-4 py-2 border-t border-purple-200">
           <pre className="text-xs text-purple-900 bg-purple-100/50 p-2 rounded overflow-x-auto">
-            <code>{highlightDual(inputStr, searchHighlight, findHighlight, searchColors)}</code>
+            <code>
+              {highlightDual(
+                inputStr,
+                searchHighlight,
+                findHighlight,
+                searchColors,
+              )}
+            </code>
           </pre>
         </div>
       )}

@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useSessionStore } from '../../stores/sessionStore';
-import { invoke } from '@tauri-apps/api/core';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { useSessionStore } from "../../stores/sessionStore";
+import { invoke } from "@tauri-apps/api/core";
 
 const mockedInvoke = vi.mocked(invoke);
 
 // Mock the tauri invoke
-vi.mock('@tauri-apps/api/core', () => ({
+vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
-describe('sessionStore', () => {
+describe("sessionStore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset the store
@@ -18,44 +18,44 @@ describe('sessionStore', () => {
       sessions: [],
       currentSession: null,
       searchResults: [],
-      viewMode: 'by-project' as const,
+      viewMode: "by-project" as const,
       selectedProjectPath: null,
       selectedSessionPath: null,
-      searchQuery: '',
+      searchQuery: "",
       isLoading: false,
       isLoadingConversation: false,
       error: null,
     });
   });
 
-  it('should have initial state', () => {
+  it("should have initial state", () => {
     const state = useSessionStore.getState();
     expect(state.projects).toEqual([]);
     expect(state.sessions).toEqual([]);
     expect(state.currentSession).toBeNull();
-    expect(state.viewMode).toBe('by-project');
+    expect(state.viewMode).toBe("by-project");
     expect(state.isLoading).toBe(false);
   });
 
-  it('should set view mode', () => {
-    useSessionStore.getState().setViewMode('by-time');
-    expect(useSessionStore.getState().viewMode).toBe('by-time');
+  it("should set view mode", () => {
+    useSessionStore.getState().setViewMode("by-time");
+    expect(useSessionStore.getState().viewMode).toBe("by-time");
   });
 
-  it('should set search query', () => {
-    useSessionStore.getState().setSearchQuery('test query');
-    expect(useSessionStore.getState().searchQuery).toBe('test query');
+  it("should set search query", () => {
+    useSessionStore.getState().setSearchQuery("test query");
+    expect(useSessionStore.getState().searchQuery).toBe("test query");
   });
 
-  it('should clear selection', () => {
+  it("should clear selection", () => {
     useSessionStore.setState({
       currentSession: {
-        id: 'test',
-        filePath: '/test.jsonl',
+        id: "test",
+        filePath: "/test.jsonl",
         events: [],
-        display: '',
+        display: "",
       },
-      selectedSessionPath: '/test.jsonl',
+      selectedSessionPath: "/test.jsonl",
     });
 
     useSessionStore.getState().clearSelection();
@@ -64,8 +64,8 @@ describe('sessionStore', () => {
     expect(state.selectedSessionPath).toBeNull();
   });
 
-  it('should clear error', () => {
-    useSessionStore.setState({ error: 'test error' });
+  it("should clear error", () => {
+    useSessionStore.setState({ error: "test error" });
     useSessionStore.getState().clearError();
     expect(useSessionStore.getState().error).toBeNull();
   });
@@ -75,7 +75,7 @@ describe('sessionStore', () => {
   // 而非闭包中的陈旧值（Bug: stale closure in useSessions wrapper）
   // ============================================================
 
-  it('selectSession 应使用显式传入的 filter 而非旧值', async () => {
+  it("selectSession 应使用显式传入的 filter 而非旧值", async () => {
     const filterA = {
       showThinking: false,
       showToolCalls: false,
@@ -91,40 +91,44 @@ describe('sessionStore', () => {
     };
 
     mockedInvoke.mockResolvedValue({
-      id: 'test',
-      filePath: '/test.jsonl',
-      display: '(Empty session)',
+      id: "test",
+      filePath: "/test.jsonl",
+      display: "(Empty session)",
       events: [],
     });
 
     // 第一次请求：用 filterA (thinking=false)
     await useSessionStore
       .getState()
-      .selectSession('/test.jsonl', filterA, 'claude_code');
+      .selectSession("/test.jsonl", filterA, "claude_code");
 
     expect(mockedInvoke).toHaveBeenCalledTimes(1);
     // invoke('get_conversation', { sessionPath, filter, providerName })
-    const call1Args = mockedInvoke.mock.calls[0]![1] as { filter: typeof filterA };
+    const call1Args = mockedInvoke.mock.calls[0]![1] as {
+      filter: typeof filterA;
+    };
     expect(call1Args.filter.showThinking).toBe(false);
 
     // 第二次请求：用 filterB (thinking=true)
     // 这是关键断言：filter 必须是 B 而非 A
     await useSessionStore
       .getState()
-      .selectSession('/test.jsonl', filterB, 'claude_code');
+      .selectSession("/test.jsonl", filterB, "claude_code");
 
     expect(mockedInvoke).toHaveBeenCalledTimes(2);
-    const call2Args = mockedInvoke.mock.calls[1]![1] as { filter: typeof filterA };
+    const call2Args = mockedInvoke.mock.calls[1]![1] as {
+      filter: typeof filterA;
+    };
     expect(call2Args.filter.showThinking).toBe(true);
     // 同时验证 filterB 的其他值也没变
     expect(call2Args.filter.showToolCalls).toBe(false);
   });
 
-  it('连续切换 filter 每次都应传递正确的值', async () => {
+  it("连续切换 filter 每次都应传递正确的值", async () => {
     mockedInvoke.mockResolvedValue({
-      id: 'test',
-      filePath: '/test.jsonl',
-      display: '(Empty session)',
+      id: "test",
+      filePath: "/test.jsonl",
+      display: "(Empty session)",
       events: [],
     });
 
@@ -145,7 +149,7 @@ describe('sessionStore', () => {
       };
       await useSessionStore
         .getState()
-        .selectSession('/test.jsonl', filter, 'claude_code');
+        .selectSession("/test.jsonl", filter, "claude_code");
 
       const callArgs = mockedInvoke.mock.calls[i]!;
       const passedFilter = (callArgs[1] as { filter: typeof filter }).filter;

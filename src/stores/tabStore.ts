@@ -1,15 +1,20 @@
-import { create } from 'zustand';
-import type { TabState, TabSnapshot, FilterConfig, SessionDetail } from '../types';
-import * as tauri from '../utils/tauri';
-import { useSettingsStore } from './settingsStore';
-import { useToastStore } from './toastStore';
-import { extractUserText } from '../utils/filterEvents';
+import { create } from "zustand";
+import type {
+  TabState,
+  TabSnapshot,
+  FilterConfig,
+  SessionDetail,
+} from "../types";
+import * as tauri from "../utils/tauri";
+import { useSettingsStore } from "./settingsStore";
+import { useToastStore } from "./toastStore";
+import { extractUserText } from "../utils/filterEvents";
 import {
   TabPinService,
   CloseOthersPolicy,
   CloseToRightPolicy,
   CloseAllPolicy,
-} from '../utils/tabPinService';
+} from "../utils/tabPinService";
 
 // 后端请求用：始终加载全部内容块，前端侧再做用户过滤
 const FULL_FILTER: FilterConfig = {
@@ -49,9 +54,9 @@ function persistTabState() {
   };
 
   useSettingsStore.setState({ settings: updated });
-  tauri.saveSettings(updated).catch((err) =>
-    console.error('Failed to save tab state:', err),
-  );
+  tauri
+    .saveSettings(updated)
+    .catch((err) => console.error("Failed to save tab state:", err));
 }
 
 /** 触发标签页状态保存（300ms debounce） */
@@ -69,7 +74,9 @@ function getUseLast(): boolean {
 function buildTabTitle(detail: SessionDetail, useLast?: boolean): string {
   if (useLast) {
     // 取最后一条用户消息
-    const userEvents = (detail.events || []).filter((e) => e.eventType === 'user');
+    const userEvents = (detail.events || []).filter(
+      (e) => e.eventType === "user",
+    );
     const lastUser = userEvents[userEvents.length - 1];
     if (lastUser) {
       const text = extractUserText(lastUser);
@@ -77,13 +84,13 @@ function buildTabTitle(detail: SessionDetail, useLast?: boolean): string {
     }
   }
   // 默认取第一条用户消息：优先使用后端清理过的 display 字段
-  if (detail.display && detail.display !== '(Empty session)') {
+  if (detail.display && detail.display !== "(Empty session)") {
     return detail.display.slice(0, 60);
   }
   // 兜底：前端从 events 中提取第一条
-  const firstUserEvent = detail.events?.find((e) => e.eventType === 'user');
-  if (!firstUserEvent) return 'Untitled';
-  return extractUserText(firstUserEvent).slice(0, 60) || 'Untitled';
+  const firstUserEvent = detail.events?.find((e) => e.eventType === "user");
+  if (!firstUserEvent) return "Untitled";
+  return extractUserText(firstUserEvent).slice(0, 60) || "Untitled";
 }
 
 /** 生成唯一 tab id */
@@ -107,7 +114,12 @@ interface TabStoreState {
 
   // === 操作 ===
   /** 打开标签页（已存在则激活），返回 tabId。activate=false 时在后台打开不切换 */
-  openTab: (sessionPath: string, providerName: string, activate?: boolean, cwd?: string) => Promise<string>;
+  openTab: (
+    sessionPath: string,
+    providerName: string,
+    activate?: boolean,
+    cwd?: string,
+  ) => Promise<string>;
   /** 关闭标签页 */
   closeTab: (tabId: string) => void;
   /** 激活标签页 */
@@ -133,13 +145,13 @@ interface TabStoreState {
   /** 更新标签页展开状态 */
   updateTabExpanded: (
     tabId: string,
-    type: 'thinking' | 'toolCall' | 'toolResult',
-    uuids: string[]
+    type: "thinking" | "toolCall" | "toolResult",
+    uuids: string[],
   ) => void;
   /** 更新标签页搜索高亮 */
   updateTabSearchHighlight: (
     tabId: string,
-    highlight: string | undefined
+    highlight: string | undefined,
   ) => void;
   /** 刷新标签页（重新加载会话内容） */
   refreshTab: (tabId: string) => Promise<void>;
@@ -193,7 +205,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       expandedThinking: [],
       expandedToolCalls: [],
       expandedToolResults: [],
-      title: '加载中...',
+      title: "加载中...",
       pinned: false,
       workingDir: cwd,
     };
@@ -209,7 +221,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       const detail = await tauri.getConversation(
         sessionPath,
         FULL_FILTER,
-        providerName
+        providerName,
       );
       const title = buildTabTitle(detail, getUseLast());
       set((s) => ({
@@ -222,16 +234,14 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
                 isLoading: false,
                 error: null,
               }
-            : t
+            : t,
         ),
       }));
       triggerSaveTabState();
     } catch (err) {
       set((s) => ({
         tabs: s.tabs.map((t) =>
-          t.id === id
-            ? { ...t, isLoading: false, error: String(err) }
-            : t
+          t.id === id ? { ...t, isLoading: false, error: String(err) } : t,
         ),
       }));
     }
@@ -408,9 +418,11 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       // 尝试钉住 — 检查是否达到上限
       const pinnedCount = pinService.countPinned(tabs);
       if (!pinService.canPin(pinnedCount)) {
-        useToastStore.getState().showToast(
-          `已达最大钉住数 (${pinService.getMaxPinned()})，请在设置中调整`,
-        );
+        useToastStore
+          .getState()
+          .showToast(
+            `已达最大钉住数 (${pinService.getMaxPinned()})，请在设置中调整`,
+          );
         return;
       }
     }
@@ -422,8 +434,8 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
 
     // 再重排位置
     const reordered = tab.pinned
-      ? pinService.reorderOnUnpin(toggled, tabId)  // 取消钉住
-      : pinService.reorderOnPin(toggled, tabId);    // 钉住
+      ? pinService.reorderOnUnpin(toggled, tabId) // 取消钉住
+      : pinService.reorderOnPin(toggled, tabId); // 钉住
 
     set({
       tabs: reordered,
@@ -445,9 +457,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
   updateTabFilter: (tabId, filter) => {
     set((s) => ({
       tabs: s.tabs.map((t) =>
-        t.id === tabId
-          ? { ...t, filter: { ...t.filter, ...filter } }
-          : t
+        t.id === tabId ? { ...t, filter: { ...t.filter, ...filter } } : t,
       ),
     }));
   },
@@ -455,16 +465,14 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
   updateTabFindBar: (tabId, show) => {
     set((s) => ({
       tabs: s.tabs.map((t) =>
-        t.id === tabId ? { ...t, showFindBar: show } : t
+        t.id === tabId ? { ...t, showFindBar: show } : t,
       ),
     }));
   },
 
   updateTabScrollTop: (tabId, scrollTop) => {
     set((s) => ({
-      tabs: s.tabs.map((t) =>
-        t.id === tabId ? { ...t, scrollTop } : t
-      ),
+      tabs: s.tabs.map((t) => (t.id === tabId ? { ...t, scrollTop } : t)),
     }));
   },
 
@@ -473,11 +481,11 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       tabs: s.tabs.map((t) => {
         if (t.id !== tabId) return t;
         switch (type) {
-          case 'thinking':
+          case "thinking":
             return { ...t, expandedThinking: uuids };
-          case 'toolCall':
+          case "toolCall":
             return { ...t, expandedToolCalls: uuids };
-          case 'toolResult':
+          case "toolResult":
             return { ...t, expandedToolResults: uuids };
           default:
             return t;
@@ -489,7 +497,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
   updateTabSearchHighlight: (tabId, highlight) => {
     set((s) => ({
       tabs: s.tabs.map((t) =>
-        t.id === tabId ? { ...t, searchHighlight: highlight } : t
+        t.id === tabId ? { ...t, searchHighlight: highlight } : t,
       ),
     }));
   },
@@ -501,7 +509,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
 
     set((s) => ({
       tabs: s.tabs.map((t) =>
-        t.id === tabId ? { ...t, isLoading: true, error: null } : t
+        t.id === tabId ? { ...t, isLoading: true, error: null } : t,
       ),
     }));
 
@@ -509,7 +517,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
       const detail = await tauri.getConversation(
         tab.sessionPath,
         FULL_FILTER,
-        tab.providerName
+        tab.providerName,
       );
       const title = buildTabTitle(detail, getUseLast());
       set((s) => ({
@@ -522,15 +530,13 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
                 isLoading: false,
                 error: null,
               }
-            : t
+            : t,
         ),
       }));
     } catch (err) {
       set((s) => ({
         tabs: s.tabs.map((t) =>
-          t.id === tabId
-            ? { ...t, isLoading: false, error: String(err) }
-            : t
+          t.id === tabId ? { ...t, isLoading: false, error: String(err) } : t,
         ),
       }));
     }
@@ -582,9 +588,7 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
     } catch (err) {
       set((s) => ({
         tabs: s.tabs.map((t) =>
-          t.id === tabId
-            ? { ...t, isLoading: false, error: String(err) }
-            : t,
+          t.id === tabId ? { ...t, isLoading: false, error: String(err) } : t,
         ),
       }));
     }
@@ -624,22 +628,20 @@ export const useTabStore = create<TabStoreState>((set, get) => ({
         expandedThinking: [],
         expandedToolCalls: [],
         expandedToolResults: [],
-        title:
-          snap.title ||
-          snap.sessionPath.split('/').pop() ||
-          'Untitled',
+        title: snap.title || snap.sessionPath.split("/").pop() || "Untitled",
         pinned: snap.pinned,
         workingDir: snap.workingDir,
       });
     }
 
     // 映射活跃标签页索引（考虑重排后的顺序）
-    const activeIndex = tabSnapshots.length > 0
-      ? Math.min(
-          useSettingsStore.getState().settings.activeTabIndex ?? 0,
-          tabSnapshots.length - 1,
-        )
-      : 0;
+    const activeIndex =
+      tabSnapshots.length > 0
+        ? Math.min(
+            useSettingsStore.getState().settings.activeTabIndex ?? 0,
+            tabSnapshots.length - 1,
+          )
+        : 0;
 
     // 找到原始快照中 activeIndex 对应的 sessionPath
     const activeSnapshot = tabSnapshots[activeIndex];
@@ -696,7 +698,8 @@ let _prevDisplayFirst: boolean | undefined;
 function ensureSettingsSubscribed() {
   if (_settingsSubscribed) return;
   _settingsSubscribed = true;
-  _prevDisplayFirst = useSettingsStore.getState().settings.displayFirstUserMessage;
+  _prevDisplayFirst =
+    useSettingsStore.getState().settings.displayFirstUserMessage;
   useSettingsStore.subscribe((state) => {
     const current = state.settings.displayFirstUserMessage;
     if (current !== _prevDisplayFirst) {

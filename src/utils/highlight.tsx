@@ -1,5 +1,5 @@
-import React from 'react';
-import { regexFlags } from './searchEvents';
+import React from "react";
+import { regexFlags } from "./searchEvents";
 
 interface HighlightColors {
   search: string;
@@ -12,11 +12,11 @@ interface HighlightColors {
 export function highlightText(
   text: string,
   term: string,
-  color: string
+  color: string,
 ): React.ReactNode {
   if (!term || !term.trim()) return text;
 
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`(${escaped})`, regexFlags(term));
   const parts = text.split(regex);
 
@@ -26,21 +26,25 @@ export function highlightText(
     regex.test(part) ? (
       <mark
         key={i}
-        style={{ backgroundColor: color, borderRadius: '3px', padding: '0 2px' }}
+        style={{
+          backgroundColor: color,
+          borderRadius: "3px",
+          padding: "0 2px",
+        }}
       >
         {part}
       </mark>
     ) : (
       part
-    )
+    ),
   );
 }
 
 /** 激活匹配的样式（橙色描边，和浏览器的行为一致） */
 const ACTIVE_FIND_STYLE: React.CSSProperties = {
-  outline: '2px solid #f97316',
-  outlineOffset: '1px',
-  borderRadius: '3px',
+  outline: "2px solid #f97316",
+  outlineOffset: "1px",
+  borderRadius: "3px",
 };
 
 /**
@@ -52,9 +56,9 @@ function highlightFindWithActive(
   term: string,
   color: string,
   startCounter: number,
-  activeOccurrence?: number
+  activeOccurrence?: number,
 ): { nodes: React.ReactNode[]; count: number } {
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`(${escaped})`, regexFlags(term));
   const parts = text.split(regex);
 
@@ -65,12 +69,13 @@ function highlightFindWithActive(
   let counter = startCounter;
   const nodes = parts.map((part, i) => {
     if (regex.test(part)) {
-      const isActive = activeOccurrence !== undefined && counter === activeOccurrence;
+      const isActive =
+        activeOccurrence !== undefined && counter === activeOccurrence;
       counter++;
       const style: React.CSSProperties = {
         backgroundColor: color,
-        borderRadius: '3px',
-        padding: '0 2px',
+        borderRadius: "3px",
+        padding: "0 2px",
         ...(isActive ? ACTIVE_FIND_STYLE : {}),
       };
       return (
@@ -96,7 +101,7 @@ export function highlightDual(
   searchTerm: string | undefined,
   findTerm: string | undefined,
   colors: HighlightColors,
-  activeFindOccurrence?: number
+  activeFindOccurrence?: number,
 ): React.ReactNode {
   if (!searchTerm && !findTerm) return text;
 
@@ -108,19 +113,27 @@ export function highlightDual(
   // 只有查找词
   if (!searchTerm && findTerm) {
     const { nodes } = highlightFindWithActive(
-      text, findTerm, colors.find, 0, activeFindOccurrence
+      text,
+      findTerm,
+      colors.find,
+      0,
+      activeFindOccurrence,
     );
     return nodes;
   }
 
   // 两者都有：先按搜索词分割，再在片段上标查找词
-  const escaped = searchTerm!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = searchTerm!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`(${escaped})`, regexFlags(searchTerm!));
   const parts = text.split(regex);
 
   if (parts.length === 1) {
     const { nodes } = highlightFindWithActive(
-      text, findTerm!, colors.find, 0, activeFindOccurrence
+      text,
+      findTerm!,
+      colors.find,
+      0,
+      activeFindOccurrence,
     );
     return nodes;
   }
@@ -130,13 +143,21 @@ export function highlightDual(
     if (regex.test(part)) {
       // 搜索词匹配 → 搜索色为底，内层再做查找高亮
       const inner = highlightFindWithActive(
-        part, findTerm!, colors.find, findCounter, activeFindOccurrence
+        part,
+        findTerm!,
+        colors.find,
+        findCounter,
+        activeFindOccurrence,
       );
       findCounter += inner.count;
       return (
         <mark
           key={i}
-          style={{ backgroundColor: colors.search, borderRadius: '3px', padding: '0 2px' }}
+          style={{
+            backgroundColor: colors.search,
+            borderRadius: "3px",
+            padding: "0 2px",
+          }}
         >
           {inner.nodes}
         </mark>
@@ -144,11 +165,15 @@ export function highlightDual(
     }
     // 非搜索匹配 → 仅做查找高亮
     const inner = highlightFindWithActive(
-      part, findTerm!, colors.find, findCounter, activeFindOccurrence
+      part,
+      findTerm!,
+      colors.find,
+      findCounter,
+      activeFindOccurrence,
     );
     findCounter += inner.count;
     // 如果 inner.nodes 仅一个字符串元素，直接返回避免多余的 Fragment key 警告
-    if (inner.nodes.length === 1 && typeof inner.nodes[0] === 'string') {
+    if (inner.nodes.length === 1 && typeof inner.nodes[0] === "string") {
       return <React.Fragment key={i}>{inner.nodes[0]}</React.Fragment>;
     }
     return <React.Fragment key={i}>{inner.nodes}</React.Fragment>;

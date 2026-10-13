@@ -1,4 +1,4 @@
-import type { ChatEvent, ContentBlock } from '../types';
+import type { ChatEvent, ContentBlock } from "../types";
 
 export interface EventMatch {
   eventIdx: number;
@@ -13,20 +13,20 @@ export interface EventMatch {
  */
 export function blockToSearchText(block: ContentBlock): string {
   switch (block.blockType) {
-    case 'text':
+    case "text":
       return block.text;
 
-    case 'thinking':
+    case "thinking":
       return `思考过程 ${block.thinking}`;
 
-    case 'tool_use':
+    case "tool_use":
       return `工具调用 ${block.toolName} ${JSON.stringify(block.toolInput)}`;
 
-    case 'tool_result':
-      return `工具结果 ${block.content ?? ''} ${block.isError ? '错误' : ''}`;
+    case "tool_result":
+      return `工具结果 ${block.content ?? ""} ${block.isError ? "错误" : ""}`;
 
     default:
-      return '';
+      return "";
   }
 }
 
@@ -36,20 +36,17 @@ export function blockToSearchText(block: ContentBlock): string {
  *（例如 `/的/i` 错误匹配 ASCII `d`）。
  */
 export function regexFlags(query: string): string {
-  return /[^\x00-\x7F]/.test(query) ? 'g' : 'gi';
+  return /\P{ASCII}/u.test(query) ? "g" : "gi";
 }
 
 /**
  * 在事件列表中搜索匹配项（按关键词出现次数计数）。
  * 纯函数，方便单元测试。
  */
-export function searchEvents(
-  events: ChatEvent[],
-  query: string
-): EventMatch[] {
+export function searchEvents(events: ChatEvent[], query: string): EventMatch[] {
   if (!query.trim()) return [];
 
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(escaped, regexFlags(query));
   const result: EventMatch[] = [];
 

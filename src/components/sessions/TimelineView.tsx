@@ -1,10 +1,18 @@
-import React, { useMemo } from 'react';
-import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Filter, Clock, Sparkles } from 'lucide-react';
-import type { SessionSummary, SortConfig, TimeField } from '../../types';
-import { multiSort, getSessionTime } from '../../utils/sort';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { SessionItem } from './SessionItem';
-import SortBar from '../filter/SortBar';
+import React, { useMemo } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Filter,
+  Clock,
+  Sparkles,
+} from "lucide-react";
+import type { SessionSummary, SortConfig, TimeField } from "../../types";
+import { multiSort, getSessionTime } from "../../utils/sort";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { SessionItem } from "./SessionItem";
+import SortBar from "../filter/SortBar";
 
 interface TimelineViewProps {
   sessions: SessionSummary[];
@@ -17,11 +25,15 @@ interface TimelineViewProps {
   onTimeFieldChange: (field: TimeField) => void;
   selectedSessionPath: string | null;
   /** 当前过滤上下文 */
-  filterContext: 'all' | string;
+  filterContext: "all" | string;
   filterContextLabel?: string;
   onSelectSession: (path: string, providerName: string, cwd?: string) => void;
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
-  onLocateInFolderList?: (filePath: string, projectPath: string, providerName: string) => void;
+  onLocateInFolderList?: (
+    filePath: string,
+    projectPath: string,
+    providerName: string,
+  ) => void;
   onClearFilter?: () => void;
 }
 
@@ -30,7 +42,10 @@ interface TimeGroup {
   sessions: SessionSummary[];
 }
 
-function groupByTime(sessions: SessionSummary[], timeField: TimeField): TimeGroup[] {
+function groupByTime(
+  sessions: SessionSummary[],
+  timeField: TimeField,
+): TimeGroup[] {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today.getTime() - 86400000);
@@ -39,17 +54,17 @@ function groupByTime(sessions: SessionSummary[], timeField: TimeField): TimeGrou
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const groups: Record<string, SessionSummary[]> = {
-    '今天': [],
-    '昨天': [],
-    '本周': [],
-    '上周': [],
-    '本月': [],
+    今天: [],
+    昨天: [],
+    本周: [],
+    上周: [],
+    本月: [],
   };
   const monthGroups: Record<string, SessionSummary[]> = {};
   const older: SessionSummary[] = [];
 
   // 时间字段对应的 SortField（用于分组内子排序）
-  const timeSortField = timeField === 'modified' ? 'modified' : 'created';
+  const timeSortField = timeField === "modified" ? "modified" : "created";
 
   for (const session of sessions) {
     const date = new Date(getSessionTime(session, timeField));
@@ -57,15 +72,15 @@ function groupByTime(sessions: SessionSummary[], timeField: TimeField): TimeGrou
       older.push(session);
       continue;
     }
-    if (date >= today) groups['今天'].push(session);
-    else if (date >= yesterday) groups['昨天'].push(session);
-    else if (date >= weekStart) groups['本周'].push(session);
-    else if (date >= lastWeekStart) groups['上周'].push(session);
-    else if (date >= monthStart) groups['本月'].push(session);
+    if (date >= today) groups["今天"].push(session);
+    else if (date >= yesterday) groups["昨天"].push(session);
+    else if (date >= weekStart) groups["本周"].push(session);
+    else if (date >= lastWeekStart) groups["上周"].push(session);
+    else if (date >= monthStart) groups["本月"].push(session);
     else {
-      const monthKey = date.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
+      const monthKey = date.toLocaleDateString("zh-CN", {
+        year: "numeric",
+        month: "long",
       });
       if (!monthGroups[monthKey]) monthGroups[monthKey] = [];
       monthGroups[monthKey].push(session);
@@ -73,16 +88,27 @@ function groupByTime(sessions: SessionSummary[], timeField: TimeField): TimeGrou
   }
 
   const result: TimeGroup[] = [];
-  for (const label of ['今天', '昨天', '本周', '上周', '本月']) {
+  for (const label of ["今天", "昨天", "本周", "上周", "本月"]) {
     if (groups[label].length > 0) {
-      result.push({ label, sessions: multiSort(groups[label], [{ field: timeSortField, direction: 'desc' }]) });
+      result.push({
+        label,
+        sessions: multiSort(groups[label], [
+          { field: timeSortField, direction: "desc" },
+        ]),
+      });
     }
   }
   for (const [label, sess] of Object.entries(monthGroups)) {
-    result.push({ label, sessions: multiSort(sess, [{ field: timeSortField, direction: 'desc' }]) });
+    result.push({
+      label,
+      sessions: multiSort(sess, [{ field: timeSortField, direction: "desc" }]),
+    });
   }
   if (older.length > 0) {
-    result.push({ label: '更早', sessions: multiSort(older, [{ field: timeSortField, direction: 'desc' }]) });
+    result.push({
+      label: "更早",
+      sessions: multiSort(older, [{ field: timeSortField, direction: "desc" }]),
+    });
   }
   return result;
 }
@@ -102,17 +128,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   onClearFilter,
 }) => {
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   // 先全局排序再分组
   const sortedSessions = useMemo(
     () => multiSort(sessions, sortConfig),
-    [sessions, sortConfig]
+    [sessions, sortConfig],
   );
   const groups = useMemo(
     () => groupByTime(sortedSessions, timeField),
-    [sortedSessions, timeField]
+    [sortedSessions, timeField],
   );
 
   const toggleGroup = (label: string) => {
@@ -124,10 +150,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     });
   };
 
-  const density = useSettingsStore((s) => s.settings.sessionListStyle ?? 'loose');
-  const isCompact = density === 'compact';
+  const density = useSettingsStore(
+    (s) => s.settings.sessionListStyle ?? "loose",
+  );
+  const isCompact = density === "compact";
 
-  const allCollapsed = collapsedGroups.size >= groups.length && groups.length > 0;
+  const allCollapsed =
+    collapsedGroups.size >= groups.length && groups.length > 0;
 
   const toggleAll = () => {
     if (allCollapsed) {
@@ -144,13 +173,26 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         <div className="flex items-center gap-2 text-xs min-w-0">
           {/* 左侧：范围标签 + 清除，超长省略 */}
           <div className="flex-1 min-w-0 flex items-center gap-2">
-            <span className="text-gray-400 flex items-center gap-1 min-w-0 truncate"
-                  title={filterContext === 'all' ? '全部' : (filterContextLabel ?? filterContext)}>
+            <span
+              className="text-gray-400 flex items-center gap-1 min-w-0 truncate"
+              title={
+                filterContext === "all"
+                  ? "全部"
+                  : (filterContextLabel ?? filterContext)
+              }
+            >
               <Filter className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{filterContext === 'all' ? '全部' : (filterContextLabel ?? filterContext)}</span>
+              <span className="truncate">
+                {filterContext === "all"
+                  ? "全部"
+                  : (filterContextLabel ?? filterContext)}
+              </span>
             </span>
-            {filterContext !== 'all' && onClearFilter && (
-              <button onClick={onClearFilter} className="whitespace-nowrap text-primary-600 hover:text-primary-700 flex-shrink-0">
+            {filterContext !== "all" && onClearFilter && (
+              <button
+                onClick={onClearFilter}
+                className="whitespace-nowrap text-primary-600 hover:text-primary-700 flex-shrink-0"
+              >
                 清除
               </button>
             )}
@@ -163,7 +205,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                           bg-amber-100/40 backdrop-blur-sm
                           shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]
                           border border-amber-200/50"
-              role="radiogroup" aria-label="时间线分组依据"
+              role="radiogroup"
+              aria-label="时间线分组依据"
             >
               {/* 滑动指示器 */}
               <div
@@ -171,24 +214,32 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                             bg-gradient-to-r from-amber-400 to-orange-400
                             shadow shadow-amber-400/25
                             transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-                style={{ left: timeField === 'created' ? '1px' : 'calc(50% - 0px)' }}
+                style={{
+                  left: timeField === "created" ? "1px" : "calc(50% - 0px)",
+                }}
               />
               <button
-                onClick={() => onTimeFieldChange('created')}
+                onClick={() => onTimeFieldChange("created")}
                 className={`relative z-10 flex items-center justify-center gap-0.5 px-1.5 py-0.5 text-[11px] rounded-md transition-colors duration-200 whitespace-nowrap
-                  ${timeField === 'created' ? 'font-semibold text-white' : 'font-medium text-amber-700/50 hover:text-amber-700/70'}`}
-                role="radio" aria-checked={timeField === 'created'}
+                  ${timeField === "created" ? "font-semibold text-white" : "font-medium text-amber-700/50 hover:text-amber-700/70"}`}
+                role="radio"
+                aria-checked={timeField === "created"}
               >
-                <Clock className={`h-3 w-3 transition-transform duration-200 ${timeField === 'created' ? 'scale-110' : ''}`} />
+                <Clock
+                  className={`h-3 w-3 transition-transform duration-200 ${timeField === "created" ? "scale-110" : ""}`}
+                />
                 创建时间
               </button>
               <button
-                onClick={() => onTimeFieldChange('modified')}
+                onClick={() => onTimeFieldChange("modified")}
                 className={`relative z-10 flex items-center justify-center gap-0.5 px-1.5 py-0.5 text-[11px] rounded-md transition-colors duration-200 whitespace-nowrap
-                  ${timeField === 'modified' ? 'font-semibold text-white' : 'font-medium text-amber-700/50 hover:text-amber-700/70'}`}
-                role="radio" aria-checked={timeField === 'modified'}
+                  ${timeField === "modified" ? "font-semibold text-white" : "font-medium text-amber-700/50 hover:text-amber-700/70"}`}
+                role="radio"
+                aria-checked={timeField === "modified"}
               >
-                <Sparkles className={`h-3 w-3 transition-transform duration-200 ${timeField === 'modified' ? 'scale-110' : ''}`} />
+                <Sparkles
+                  className={`h-3 w-3 transition-transform duration-200 ${timeField === "modified" ? "scale-110" : ""}`}
+                />
                 修改时间
               </button>
             </div>
@@ -206,21 +257,27 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             onClick={toggleAll}
             className={`flex items-center gap-1 px-1.5 py-0.5 text-[11px] rounded-full border transition-colors whitespace-nowrap flex-shrink-0 ${
               allCollapsed
-                ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300'
-                : 'border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:border-gray-300'
+                ? "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300"
+                : "border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:border-gray-300"
             }`}
-            title={allCollapsed ? '展开全部' : '折叠全部'}
+            title={allCollapsed ? "展开全部" : "折叠全部"}
           >
-            {allCollapsed ? <ChevronsDownUp className="h-3 w-3" /> : <ChevronsUpDown className="h-3 w-3" />}
-            {allCollapsed ? '展开' : '折叠'}
+            {allCollapsed ? (
+              <ChevronsDownUp className="h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="h-3 w-3" />
+            )}
+            {allCollapsed ? "展开" : "折叠"}
           </button>
         )}
       </div>
 
       {/* 时间分组列表 */}
-      <div className={`flex-1 overflow-y-auto ${isCompact ? 'py-0.5' : 'py-1'}`}>
+      <div
+        className={`flex-1 overflow-y-auto ${isCompact ? "py-0.5" : "py-1"}`}
+      >
         {groups.map((group) => (
-          <div key={group.label} className={isCompact ? 'mb-1.5' : 'mb-2'}>
+          <div key={group.label} className={isCompact ? "mb-1.5" : "mb-2"}>
             <button
               onClick={() => toggleGroup(group.label)}
               className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors sticky top-0 bg-white z-10"
@@ -243,7 +300,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     key={session.id}
                     session={session}
                     isSelected={selectedSessionPath === session.filePath}
-                    showProject={filterContext === 'all'}
+                    showProject={filterContext === "all"}
                     showProvider={true}
                     timeField={timeField}
                     density={density}

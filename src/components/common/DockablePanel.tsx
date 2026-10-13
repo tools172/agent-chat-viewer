@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { GripVertical } from 'lucide-react';
-import { PANEL_OPACITY_DEFAULT, PANEL_OPACITY_DRAG } from '../../types';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { GripVertical } from "lucide-react";
+import { PANEL_OPACITY_DEFAULT, PANEL_OPACITY_DRAG } from "../../types";
 
 /** 滑板默认宽度（px），对应 w-96 */
 const DEFAULT_WIDTH = 384;
@@ -64,13 +64,15 @@ export const DockablePanel: React.FC<DockablePanelProps> = ({
   const [snappedAnchor] = useState<number | null>(() => {
     if (anchorX == null) return null;
     const a = Math.min(Math.max(0, anchorX), maxOffset);
-    return Math.abs(rawDockedOffset - maxOffset) <= Math.abs(rawDockedOffset - a)
+    return Math.abs(rawDockedOffset - maxOffset) <=
+      Math.abs(rawDockedOffset - a)
       ? maxOffset
       : a;
   });
   // 吸附只作用于「打开那一刻」：一旦拖拽并松手，停驻就跟随自由位置（rawDockedOffset），不再回跳锚点
   const [hasDragged, setHasDragged] = useState(false);
-  const baseOffset = !hasDragged && snappedAnchor != null ? snappedAnchor : rawDockedOffset;
+  const baseOffset =
+    !hasDragged && snappedAnchor != null ? snappedAnchor : rawDockedOffset;
   // 实际渲染偏移
   const renderOffset = dragOffset ?? baseOffset;
   // 拖动中：临时增大透明度（方便看清下方内容、避免卡顿），松手恢复静止值
@@ -81,20 +83,20 @@ export const DockablePanel: React.FC<DockablePanelProps> = ({
   // 窗口缩放时更新视口宽度
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   // Esc 关闭
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   // 停靠位置变化时，同步「最新偏移」基线（拖动起点始终从当前位置开始）
@@ -112,15 +114,18 @@ export const DockablePanel: React.FC<DockablePanelProps> = ({
   const startDrag = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return;
     // 头部内的交互控件（关闭按钮、透明度滑块等）不应触发拖拽
-    if ((e.target as HTMLElement).closest('button')) return;
-    if ((e.target as HTMLElement).closest('input')) return;
+    if ((e.target as HTMLElement).closest("button")) return;
+    if ((e.target as HTMLElement).closest("input")) return;
     e.preventDefault();
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
       /* 某些环境（如 jsdom）不支持 pointer capture，忽略 */
     }
-    dragStartRef.current = { pointerX: e.clientX, offset: latestOffsetRef.current };
+    dragStartRef.current = {
+      pointerX: e.clientX,
+      offset: latestOffsetRef.current,
+    };
     setIsDragging(true);
   }, []);
 
@@ -128,11 +133,14 @@ export const DockablePanel: React.FC<DockablePanelProps> = ({
     (e: React.PointerEvent) => {
       if (!isDragging) return;
       const { pointerX, offset: start } = dragStartRef.current;
-      const next = Math.min(maxOffset, Math.max(0, start + (e.clientX - pointerX)));
+      const next = Math.min(
+        maxOffset,
+        Math.max(0, start + (e.clientX - pointerX)),
+      );
       latestOffsetRef.current = next;
       setDragOffset(next);
     },
-    [isDragging, maxOffset]
+    [isDragging, maxOffset],
   );
 
   const endDrag = useCallback(() => {
@@ -153,13 +161,13 @@ export const DockablePanel: React.FC<DockablePanelProps> = ({
 
       {/* 覆盖式滑板 */}
       <div
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col shadow-xl panel-glass${glass && !isDragging ? ' panel-glass-blur' : ''}`}
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col shadow-xl panel-glass${glass && !isDragging ? " panel-glass-blur" : ""}`}
         style={{
           width: `${width}px`,
           transform: `translateX(${renderOffset}px)`,
-          ['--panel-opacity' as string]: String(renderOpacity),
-          ['--slide-from-x' as string]: `${slideFromX}px`,
-          animation: 'dockable-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+          ["--panel-opacity" as string]: String(renderOpacity),
+          ["--slide-from-x" as string]: `${slideFromX}px`,
+          animation: "dockable-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
         {/* 头部：拖拽手柄 + 标题 + 操作区
@@ -173,13 +181,18 @@ export const DockablePanel: React.FC<DockablePanelProps> = ({
           onPointerCancel={endDrag}
         >
           {/* 标题区固定不收缩，避免被右侧操作区挤压变形；这里才是真正的拖拽手柄 */}
-          <div className="flex items-center gap-2 shrink-0" title="拖动面板到任意位置">
+          <div
+            className="flex items-center gap-2 shrink-0"
+            title="拖动面板到任意位置"
+          >
             <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0" />
             <h2 className="text-lg font-semibold whitespace-nowrap">{title}</h2>
           </div>
           {/* 操作区占满剩余宽度（flex-1）并允许收缩：内部滑块承担收缩，空间不足时滑块变窄而非标题变形。
               整体 cursor-default：操作区不参与拖拽，间隙/容器不再误显抓手 */}
-          <div className="flex items-center gap-1 flex-1 min-w-0 cursor-default">{actions}</div>
+          <div className="flex items-center gap-1 flex-1 min-w-0 cursor-default">
+            {actions}
+          </div>
         </div>
 
         {children}

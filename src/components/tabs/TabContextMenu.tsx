@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useRef, useEffect, useLayoutEffect } from "react";
 import {
   RefreshCw,
   Pin,
@@ -10,20 +10,20 @@ import {
   Folder,
   Download,
   FileText,
-} from 'lucide-react';
+} from "lucide-react";
 
 export type TabContextAction =
-  | 'refresh'
-  | 'togglePin'
-  | 'close'
-  | 'closeOthers'
-  | 'closeToRight'
-  | 'closeAll'
-  | 'copyPath'
-  | 'copyId'
-  | 'openFolder'
-  | 'openProjectFolder'
-  | 'export';
+  | "refresh"
+  | "togglePin"
+  | "close"
+  | "closeOthers"
+  | "closeToRight"
+  | "closeAll"
+  | "copyPath"
+  | "copyId"
+  | "openFolder"
+  | "openProjectFolder"
+  | "export";
 
 interface TabContextMenuProps {
   x: number;
@@ -60,17 +60,17 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
         onClose();
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [onClose]);
 
   // 按 Esc 关闭
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
   // 调整位置不超出视口
@@ -100,7 +100,7 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
       style={{ left: x, top: y }}
     >
       <button
-        onClick={() => handleAction('refresh')}
+        onClick={() => handleAction("refresh")}
         className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
       >
         <RefreshCw className="h-4 w-4 text-gray-400" />
@@ -109,12 +109,12 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
       <button
         onClick={() => {
           if (pinDisabled && !isPinned) return; // 已达上限，不关闭菜单
-          handleAction('togglePin');
+          handleAction("togglePin");
         }}
         className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm transition-colors ${
           pinDisabled && !isPinned
-            ? 'text-gray-400 cursor-not-allowed'
-            : 'text-gray-700 hover:bg-gray-100'
+            ? "text-gray-400 cursor-not-allowed"
+            : "text-gray-700 hover:bg-gray-100"
         }`}
       >
         {isPinned ? (
@@ -125,9 +125,7 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
         ) : (
           <>
             <Pin className="h-4 w-4 text-gray-400" />
-            {pinDisabled
-              ? `钉住 (已达上限 ${maxPinnedCount ?? 4})`
-              : '钉住'}
+            {pinDisabled ? `钉住 (已达上限 ${maxPinnedCount ?? 4})` : "钉住"}
           </>
         )}
       </button>
@@ -135,7 +133,7 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
       <div className="border-t border-gray-100 my-1" />
 
       <button
-        onClick={() => handleAction('close')}
+        onClick={() => handleAction("close")}
         className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
       >
         <X className="h-4 w-4 text-gray-400" />
@@ -144,21 +142,21 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
       {!isPinned && (
         <>
           <button
-            onClick={() => handleAction('closeOthers')}
+            onClick={() => handleAction("closeOthers")}
             className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <FileText className="h-4 w-4 text-gray-400" />
             关闭其他
           </button>
           <button
-            onClick={() => handleAction('closeToRight')}
+            onClick={() => handleAction("closeToRight")}
             className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <FileText className="h-4 w-4 text-gray-400 rotate-90" />
             关闭右侧
           </button>
           <button
-            onClick={() => handleAction('closeAll')}
+            onClick={() => handleAction("closeAll")}
             className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <X className="h-4 w-4 text-red-400" />
@@ -170,7 +168,7 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
       <div className="border-t border-gray-100 my-1" />
 
       <button
-        onClick={() => handleAction('copyPath')}
+        onClick={() => handleAction("copyPath")}
         className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
       >
         <Copy className="h-4 w-4 text-gray-400" />
@@ -178,7 +176,7 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
       </button>
       {sessionId && (
         <button
-          onClick={() => handleAction('copyId')}
+          onClick={() => handleAction("copyId")}
           className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
         >
           <Hash className="h-4 w-4 text-gray-400" />
@@ -186,14 +184,14 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
         </button>
       )}
       <button
-        onClick={() => handleAction('openFolder')}
+        onClick={() => handleAction("openFolder")}
         className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
       >
         <FolderOpen className="h-4 w-4 text-gray-400" />
         打开所在文件夹
       </button>
       <button
-        onClick={() => handleAction('openProjectFolder')}
+        onClick={() => handleAction("openProjectFolder")}
         className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
       >
         <Folder className="h-4 w-4 text-gray-400" />
@@ -203,7 +201,7 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({
       <div className="border-t border-gray-100 my-1" />
 
       <button
-        onClick={() => handleAction('export')}
+        onClick={() => handleAction("export")}
         className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
       >
         <Download className="h-4 w-4 text-gray-400" />

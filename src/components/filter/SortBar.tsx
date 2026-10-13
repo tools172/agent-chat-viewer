@@ -1,7 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Plus, X, ArrowUp, ArrowDown } from 'lucide-react';
-import type { SortConfig, SortLevel, SortField, SortDirection } from '../../types';
-import { SORT_FIELDS, getFieldLabel, getDirectionLabel } from '../../utils/sort';
+import React, { useEffect, useRef, useState } from "react";
+import { Plus, X, ArrowUp, ArrowDown } from "lucide-react";
+import type {
+  SortConfig,
+  SortLevel,
+  SortField,
+  SortDirection,
+} from "../../types";
+import {
+  SORT_FIELDS,
+  getFieldLabel,
+  getDirectionLabel,
+} from "../../utils/sort";
 
 interface SortBarProps {
   config: SortConfig;
@@ -11,13 +20,21 @@ interface SortBarProps {
 const MAX_LEVELS = 2;
 
 /** 方向切换按钮 */
-const DirBtn: React.FC<{ dir: SortDirection; title: string; onClick: () => void }> = ({ dir, title, onClick }) => (
+const DirBtn: React.FC<{
+  dir: SortDirection;
+  title: string;
+  onClick: () => void;
+}> = ({ dir, title, onClick }) => (
   <button
     onClick={onClick}
     title={title}
     className="shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500"
   >
-    {dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+    {dir === "asc" ? (
+      <ArrowUp className="h-3 w-3" />
+    ) : (
+      <ArrowDown className="h-3 w-3" />
+    )}
   </button>
 );
 
@@ -29,18 +46,21 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
   useEffect(() => {
     if (openMenu === null) return;
     const clickHandler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setOpenMenu(null);
       }
     };
     const keyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenMenu(null);
+      if (e.key === "Escape") setOpenMenu(null);
     };
-    document.addEventListener('mousedown', clickHandler);
-    document.addEventListener('keydown', keyHandler);
+    document.addEventListener("mousedown", clickHandler);
+    document.addEventListener("keydown", keyHandler);
     return () => {
-      document.removeEventListener('mousedown', clickHandler);
-      document.removeEventListener('keydown', keyHandler);
+      document.removeEventListener("mousedown", clickHandler);
+      document.removeEventListener("keydown", keyHandler);
     };
   }, [openMenu]);
 
@@ -58,7 +78,7 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
   // 添加新级别
   const addLevel = (field: SortField) => {
     if (config.length >= MAX_LEVELS) return;
-    onChange([...config, { field, direction: 'desc' }]);
+    onChange([...config, { field, direction: "desc" }]);
     setOpenMenu(null);
   };
 
@@ -69,7 +89,10 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
         <span className="text-gray-500 mr-0.5">排序</span>
 
         {config.map((level, idx) => (
-          <span key={idx} className="inline-flex items-center gap-0.5 bg-white border rounded-md shadow-sm">
+          <span
+            key={idx}
+            className="inline-flex items-center gap-0.5 bg-white border rounded-md shadow-sm"
+          >
             {/* 字段下拉 */}
             <button
               onClick={() => setOpenMenu(openMenu === idx ? null : idx)}
@@ -82,7 +105,9 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
               dir={level.direction}
               title={getDirectionLabel(level.field, level.direction)}
               onClick={() =>
-                updateLevel(idx, { direction: level.direction === 'asc' ? 'desc' : 'asc' })
+                updateLevel(idx, {
+                  direction: level.direction === "asc" ? "desc" : "asc",
+                })
               }
             />
             {/* 删除（二级可删） */}
@@ -111,27 +136,34 @@ const SortBar: React.FC<SortBarProps> = ({ config, onChange }) => {
 
       {/* 下拉字段选择菜单 */}
       {openMenu !== null && (
-        <div ref={dropdownRef} className="mt-1 py-1 bg-white border rounded-md shadow-lg z-10">
+        <div
+          ref={dropdownRef}
+          className="mt-1 py-1 bg-white border rounded-md shadow-lg z-10"
+        >
           {SORT_FIELDS.map((field) => {
             const alreadyUsed = config.some((l) => l.field === field);
-            const action = openMenu === -1 ? 'addLevel' : 'updateLevel';
+            const action = openMenu === -1 ? "addLevel" : "updateLevel";
             return (
               <button
                 key={field}
                 onClick={() => {
-                  if (action === 'addLevel') addLevel(field);
+                  if (action === "addLevel") addLevel(field);
                   else if (openMenu >= 0) {
                     updateLevel(openMenu, { field });
                     setOpenMenu(null);
                   }
                 }}
                 className={`w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center justify-between ${
-                  alreadyUsed ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'
+                  alreadyUsed
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700"
                 }`}
                 disabled={alreadyUsed}
               >
                 <span>{getFieldLabel(field)}</span>
-                {alreadyUsed && <span className="text-[10px] text-gray-400">已使用</span>}
+                {alreadyUsed && (
+                  <span className="text-[10px] text-gray-400">已使用</span>
+                )}
               </button>
             );
           })}

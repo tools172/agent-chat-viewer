@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useLayoutEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
-import type { TabState } from '../../types';
-import { getProviderColor } from '../../utils/providers';
+import React, { useRef, useEffect, useLayoutEffect } from "react";
+import { ChevronDown } from "lucide-react";
+import type { TabState } from "../../types";
+import { getProviderColor } from "../../utils/providers";
 
 interface TabOverflowMenuProps {
   tabs: TabState[];
@@ -24,16 +24,16 @@ export const TabOverflowMenu: React.FC<TabOverflowMenuProps> = ({
         onClose();
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [onClose]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
   // 调整位置
@@ -47,8 +47,8 @@ export const TabOverflowMenu: React.FC<TabOverflowMenuProps> = ({
       menuRef.current.style.left = `${Math.max(gap, vw - rect.width - gap)}px`;
     }
     if (rect.bottom > vh) {
-      menuRef.current.style.top = 'auto';
-      menuRef.current.style.bottom = '100%';
+      menuRef.current.style.top = "auto";
+      menuRef.current.style.bottom = "100%";
     }
   }, []);
 
@@ -66,8 +66,8 @@ export const TabOverflowMenu: React.FC<TabOverflowMenuProps> = ({
           }}
           className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm transition-colors ${
             tab.id === activeTabId
-              ? 'bg-primary-50 text-primary-700'
-              : 'text-gray-700 hover:bg-gray-100'
+              ? "bg-primary-50 text-primary-700"
+              : "text-gray-700 hover:bg-gray-100"
           }`}
         >
           <span

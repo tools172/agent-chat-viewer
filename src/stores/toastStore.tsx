@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import React, { useEffect, useRef } from 'react';
-import { Info, AlertTriangle, Copy, Check } from 'lucide-react';
+import { create } from "zustand";
+import React, { useEffect, useRef } from "react";
+import { Info, AlertTriangle, Copy, Check } from "lucide-react";
 
-export type ToastVariant = 'info' | 'error';
+export type ToastVariant = "info" | "error";
 
 export interface ToastOptions {
   /** 停留时长（毫秒）。不传时：error 默认 10000，info 默认 2500 */
@@ -37,9 +37,8 @@ export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
 
   showToast: (message, options = {}) => {
-    const variant = options.variant ?? 'info';
-    const duration =
-      options.duration ?? (variant === 'error' ? 10000 : 2500);
+    const variant = options.variant ?? "info";
+    const duration = options.duration ?? (variant === "error" ? 10000 : 2500);
     const id = ++counter;
     set((s) => ({
       toasts: [
@@ -87,8 +86,8 @@ export const ToastContainer: React.FC = () => {
         dismissAll();
       }
     };
-    document.addEventListener('mousedown', onMouseDown);
-    return () => document.removeEventListener('mousedown', onMouseDown);
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
   }, [toasts.length, dismissAll]);
 
   if (toasts.length === 0) return null;
@@ -111,7 +110,7 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
   const [copied, setCopied] = React.useState(false);
   const dismissToast = useToastStore((s) => s.dismissToast);
   const elRef = useRef<HTMLDivElement>(null);
-  const isError = toast.variant === 'error';
+  const isError = toast.variant === "error";
   const copyable = !!toast.copyable;
 
   // 入场动画（柔和上升 + 轻微收敛）
@@ -161,12 +160,12 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
     };
 
     start();
-    el.addEventListener('mouseenter', onEnter);
-    el.addEventListener('mouseleave', onLeave);
+    el.addEventListener("mouseenter", onEnter);
+    el.addEventListener("mouseleave", onLeave);
     return () => {
       stop();
-      el.removeEventListener('mouseenter', onEnter);
-      el.removeEventListener('mouseleave', onLeave);
+      el.removeEventListener("mouseenter", onEnter);
+      el.removeEventListener("mouseleave", onLeave);
     };
   }, [toast.expiresAt, toast.duration, toast.id, dismissToast]);
 
@@ -187,19 +186,19 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
       data-testid="toast-card"
       className={`pointer-events-auto select-text ${
         isError
-          ? 'bg-stone-900/90 ring-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.3),0_24px_56px_-16px_rgba(192,57,43,0.35)]'
-          : 'bg-white/90 ring-gray-900/[0.05] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_16px_40px_-16px_rgba(15,23,42,0.16)]'
+          ? "bg-stone-900/90 ring-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.3),0_24px_56px_-16px_rgba(192,57,43,0.35)]"
+          : "bg-white/90 ring-gray-900/[0.05] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_16px_40px_-16px_rgba(15,23,42,0.16)]"
       } backdrop-blur-xl rounded-2xl overflow-hidden ring-1 max-w-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         visible
-          ? 'opacity-100 translate-y-0 scale-100 rotate-0'
-          : 'opacity-0 translate-y-3 scale-[0.97] rotate-[0.4deg]'
+          ? "opacity-100 translate-y-0 scale-100 rotate-0"
+          : "opacity-0 translate-y-3 scale-[0.97] rotate-[0.4deg]"
       }`}
     >
       <div className="px-4 pt-3 pb-2.5 flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-3">
           <span
             className={`flex items-center gap-1.5 text-sm font-semibold tracking-[0.22em] ${
-              isError ? 'text-[#F08A5C]' : 'text-primary-600'
+              isError ? "text-[#F08A5C]" : "text-primary-600"
             }`}
           >
             {isError ? (
@@ -207,7 +206,7 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
             ) : (
               <Info className="h-4 w-4" />
             )}
-            {isError ? '错误' : '提示'}
+            {isError ? "错误" : "提示"}
           </span>
           {copyable && (
             <button
@@ -217,11 +216,11 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
               className={`flex-shrink-0 inline-flex items-center gap-1 text-xs cursor-pointer select-none rounded-md px-1.5 py-0.5 transition-colors ${
                 copied
                   ? isError
-                    ? 'text-emerald-400'
-                    : 'text-emerald-600'
+                    ? "text-emerald-400"
+                    : "text-emerald-600"
                   : isError
-                    ? 'text-stone-400 hover:text-[#F08A5C] hover:bg-white/[0.06]'
-                    : 'text-gray-400 hover:text-primary-600 hover:bg-gray-900/[0.04]'
+                    ? "text-stone-400 hover:text-[#F08A5C] hover:bg-white/[0.06]"
+                    : "text-gray-400 hover:text-primary-600 hover:bg-gray-900/[0.04]"
               }`}
             >
               {copied ? (
@@ -229,24 +228,26 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
               ) : (
                 <Copy className="h-3.5 w-3.5" />
               )}
-              {copied ? '已复制' : '复制'}
+              {copied ? "已复制" : "复制"}
             </button>
           )}
         </div>
         <p
           className={`text-[13px] leading-relaxed break-words ${
-            isError ? 'font-medium text-[#f4efe7]' : 'text-gray-700'
+            isError ? "font-medium text-[#f4efe7]" : "text-gray-700"
           }`}
         >
           {toast.message}
         </p>
       </div>
-      <div className={`h-[3px] ${isError ? 'bg-white/[0.08]' : 'bg-gray-900/[0.06]'}`}>
+      <div
+        className={`h-[3px] ${isError ? "bg-white/[0.08]" : "bg-gray-900/[0.06]"}`}
+      >
         <div
           className={`h-full rounded-r-full transition-[width] duration-100 ease-linear ${
             isError
-              ? 'bg-gradient-to-r from-[#F08A5C] to-[#C0392B]'
-              : 'bg-gradient-to-r from-primary-400 to-primary-600'
+              ? "bg-gradient-to-r from-[#F08A5C] to-[#C0392B]"
+              : "bg-gradient-to-r from-primary-400 to-primary-600"
           }`}
           style={{ width: `${remainingPct}%` }}
         />

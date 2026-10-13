@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Download, FileText, FileJson, X, Check } from 'lucide-react';
-import { save } from '@tauri-apps/plugin-dialog';
-import type { ExportFormat, ExportOptions, FilterConfig } from '../../types';
-import * as tauri from '../../utils/tauri';
+import React, { useState } from "react";
+import { Download, FileText, FileJson, X, Check } from "lucide-react";
+import { save } from "@tauri-apps/plugin-dialog";
+import type { ExportFormat, ExportOptions, FilterConfig } from "../../types";
+import * as tauri from "../../utils/tauri";
 
 interface ExportDialogProps {
   sessionPath: string;
@@ -17,9 +17,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   providerName,
   onClose,
 }) => {
-  const [format, setFormat] = useState<ExportFormat>('markdown');
+  const [format, setFormat] = useState<ExportFormat>("markdown");
   const [options, setOptions] = useState<ExportOptions>({
-    format: 'markdown',
+    format: "markdown",
     includeThinking: true,
     includeToolCalls: true,
     includeToolResults: true,
@@ -34,9 +34,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     setError(null);
 
     try {
-      const ext = format === 'markdown' ? 'md' : 'json';
+      const ext = format === "markdown" ? "md" : "json";
       const safeTitle = sessionTitle
-        .replace(/[^a-zA-Z0-9一-龥]/g, '_')
+        .replace(/[^a-zA-Z0-9一-龥]/g, "_")
         .slice(0, 50);
 
       // 使用原生保存对话框
@@ -44,7 +44,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         defaultPath: `session_${safeTitle}.${ext}`,
         filters: [
           {
-            name: format === 'markdown' ? 'Markdown' : 'JSON',
+            name: format === "markdown" ? "Markdown" : "JSON",
             extensions: [ext],
           },
         ],
@@ -66,11 +66,11 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       };
 
       let content: string;
-      if (format === 'markdown') {
+      if (format === "markdown") {
         content = await tauri.exportMarkdown(
           sessionPath,
           exportFilter,
-          providerName
+          providerName,
         );
       } else {
         content = await tauri.exportJson(sessionPath, providerName);
@@ -117,22 +117,22 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             </label>
             <div className="flex gap-3">
               <button
-                onClick={() => setFormat('markdown')}
+                onClick={() => setFormat("markdown")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm ${
-                  format === 'markdown'
-                    ? 'border-primary-500 bg-primary-50 text-primary-700'
-                    : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                  format === "markdown"
+                    ? "border-primary-500 bg-primary-50 text-primary-700"
+                    : "border-gray-300 text-gray-600 hover:border-gray-400"
                 }`}
               >
                 <FileText className="h-4 w-4" />
                 Markdown
               </button>
               <button
-                onClick={() => setFormat('json')}
+                onClick={() => setFormat("json")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm ${
-                  format === 'json'
-                    ? 'border-primary-500 bg-primary-50 text-primary-700'
-                    : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                  format === "json"
+                    ? "border-primary-500 bg-primary-50 text-primary-700"
+                    : "border-gray-300 text-gray-600 hover:border-gray-400"
                 }`}
               >
                 <FileJson className="h-4 w-4" />
@@ -148,12 +148,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             </label>
             <div className="space-y-2">
               {[
-                { key: 'includeThinking', label: '包含思考过程' },
-                { key: 'includeToolCalls', label: '包含工具调用' },
-                { key: 'includeToolResults', label: '包含工具结果' },
+                { key: "includeThinking", label: "包含思考过程" },
+                { key: "includeToolCalls", label: "包含工具调用" },
+                { key: "includeToolResults", label: "包含工具结果" },
                 {
-                  key: 'excludeEmptyToolResults',
-                  label: '排除空工具结果',
+                  key: "excludeEmptyToolResults",
+                  label: "排除空工具结果",
                 },
               ].map(({ key, label }) => (
                 <label
@@ -162,9 +162,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 >
                   <input
                     type="checkbox"
-                    checked={
-                      options[key as keyof ExportOptions] as boolean
-                    }
+                    checked={options[key as keyof ExportOptions] as boolean}
                     onChange={(e) =>
                       setOptions((prev) => ({
                         ...prev,
@@ -213,7 +211,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             ) : (
               <Download className="h-4 w-4" />
             )}
-            {isExporting ? '导出中...' : '导出'}
+            {isExporting ? "导出中..." : "导出"}
           </button>
         </div>
       </div>

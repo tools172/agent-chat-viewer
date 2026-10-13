@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, ChevronUp, ChevronDown, X } from 'lucide-react';
-import type { ChatEvent } from '../../types';
-import { searchEvents, type EventMatch } from '../../utils/searchEvents';
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Search, ChevronUp, ChevronDown, X } from "lucide-react";
+import type { ChatEvent } from "../../types";
+import { searchEvents, type EventMatch } from "../../utils/searchEvents";
 
 interface ConversationFindBarProps {
   events: ChatEvent[];
@@ -19,14 +19,11 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
   onQueryChange,
   onCurrentMatchChange,
 }) => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [currentIdx, setCurrentIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const matches = useMemo(
-    () => searchEvents(events, query),
-    [events, query]
-  );
+  const matches = useMemo(() => searchEvents(events, query), [events, query]);
 
   // 聚焦输入
   useEffect(() => {
@@ -39,15 +36,15 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
   // 关闭时清除
   useEffect(() => {
     if (!visible) {
-      setQuery('');
+      setQuery("");
       setCurrentIdx(0);
-      onQueryChange('');
+      onQueryChange("");
     }
   }, [visible]); // 故意不加 onQueryChange
 
   // 搜索词变化 → 通知父组件高亮
   useEffect(() => {
-    onQueryChange(query.trim() || '');
+    onQueryChange(query.trim() || "");
   }, [query]); // 故意不加 onQueryChange
 
   // 重置 currentIdx 当匹配变化
@@ -69,19 +66,23 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
 
     // 优先精确定位到 find <mark> 元素（处理代码块内匹配被裁切的情况）
     const markEl = document.querySelector(
-      `[data-event-uuid="${uuid}"] [data-find-block="${match.blockIdx}"][data-find-occurrence="${match.occurrenceIdx}"]`
+      `[data-event-uuid="${uuid}"] [data-find-block="${match.blockIdx}"][data-find-occurrence="${match.occurrenceIdx}"]`,
     );
-    const target = markEl ?? document.querySelector(`[data-event-uuid="${uuid}"]`);
+    const target =
+      markEl ?? document.querySelector(`[data-event-uuid="${uuid}"]`);
 
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     // 事件卡片加闪烁环
     const eventEl = document.querySelector(`[data-event-uuid="${uuid}"]`);
     if (eventEl) {
-      eventEl.classList.add('ring-2', 'ring-orange-400');
-      setTimeout(() => eventEl.classList.remove('ring-2', 'ring-orange-400'), 2000);
+      eventEl.classList.add("ring-2", "ring-orange-400");
+      setTimeout(
+        () => eventEl.classList.remove("ring-2", "ring-orange-400"),
+        2000,
+      );
     }
   };
 
@@ -94,18 +95,17 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
 
   const goPrev = () => {
     if (matches.length === 0) return;
-    const prev =
-      (currentIdx - 1 + matches.length) % matches.length;
+    const prev = (currentIdx - 1 + matches.length) % matches.length;
     setCurrentIdx(prev);
     scrollTo(prev);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       e.shiftKey ? goPrev() : goNext();
     }
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       e.preventDefault();
       onClose();
     }
@@ -136,9 +136,7 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
         </span>
       )}
       {hasQuery && !hasResults && (
-        <span className="text-xs text-red-400 whitespace-nowrap">
-          0 个匹配
-        </span>
+        <span className="text-xs text-red-400 whitespace-nowrap">0 个匹配</span>
       )}
       <button
         onClick={goPrev}

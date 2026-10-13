@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { TabBar } from '../../components/tabs/TabBar';
-import type { TabState } from '../../types';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { TabBar } from "../../components/tabs/TabBar";
+import type { TabState } from "../../types";
 
 // Mock settingsStore
-vi.mock('../../stores/settingsStore', () => ({
+vi.mock("../../stores/settingsStore", () => ({
   useSettingsStore: vi.fn((selector) => {
     const state = {
       settings: {
-        searchColors: { search: '#fef08a', find: '#fed7aa' },
+        searchColors: { search: "#fef08a", find: "#fed7aa" },
         watchDirectories: [],
         defaultFilter: {
           showThinking: false,
@@ -30,7 +30,7 @@ function makeTab(overrides: Partial<TabState> = {}): TabState {
   return {
     id,
     sessionPath: `/test/${id}.jsonl`,
-    providerName: 'claude_code',
+    providerName: "claude_code",
     sessionDetail: null,
     isLoading: false,
     error: null,
@@ -54,12 +54,12 @@ function makeTab(overrides: Partial<TabState> = {}): TabState {
   };
 }
 
-describe('TabBar', () => {
+describe("TabBar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('无标签时不渲染', () => {
+  it("无标签时不渲染", () => {
     const { container } = render(
       <TabBar
         tabs={[]}
@@ -68,16 +68,16 @@ describe('TabBar', () => {
         onCloseTab={vi.fn()}
         onMoveTab={vi.fn()}
         onOpenContextMenu={vi.fn()}
-      />
+      />,
     );
-    expect(container.innerHTML).toBe('');
+    expect(container.innerHTML).toBe("");
   });
 
-  it('渲染所有标签', () => {
+  it("渲染所有标签", () => {
     const tabs = [
-      makeTab({ id: 'tab-1', title: 'First' }),
-      makeTab({ id: 'tab-2', title: 'Second' }),
-      makeTab({ id: 'tab-3', title: 'Third' }),
+      makeTab({ id: "tab-1", title: "First" }),
+      makeTab({ id: "tab-2", title: "Second" }),
+      makeTab({ id: "tab-3", title: "Third" }),
     ];
 
     render(
@@ -88,72 +88,72 @@ describe('TabBar', () => {
         onCloseTab={vi.fn()}
         onMoveTab={vi.fn()}
         onOpenContextMenu={vi.fn()}
-      />
+      />,
     );
 
-    expect(screen.getByText('First')).toBeInTheDocument();
-    expect(screen.getByText('Second')).toBeInTheDocument();
-    expect(screen.getByText('Third')).toBeInTheDocument();
+    expect(screen.getByText("First")).toBeInTheDocument();
+    expect(screen.getByText("Second")).toBeInTheDocument();
+    expect(screen.getByText("Third")).toBeInTheDocument();
   });
 
-  it('点击标签触发 onActivateTab', () => {
+  it("点击标签触发 onActivateTab", () => {
     const onActivate = vi.fn();
     render(
       <TabBar
-        tabs={[makeTab({ id: 'tab-1', title: 'My Session' })]}
+        tabs={[makeTab({ id: "tab-1", title: "My Session" })]}
         activeTabId={null}
         onActivateTab={onActivate}
         onCloseTab={vi.fn()}
         onMoveTab={vi.fn()}
         onOpenContextMenu={vi.fn()}
-      />
+      />,
     );
 
-    fireEvent.click(screen.getByText('My Session'));
-    expect(onActivate).toHaveBeenCalledWith('tab-1');
+    fireEvent.click(screen.getByText("My Session"));
+    expect(onActivate).toHaveBeenCalledWith("tab-1");
   });
 
-  it('点击关闭按钮触发 onCloseTab', () => {
+  it("点击关闭按钮触发 onCloseTab", () => {
     const onClose = vi.fn();
     render(
       <TabBar
-        tabs={[makeTab({ id: 'tab-1', title: 'My Session' })]}
+        tabs={[makeTab({ id: "tab-1", title: "My Session" })]}
         activeTabId="tab-1"
         onActivateTab={vi.fn()}
         onCloseTab={onClose}
         onMoveTab={vi.fn()}
         onOpenContextMenu={vi.fn()}
-      />
+      />,
     );
 
     const closeBtn = document.querySelector('button[title="关闭标签页"]');
     fireEvent.click(closeBtn!);
-    expect(onClose).toHaveBeenCalledWith('tab-1');
+    expect(onClose).toHaveBeenCalledWith("tab-1");
   });
 
-  it('右键菜单触发 onOpenContextMenu', () => {
+  it("右键菜单触发 onOpenContextMenu", () => {
     const onContextMenu = vi.fn();
     render(
       <TabBar
-        tabs={[makeTab({ id: 'tab-1', title: 'My Session' })]}
+        tabs={[makeTab({ id: "tab-1", title: "My Session" })]}
         activeTabId="tab-1"
         onActivateTab={vi.fn()}
         onCloseTab={vi.fn()}
         onMoveTab={vi.fn()}
         onOpenContextMenu={onContextMenu}
-      />
+      />,
     );
 
-    fireEvent.contextMenu(screen.getByText('My Session'));
+    fireEvent.contextMenu(screen.getByText("My Session"));
     expect(onContextMenu).toHaveBeenCalledTimes(1);
   });
 
-  it('拖拽触发 onMoveTab', () => {
+  it("拖拽触发 onMoveTab", () => {
     const onMove = vi.fn();
     const tabs = [
-      makeTab({ id: 'tab-1', title: 'First' }),
-      makeTab({ id: 'tab-2', title: 'Second' }),
-      makeTab({ id: 'tab-3', title: 'Third' }),
+      makeTab({ id: "tab-1", title: "First" }),
+      makeTab({ id: "tab-2", title: "Second" }),
+      makeTab({ id: "tab-3", title: "Third" }),
     ];
 
     const { container } = render(
@@ -164,7 +164,7 @@ describe('TabBar', () => {
         onCloseTab={vi.fn()}
         onMoveTab={onMove}
         onOpenContextMenu={vi.fn()}
-      />
+      />,
     );
 
     const tabItems = container.querySelectorAll('[draggable="true"]');

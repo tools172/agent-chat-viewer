@@ -1,4 +1,4 @@
-import type { ChatEvent, ContentBlock, FilterConfig } from '../types';
+import type { ChatEvent, ContentBlock, FilterConfig } from "../types";
 
 /**
  * 前端侧过滤：对已加载的事件应用事件级别 + 内容块级别的过滤。
@@ -20,21 +20,21 @@ export function filterEvents(
 /** 与 Rust filter.rs should_show_event 一致 */
 function shouldShowEvent(event: ChatEvent, config: FilterConfig): boolean {
   switch (event.eventType) {
-    case 'user':
-    case 'assistant':
+    case "user":
+    case "assistant":
       return true; // 始终显示，由 content-block 级别过滤决定可见内容
-    case 'developer':
-    case 'system':
+    case "developer":
+    case "system":
       return config.showSystemMessages;
-    case 'file_history_snapshot':
+    case "file_history_snapshot":
       return config.showFileSnapshots;
-    case 'attachment':
-    case 'unknown':
+    case "attachment":
+    case "unknown":
       return config.showSystemMessages;
-    case 'mode':
-    case 'permission_mode':
-    case 'last_prompt':
-    case 'ai_title':
+    case "mode":
+    case "permission_mode":
+    case "last_prompt":
+    case "ai_title":
       return false; // 始终隐藏的元数据事件
     default:
       return true;
@@ -77,7 +77,7 @@ export function collapseConsecutiveEvents(
       })()
     : null;
 
-  const collapsible = new Set(['user', 'assistant', 'developer', 'system']);
+  const collapsible = new Set(["user", "assistant", "developer", "system"]);
   const result: ChatEvent[] = [];
   let i = 0;
 
@@ -105,7 +105,7 @@ export function collapseConsecutiveEvents(
     // 检查组内是否有任何非纯文本事件（含 tool_use / thinking / tool_result）
     const allTextOnly = (function () {
       for (let k = i; k <= j; k++) {
-        if (events[k].content.some((b) => b.blockType !== 'text')) {
+        if (events[k].content.some((b) => b.blockType !== "text")) {
           return false;
         }
       }
@@ -146,10 +146,7 @@ function isOriginallyAdjacent(
   return ib === ia + 1;
 }
 
-function filterEventContent(
-  event: ChatEvent,
-  config: FilterConfig,
-): ChatEvent {
+function filterEventContent(event: ChatEvent, config: FilterConfig): ChatEvent {
   const filteredContent = event.content.filter((block) =>
     shouldShowBlock(block, config),
   );
@@ -158,17 +155,17 @@ function filterEventContent(
 
 function shouldShowBlock(block: ContentBlock, config: FilterConfig): boolean {
   switch (block.blockType) {
-    case 'text':
+    case "text":
       return true; // 文本始终显示
-    case 'thinking':
+    case "thinking":
       return config.showThinking;
-    case 'tool_use':
+    case "tool_use":
       return config.showToolCalls;
-    case 'tool_result':
+    case "tool_result":
       if (!config.showToolResults) return false;
       if (
         config.hideEmptyToolResults &&
-        (!block.content || block.content.trim() === '')
+        (!block.content || block.content.trim() === "")
       ) {
         return false;
       }
@@ -188,7 +185,8 @@ function shouldShowBlock(block: ContentBlock, config: FilterConfig): boolean {
  * - Claude Code: 独立 content block 形式的纯注解块（parse 阶段会因全空被过滤）
  * - 任何未被后端清理的 XML 格式系统提示
  */
-const SYSTEM_ANNOTATION_PATTERN = /^<[a-z][a-z0-9_-]*>[\s\S]*<\/[a-z][a-z0-9_-]*>$/;
+const SYSTEM_ANNOTATION_PATTERN =
+  /^<[a-z][a-z0-9_-]*>[\s\S]*<\/[a-z][a-z0-9_-]*>$/;
 
 /** 判断一个 text block 是否为系统注解（如 <ide_opened_file>、<system-reminder> 等） */
 function isSystemAnnotation(text: string): boolean {
@@ -202,13 +200,11 @@ function isSystemAnnotation(text: string): boolean {
  * - 跳过纯 XML 系统注解块，取第一个真实用户 text block
  * - 如果所有 text block 都是系统注解，回退到第一个 block
  */
-export function extractUserText(
-  event: import('../types').ChatEvent
-): string {
+export function extractUserText(event: import("../types").ChatEvent): string {
   const textBlocks = event.content.filter(
-    (b) => b.blockType === 'text'
-  ) as import('../types').TextBlock[];
-  if (textBlocks.length === 0) return '';
+    (b) => b.blockType === "text",
+  ) as import("../types").TextBlock[];
+  if (textBlocks.length === 0) return "";
 
   // 优先取第一个非系统注解的 text block
   const realBlock = textBlocks.find((b) => !isSystemAnnotation(b.text));
@@ -222,7 +218,7 @@ export function extractUserText(
  */
 export function isUserTextTurn(event: ChatEvent): boolean {
   return (
-    event.eventType === 'user' &&
-    event.content.some((b) => b.blockType === 'text')
+    event.eventType === "user" &&
+    event.content.some((b) => b.blockType === "text")
   );
 }

@@ -23,17 +23,30 @@ export const CONTENT_ZOOM_STEP = 10;
 
 // ===== View Modes =====
 
-export type ViewMode = 'flat' | 'by-project' | 'by-time' | 'search' | 'folder' | 'timeline';
+export type ViewMode =
+  | "flat"
+  | "by-project"
+  | "by-time"
+  | "search"
+  | "folder"
+  | "timeline";
 
 // ===== Timeline Time Field =====
 
 /** 时间线分组依据：按创建时间 or 按修改时间 */
-export type TimeField = 'created' | 'modified';
+export type TimeField = "created" | "modified";
 
 // ===== Sort System =====
 
-export type SortField = 'created' | 'modified' | 'path' | 'name' | 'messageCount' | 'agent' | 'size';
-export type SortDirection = 'asc' | 'desc';
+export type SortField =
+  | "created"
+  | "modified"
+  | "path"
+  | "name"
+  | "messageCount"
+  | "agent"
+  | "size";
+export type SortDirection = "asc" | "desc";
 
 /** 一级排序条件 */
 export interface SortLevel {
@@ -94,17 +107,17 @@ export interface ChatEvent {
 }
 
 export type EventType =
-  | 'user'
-  | 'assistant'
-  | 'developer'
-  | 'system'
-  | 'attachment'
-  | 'mode'
-  | 'permission_mode'
-  | 'file_history_snapshot'
-  | 'last_prompt'
-  | 'ai_title'
-  | 'unknown';
+  | "user"
+  | "assistant"
+  | "developer"
+  | "system"
+  | "attachment"
+  | "mode"
+  | "permission_mode"
+  | "file_history_snapshot"
+  | "last_prompt"
+  | "ai_title"
+  | "unknown";
 
 // ===== Content Blocks =====
 
@@ -114,10 +127,27 @@ export type ContentBlock =
   | ToolUseBlock
   | ToolResultBlock;
 
-export interface TextBlock { blockType: 'text'; text: string }
-export interface ThinkingBlock { blockType: 'thinking'; thinking: string; signature: string }
-export interface ToolUseBlock { blockType: 'tool_use'; toolId: string; toolName: string; toolInput: Record<string, unknown> }
-export interface ToolResultBlock { blockType: 'tool_result'; toolUseId: string; content: string | null; isError: boolean }
+export interface TextBlock {
+  blockType: "text";
+  text: string;
+}
+export interface ThinkingBlock {
+  blockType: "thinking";
+  thinking: string;
+  signature: string;
+}
+export interface ToolUseBlock {
+  blockType: "tool_use";
+  toolId: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+}
+export interface ToolResultBlock {
+  blockType: "tool_result";
+  toolUseId: string;
+  content: string | null;
+  isError: boolean;
+}
 
 // ===== Filter & Settings =====
 
@@ -138,8 +168,8 @@ export interface SearchColors {
 }
 
 export const DEFAULT_SEARCH_COLORS: SearchColors = {
-  search: '#fef08a',
-  find: '#fed7aa',
+  search: "#fef08a",
+  find: "#fed7aa",
 };
 
 export interface WatchDirectory {
@@ -147,7 +177,7 @@ export interface WatchDirectory {
   enabled: boolean;
 }
 
-export type ThemeMode = 'light' | 'dark' | 'eyecare' | 'system';
+export type ThemeMode = "light" | "dark" | "eyecare" | "system";
 
 export interface AppSettings {
   watchDirectories: WatchDirectory[];
@@ -177,9 +207,9 @@ export interface AppSettings {
   /** 会话标题显示第一条用户消息 (true) 还是最后一条 (false) */
   displayFirstUserMessage?: boolean;
   /** 时间基准：'created'（创建时间）| 'modified'（修改时间），默认 'modified' */
-  timeBase?: 'created' | 'modified';
+  timeBase?: "created" | "modified";
   /** 左侧会话列表样式：'compact'（紧凑）| 'loose'（宽松），默认 'loose' */
-  sessionListStyle?: 'compact' | 'loose';
+  sessionListStyle?: "compact" | "loose";
   /** 设置面板水平偏移（0~1，相对可用空间的比例；省略时默认停靠右侧） */
   settingsPanelOffset?: number;
   /** 设置面板不透明度（PANEL_OPACITY_MIN ~ PANEL_OPACITY_MAX），默认 0.8（透明度 20%） */
@@ -205,7 +235,7 @@ export interface ProviderMeta {
 
 // ===== Export =====
 
-export type ExportFormat = 'markdown' | 'json';
+export type ExportFormat = "markdown" | "json";
 
 export interface ExportOptions {
   format: ExportFormat;

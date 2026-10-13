@@ -1,8 +1,8 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { Search, X, Highlighter } from 'lucide-react';
-import { SessionItem } from '../sessions/SessionItem';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import type { SessionSummary } from '../../types';
+import React, { useRef, useEffect, useCallback } from "react";
+import { Search, X, Highlighter } from "lucide-react";
+import { SessionItem } from "../sessions/SessionItem";
+import { LoadingSpinner } from "../common/LoadingSpinner";
+import type { SessionSummary } from "../../types";
 
 interface SearchPanelProps {
   query: string;
@@ -15,7 +15,11 @@ interface SearchPanelProps {
   onSearch: (query: string) => void;
   onSelectSession: (path: string, providerName: string, cwd?: string) => void;
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
-  onLocateInFolderList?: (filePath: string, projectPath: string, providerName: string) => void;
+  onLocateInFolderList?: (
+    filePath: string,
+    projectPath: string,
+    providerName: string,
+  ) => void;
   onToggleHighlight: () => void;
   selectedSessionPath: string | null;
 }
@@ -51,11 +55,11 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
         onSearch(value);
       }, 300);
     },
-    [onQueryChange, onSearch]
+    [onQueryChange, onSearch],
   );
 
   const handleClear = () => {
-    handleChange('');
+    handleChange("");
     inputRef.current?.focus();
   };
 
@@ -73,7 +77,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             placeholder="搜索会话内容..."
             className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             onKeyDown={(e) => {
-              if (e.key === 'Escape') handleClear();
+              if (e.key === "Escape") handleClear();
             }}
           />
           {query && (
@@ -92,24 +96,24 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
             {query && results.length > 0
               ? `找到 ${results.length} 条结果`
               : query
-                ? '搜索中...'
-                : ''}
+                ? "搜索中..."
+                : ""}
           </span>
           <button
             onClick={onToggleHighlight}
             className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors ${
               highlightEnabled
-                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                : 'bg-gray-100 text-gray-500 border border-gray-200'
+                ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                : "bg-gray-100 text-gray-500 border border-gray-200"
             }`}
             title={
               highlightEnabled
-                ? '关闭高亮（列表和对话内容）'
-                : '开启高亮（列表和对话内容）'
+                ? "关闭高亮（列表和对话内容）"
+                : "开启高亮（列表和对话内容）"
             }
           >
             <Highlighter className="h-3 w-3" />
-            <span>高亮{highlightEnabled ? '开' : '关'}</span>
+            <span>高亮{highlightEnabled ? "开" : "关"}</span>
           </button>
         </div>
       </div>

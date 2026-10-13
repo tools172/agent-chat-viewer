@@ -1,5 +1,5 @@
-import * as tauri from './tauri';
-import { useToastStore } from '../stores/toastStore';
+import * as tauri from "./tauri";
+import { useToastStore } from "../stores/toastStore";
 
 /**
  * 执行可能失败的“打开文件夹”动作。
@@ -18,10 +18,10 @@ export async function runOpenFolderAction(
   try {
     await action();
   } catch (err) {
-    const msg = typeof err === 'string' ? err : String(err);
+    const msg = typeof err === "string" ? err : String(err);
     console.error(`${label}失败:`, err);
     useToastStore.getState().showToast(`${label}失败：${msg}`, {
-      variant: 'error',
+      variant: "error",
       copyable: true,
     });
   }
@@ -31,7 +31,7 @@ export async function runOpenFolderAction(
 export function openProjectFolderWithFeedback(
   primaryDir: string,
 ): Promise<void> {
-  return runOpenFolderAction('打开工作目录', () =>
+  return runOpenFolderAction("打开工作目录", () =>
     tauri.openProjectFolder(primaryDir),
   );
 }

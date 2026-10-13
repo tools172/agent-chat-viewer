@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface LoadingBarProps {
   visible: boolean;
@@ -13,8 +13,9 @@ export const LoadingBar: React.FC<LoadingBarProps> = ({ visible }) => {
       <div
         className="h-full w-2/5 rounded-full animate-shimmer-slide"
         style={{
-          background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa, #6366f1)',
-          backgroundSize: '200% 100%',
+          background:
+            "linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa, #6366f1)",
+          backgroundSize: "200% 100%",
         }}
       />
     </div>

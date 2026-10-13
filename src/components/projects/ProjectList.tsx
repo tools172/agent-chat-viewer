@@ -1,15 +1,21 @@
-import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { Folder, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
-import type { Project, SessionSummary, SortConfig } from '../../types';
-import { multiSort } from '../../utils/sort';
-import { SessionItem } from '../sessions/SessionItem';
-import { LoadingSkeleton } from '../common/LoadingSkeleton';
-import { useSessionListStore } from '../../stores/sessionListStore';
-import * as tauri from '../../utils/tauri';
+import React, {
+  useMemo,
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+} from "react";
+import { Folder, ChevronDown, ChevronRight, FolderOpen } from "lucide-react";
+import type { Project, SessionSummary, SortConfig } from "../../types";
+import { multiSort } from "../../utils/sort";
+import { SessionItem } from "../sessions/SessionItem";
+import { LoadingSkeleton } from "../common/LoadingSkeleton";
+import { useSessionListStore } from "../../stores/sessionListStore";
+import * as tauri from "../../utils/tauri";
 import {
   openProjectFolderWithFeedback,
   runOpenFolderAction,
-} from '../../utils/openFolder';
+} from "../../utils/openFolder";
 
 interface ProjectListProps {
   projects: Project[];
@@ -40,9 +46,13 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   const locateTarget = useSessionListStore((s) => s.locateTarget);
   const setLocateTarget = useSessionListStore((s) => s.setLocateTarget);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; projectPath: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    projectPath: string;
+  } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 点击外部 / Esc 关闭菜单
@@ -54,13 +64,13 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       }
     };
     const keyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setContextMenu(null);
+      if (e.key === "Escape") setContextMenu(null);
     };
-    document.addEventListener('mousedown', clickHandler);
-    document.addEventListener('keydown', keyHandler);
+    document.addEventListener("mousedown", clickHandler);
+    document.addEventListener("keydown", keyHandler);
     return () => {
-      document.removeEventListener('mousedown', clickHandler);
-      document.removeEventListener('keydown', keyHandler);
+      document.removeEventListener("mousedown", clickHandler);
+      document.removeEventListener("keydown", keyHandler);
     };
   }, [contextMenu]);
 
@@ -95,9 +105,11 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     if (cached && cached.some((s) => s.filePath === filePath)) {
       // 延迟一帧等 DOM 更新后滚动，高亮保持直到用户交互时清除
       requestAnimationFrame(() => {
-        const el = document.querySelector(`[data-session-path="${CSS.escape(filePath)}"]`);
+        const el = document.querySelector(
+          `[data-session-path="${CSS.escape(filePath)}"]`,
+        );
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       });
     }
@@ -114,12 +126,19 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     onSelectProject(projectPath, providerName);
   };
 
-  const handleSessionClick = (filePath: string, providerName: string, cwd?: string) => {
+  const handleSessionClick = (
+    filePath: string,
+    providerName: string,
+    cwd?: string,
+  ) => {
     setLocateTarget(null);
     onSelectSession(filePath, providerName, cwd);
   };
 
-  const handleProjectContextMenu = (e: React.MouseEvent, projectPath: string) => {
+  const handleProjectContextMenu = (
+    e: React.MouseEvent,
+    projectPath: string,
+  ) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, projectPath });
   };
@@ -129,7 +148,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     const projectPath = contextMenu.projectPath;
     setContextMenu(null);
     // 优先使用会话中记录的实际工作目录(cwd)，回退到数据目录
-    const session = allSessions?.find((s) => s.projectPath === projectPath && s.cwd);
+    const session = allSessions?.find(
+      (s) => s.projectPath === projectPath && s.cwd,
+    );
     await openProjectFolderWithFeedback(session?.cwd || projectPath);
   };
 
@@ -137,7 +158,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     if (!contextMenu) return;
     const path = contextMenu.projectPath;
     setContextMenu(null);
-    await runOpenFolderAction('打开存储目录', () =>
+    await runOpenFolderAction("打开存储目录", () =>
       tauri.openContainingFolder(path),
     );
   };
@@ -147,22 +168,22 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     if (!sortConfig.length) return projects;
     return [...projects].sort((a, b) => {
       for (const level of sortConfig) {
-        let cmp = 0;
+        let cmp: number;
         switch (level.field) {
-          case 'path':
+          case "path":
             cmp = a.path.localeCompare(b.path);
             break;
-          case 'created':
-          case 'modified':
+          case "created":
+          case "modified":
             cmp = a.lastActivity.localeCompare(b.lastActivity);
             break;
-          case 'name':
+          case "name":
             cmp = a.name.localeCompare(b.name);
             break;
-          case 'messageCount':
+          case "messageCount":
             cmp = a.sessionCount - b.sessionCount;
             break;
-          case 'agent':
+          case "agent":
             cmp = a.providerName.localeCompare(b.providerName);
             break;
           default:
@@ -170,7 +191,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             break;
         }
         if (cmp !== 0) {
-          return level.direction === 'asc' ? cmp : -cmp;
+          return level.direction === "asc" ? cmp : -cmp;
         }
       }
       return 0;
@@ -182,7 +203,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     const map = new Map<string, string>();
     for (const project of projects) {
       // 优先使用会话中记录的实际工作目录(cwd)，回退到数据目录路径
-      const session = allSessions?.find((s) => s.projectPath === project.path && s.cwd);
+      const session = allSessions?.find(
+        (s) => s.projectPath === project.path && s.cwd,
+      );
       map.set(project.path, session?.cwd || project.path);
     }
     return map;
@@ -197,12 +220,14 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         return (
           <div key={project.path}>
             <button
-              onClick={() => handleProjectClick(project.path, project.providerName)}
+              onClick={() =>
+                handleProjectClick(project.path, project.providerName)
+              }
               onContextMenu={(e) => handleProjectContextMenu(e, project.path)}
               className={`flex items-center gap-2 w-full px-3 py-2 text-sm font-medium transition-colors ${
                 isSelected
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               {isExpanded ? (
@@ -222,40 +247,44 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               </span>
             </button>
 
-            {isExpanded && (() => {
-              const projectSessions = sessionsCache[project.path];
-              const sortedProjectSessions = projectSessions
-                ? multiSort(projectSessions, sortConfig)
-                : [];
-              return (
-              <div className="ml-4 border-l-2 border-gray-100 pl-1">
-                {isLoadingProject && !projectSessions ? (
-                  <LoadingSkeleton rows={3} variant="list" />
-                ) : sortedProjectSessions.length === 0 ? (
-                  <p className="px-3 py-2 text-xs text-gray-400">
-                    暂无会话
-                  </p>
-                ) : (
-                  sortedProjectSessions.map((session) => (
-                    <div key={session.id} data-session-path={session.filePath}>
-                      <SessionItem
-                        session={session}
-                        isSelected={
-                          locateTarget
-                            ? locateTarget.filePath === session.filePath
-                            : selectedSessionPath === session.filePath
-                        }
-                        showProject={false}
-                        showProvider={true}
-                        onClick={handleSessionClick}
-                        onOpenInNewTab={onOpenInNewTab}
-                      />
-                    </div>
-                  ))
-                )}
-              </div>
-              );
-            })()}
+            {isExpanded &&
+              (() => {
+                const projectSessions = sessionsCache[project.path];
+                const sortedProjectSessions = projectSessions
+                  ? multiSort(projectSessions, sortConfig)
+                  : [];
+                return (
+                  <div className="ml-4 border-l-2 border-gray-100 pl-1">
+                    {isLoadingProject && !projectSessions ? (
+                      <LoadingSkeleton rows={3} variant="list" />
+                    ) : sortedProjectSessions.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-gray-400">
+                        暂无会话
+                      </p>
+                    ) : (
+                      sortedProjectSessions.map((session) => (
+                        <div
+                          key={session.id}
+                          data-session-path={session.filePath}
+                        >
+                          <SessionItem
+                            session={session}
+                            isSelected={
+                              locateTarget
+                                ? locateTarget.filePath === session.filePath
+                                : selectedSessionPath === session.filePath
+                            }
+                            showProject={false}
+                            showProvider={true}
+                            onClick={handleSessionClick}
+                            onOpenInNewTab={onOpenInNewTab}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                );
+              })()}
           </div>
         );
       })}

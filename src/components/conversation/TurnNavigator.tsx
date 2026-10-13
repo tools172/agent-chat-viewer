@@ -1,13 +1,26 @@
-import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
-import { PanelRightClose, PanelRightOpen, GripVertical } from 'lucide-react';
-import type { ChatEvent } from '../../types';
-import { extractUserText, isUserTextTurn } from '../../utils/filterEvents';
+import React, {
+  useMemo,
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
+import { PanelRightClose, PanelRightOpen, GripVertical } from "lucide-react";
+import type { ChatEvent } from "../../types";
+import { extractUserText, isUserTextTurn } from "../../utils/filterEvents";
 
 /** 小尖括号 + 顶部横线：回到最顶部 */
 function ScrollTopIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <line x1="4" y1="3" x2="12" y2="3" />
       <polyline points="11,7 8,4 5,7" />
@@ -18,8 +31,15 @@ function ScrollTopIcon() {
 /** 小尖括号 + 底部横线：回到底部 */
 function ScrollBottomIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <polyline points="5,9 8,12 11,9" />
       <line x1="4" y1="13" x2="12" y2="13" />
@@ -55,13 +75,14 @@ function extractTurns(events: ChatEvent[]): Turn[] {
     // 跳过系统注解块，取真实用户消息
     const fullText = extractUserText(event);
     // 替换换行，完整文本由 CSS line-clamp 按宽度动态截断
-    const flatText = fullText.replace(/\n/g, ' ');
-    const hint = fullText.length > TURN_HINT_MAX_LEN
-      ? fullText.slice(0, TURN_HINT_MAX_LEN) + '...'
-      : fullText;
+    const flatText = fullText.replace(/\n/g, " ");
+    const hint =
+      fullText.length > TURN_HINT_MAX_LEN
+        ? fullText.slice(0, TURN_HINT_MAX_LEN) + "..."
+        : fullText;
     turns.push({
       uuid: event.uuid,
-      label: flatText || '(空)',
+      label: flatText || "(空)",
       hint,
       index: turnIndex,
     });
@@ -69,9 +90,18 @@ function extractTurns(events: ChatEvent[]): Turn[] {
   return turns;
 }
 
-import { TURN_NAV_MIN_WIDTH, TURN_NAV_DEFAULT_WIDTH, TURN_NAV_MAX_WIDTH } from '../../types';
+import {
+  TURN_NAV_MIN_WIDTH,
+  TURN_NAV_DEFAULT_WIDTH,
+  TURN_NAV_MAX_WIDTH,
+} from "../../types";
 
-export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerRef, defaultWidth = TURN_NAV_DEFAULT_WIDTH, onWidthChange }) => {
+export const TurnNavigator: React.FC<TurnNavigatorProps> = ({
+  events,
+  containerRef,
+  defaultWidth = TURN_NAV_DEFAULT_WIDTH,
+  onWidthChange,
+}) => {
   const turns = useMemo(() => extractTurns(events), [events]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -109,7 +139,9 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
     let above = 0;
     let below = 0;
     for (const turn of turns) {
-      const el = list.querySelector(`[data-turn-index="${turn.index}"]`) as HTMLElement | null;
+      const el = list.querySelector(
+        `[data-turn-index="${turn.index}"]`,
+      ) as HTMLElement | null;
       if (!el) continue;
       const top = el.offsetTop;
       const bottom = top + el.offsetHeight;
@@ -153,69 +185,85 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
           }
         }
       },
-      { root: containerRef.current, threshold: [0, 0.25, 0.5, 0.75] }
+      { root: containerRef.current, threshold: [0, 0.25, 0.5, 0.75] },
     );
 
     const el = containerRef.current;
-    el.querySelectorAll('[data-event-uuid]').forEach((n) => observerRef.current?.observe(n));
+    el.querySelectorAll("[data-event-uuid]").forEach((n) =>
+      observerRef.current?.observe(n),
+    );
     return () => observerRef.current?.disconnect();
   }, [turns, containerRef, events]);
 
   // ---- 拖拽调整宽度 ----
-  const onDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    draggingRef.current = true;
-    startXRef.current = e.clientX;
-    startWRef.current = width;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [width]);
+  const onDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      draggingRef.current = true;
+      startXRef.current = e.clientX;
+      startWRef.current = width;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [width],
+  );
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!draggingRef.current) return;
       const delta = startXRef.current - e.clientX; // 向左拖 = 变大
-      const next = Math.min(TURN_NAV_MAX_WIDTH, Math.max(TURN_NAV_MIN_WIDTH, startWRef.current + delta));
+      const next = Math.min(
+        TURN_NAV_MAX_WIDTH,
+        Math.max(TURN_NAV_MIN_WIDTH, startWRef.current + delta),
+      );
       setWidth(next);
     };
     const onUp = () => {
       if (!draggingRef.current) return;
       draggingRef.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
       onWidthChange?.(width);
     };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
     return () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
     };
   }, [width, onWidthChange]);
 
   // ---- 滚动（导航列表自身 + 聊天内容） ----
-  const scrollChatTo = useCallback((uuid: string) => {
-    // 聊天内容即时定位
-    containerRef.current
-      ?.querySelector(`[data-event-uuid="${uuid}"]`)
-      ?.scrollIntoView({ block: 'start' });
-  }, [containerRef]);
+  const scrollChatTo = useCallback(
+    (uuid: string) => {
+      // 聊天内容即时定位
+      containerRef.current
+        ?.querySelector(`[data-event-uuid="${uuid}"]`)
+        ?.scrollIntoView({ block: "start" });
+    },
+    [containerRef],
+  );
 
   const scrollListTo = useCallback((index: number) => {
     // 导航列表自身滚动到对应项（最小滚动，刚好露出完整项）
     const btn = listRef.current?.querySelector(`[data-turn-index="${index}"]`);
-    (btn as HTMLElement)?.scrollIntoView({ block: 'nearest' });
+    (btn as HTMLElement)?.scrollIntoView({ block: "nearest" });
   }, []);
 
-  const scrollToTurn = useCallback((uuid: string) => {
-    const turn = turns.find((t) => t.uuid === uuid);
-    if (!turn) return;
-    setActiveIndex(turn.index);
-    lockRef.current = true;
-    scrollChatTo(uuid);
-    scrollListTo(turn.index);
-    setTimeout(() => { lockRef.current = false; }, 500);
-  }, [turns, scrollChatTo, scrollListTo]);
+  const scrollToTurn = useCallback(
+    (uuid: string) => {
+      const turn = turns.find((t) => t.uuid === uuid);
+      if (!turn) return;
+      setActiveIndex(turn.index);
+      lockRef.current = true;
+      scrollChatTo(uuid);
+      scrollListTo(turn.index);
+      setTimeout(() => {
+        lockRef.current = false;
+      }, 500);
+    },
+    [turns, scrollChatTo, scrollListTo],
+  );
 
   const scrollToTop = useCallback(() => {
     if (turns.length === 0) return;
@@ -224,7 +272,9 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
     lockRef.current = true;
     scrollChatTo(first.uuid);
     listRef.current?.scrollTo({ top: 0 });
-    setTimeout(() => { lockRef.current = false; }, 500);
+    setTimeout(() => {
+      lockRef.current = false;
+    }, 500);
   }, [turns, scrollChatTo]);
 
   const scrollToBottom = useCallback(() => {
@@ -232,9 +282,11 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
     const last = turns[turns.length - 1];
     setActiveIndex(last.index);
     lockRef.current = true;
-    const sentinel = containerRef.current?.querySelector('[data-bottom-sentinel]');
+    const sentinel = containerRef.current?.querySelector(
+      "[data-bottom-sentinel]",
+    );
     if (sentinel) {
-      sentinel.scrollIntoView({ block: 'end' });
+      sentinel.scrollIntoView({ block: "end" });
     } else {
       scrollChatTo(last.uuid);
     }
@@ -242,7 +294,9 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
     if (listRef.current) {
       listRef.current.scrollTo({ top: listRef.current.scrollHeight });
     }
-    setTimeout(() => { lockRef.current = false; }, 500);
+    setTimeout(() => {
+      lockRef.current = false;
+    }, 500);
   }, [turns, scrollChatTo, containerRef]);
 
   if (turns.length === 0) return null;
@@ -290,7 +344,9 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
           title="回到顶部"
         >
           {overflowAbove > 0 && (
-            <span className="text-xs font-semibold tabular-nums text-gray-900">{overflowAbove}</span>
+            <span className="text-xs font-semibold tabular-nums text-gray-900">
+              {overflowAbove}
+            </span>
           )}
           <ScrollTopIcon />
         </button>
@@ -304,7 +360,11 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
       </div>
 
       {/* 轮次列表 */}
-      <div ref={listRef} onScroll={handleListScroll} className="flex-1 overflow-y-auto py-0.5 pl-[5px]">
+      <div
+        ref={listRef}
+        onScroll={handleListScroll}
+        className="flex-1 overflow-y-auto py-0.5 pl-[5px]"
+      >
         {turns.map((turn) => (
           <button
             key={turn.uuid}
@@ -312,14 +372,17 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
             onClick={() => scrollToTurn(turn.uuid)}
             className={`w-full text-left pl-[7px] pr-2 pt-0 pb-0.5 text-xs transition-colors border-l-2 ${
               activeIndex === turn.index
-                ? 'border-primary-500 bg-primary-50 text-primary-700'
-                : 'border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                ? "border-primary-500 bg-primary-50 text-primary-700"
+                : "border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700"
             }`}
             title={turn.hint || undefined}
           >
             <span className="font-medium text-[10px] leading-none text-gray-400">
               {turn.index}
-            </span><span className="line-clamp-2 leading-tight -ml-px">{turn.label}</span>
+            </span>
+            <span className="line-clamp-2 leading-tight -ml-px">
+              {turn.label}
+            </span>
           </button>
         ))}
       </div>
@@ -332,7 +395,9 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({ events, containerR
       >
         <ScrollBottomIcon />
         {overflowBelow > 0 && (
-          <span className="text-xs font-semibold tabular-nums text-gray-900">{overflowBelow}</span>
+          <span className="text-xs font-semibold tabular-nums text-gray-900">
+            {overflowBelow}
+          </span>
         )}
       </button>
     </div>

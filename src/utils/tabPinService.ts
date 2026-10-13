@@ -1,4 +1,4 @@
-import type { TabState } from '../types';
+import type { TabState } from "../types";
 
 // ===== ClosePolicy 策略接口（开闭原则：新增关闭方式只需实现此接口） =====
 

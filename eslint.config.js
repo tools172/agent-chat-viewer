@@ -20,8 +20,12 @@ export default tseslint.config(
       // React Hooks 规则
       ...reactHooks.configs.recommended.rules,
 
-      // v7 新规则降级为 warn
+      // v7 新规则（React Compiler）降级为 warn：本项目未使用 React Compiler，
+      // 这些规则会误报大量 "Cannot access refs during render" 等错误
       'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
 
       // Vite HMR 兼容
       'react-refresh/only-export-components': [

@@ -1,6 +1,6 @@
-import { useEffect, useCallback } from 'react';
-import { useSessionListStore } from '../stores/sessionListStore';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useEffect, useCallback } from "react";
+import { useSessionListStore } from "../stores/sessionListStore";
+import { useSettingsStore } from "../stores/settingsStore";
 
 export function useSessionList() {
   const settings = useSettingsStore((s) => s.settings);
@@ -24,7 +24,7 @@ export function useSessionList() {
   const isRefreshing =
     store.isLoadingAll ||
     store.isLoadingProjects ||
-    (store.viewMode === 'search' && store.isLoadingSearch) ||
+    (store.viewMode === "search" && store.isLoadingSearch) ||
     (!!store.projectFilter && store.isLoadingProject);
 
   return {

@@ -1,5 +1,5 @@
-import { useMemo, useState, useCallback } from 'react';
-import type { ChatEvent } from '../types';
+import { useMemo, useState, useCallback } from "react";
+import type { ChatEvent } from "../types";
 
 export interface InitialExpanded {
   thinking?: string[];
@@ -13,16 +13,16 @@ export interface InitialExpanded {
  */
 export function useConversation(
   events: ChatEvent[],
-  initialExpanded?: InitialExpanded
+  initialExpanded?: InitialExpanded,
 ) {
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
-    new Set(initialExpanded?.thinking ?? [])
+    new Set(initialExpanded?.thinking ?? []),
   );
   const [expandedToolCalls, setExpandedToolCalls] = useState<Set<string>>(
-    new Set(initialExpanded?.toolCalls ?? [])
+    new Set(initialExpanded?.toolCalls ?? []),
   );
   const [expandedToolResults, setExpandedToolResults] = useState<Set<string>>(
-    new Set(initialExpanded?.toolResults ?? [])
+    new Set(initialExpanded?.toolResults ?? []),
   );
 
   // Toggle thinking block expansion
@@ -70,11 +70,11 @@ export function useConversation(
     let assistantCount = 0;
     let thinkingCount = 0;
     for (const event of events) {
-      if (event.eventType === 'user') userCount++;
-      if (event.eventType === 'assistant') assistantCount++;
+      if (event.eventType === "user") userCount++;
+      if (event.eventType === "assistant") assistantCount++;
 
       for (const block of event.content) {
-        if (block.blockType === 'thinking') thinkingCount++;
+        if (block.blockType === "thinking") thinkingCount++;
       }
     }
 
@@ -90,7 +90,7 @@ export function useConversation(
   const blockKey = useCallback(
     (eventUuid: string, blockIndex: number) =>
       `${eventUuid}-block-${blockIndex}`,
-    []
+    [],
   );
 
   return {

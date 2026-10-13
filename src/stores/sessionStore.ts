@@ -1,11 +1,11 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import type {
   Project,
   SessionSummary,
   SessionDetail,
   ViewMode,
-} from '../types';
-import * as tauri from '../utils/tauri';
+} from "../types";
+import * as tauri from "../utils/tauri";
 
 interface SessionState {
   // Data
@@ -24,16 +24,16 @@ interface SessionState {
   error: string | null;
 
   // Actions
-  loadProjects: (settings: import('../types').AppSettings) => Promise<void>;
+  loadProjects: (settings: import("../types").AppSettings) => Promise<void>;
   selectProject: (projectPath: string, provider: string) => Promise<void>;
   selectSession: (
     sessionPath: string,
-    filter: import('../types').FilterConfig,
-    provider: string
+    filter: import("../types").FilterConfig,
+    provider: string,
   ) => Promise<void>;
   search: (
     query: string,
-    settings: import('../types').AppSettings
+    settings: import("../types").AppSettings,
   ) => Promise<void>;
   setViewMode: (mode: ViewMode) => void;
   setSearchQuery: (query: string) => void;
@@ -47,10 +47,10 @@ export const useSessionStore = create<SessionState>((set) => ({
   sessions: [],
   currentSession: null,
   searchResults: [],
-  viewMode: 'by-project' as ViewMode,
+  viewMode: "by-project" as ViewMode,
   selectedProjectPath: null,
   selectedSessionPath: null,
-  searchQuery: '',
+  searchQuery: "",
   isLoading: false,
   isLoadingConversation: false,
   error: null,
@@ -85,11 +85,7 @@ export const useSessionStore = create<SessionState>((set) => ({
       error: null,
     });
     try {
-      const detail = await tauri.getConversation(
-        sessionPath,
-        filter,
-        provider
-      );
+      const detail = await tauri.getConversation(sessionPath, filter, provider);
       // Attach provider name to loaded session detail
       const currentSession = { ...detail, providerName: provider };
       set({ currentSession, isLoadingConversation: false });
@@ -101,7 +97,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   // Search across sessions
   search: async (query, settings) => {
     if (!query.trim()) {
-      set({ searchResults: [], searchQuery: '' });
+      set({ searchResults: [], searchQuery: "" });
       return;
     }
     set({ isLoading: true, searchQuery: query, error: null });

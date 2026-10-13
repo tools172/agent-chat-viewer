@@ -1,7 +1,7 @@
-import { useEffect, useCallback } from 'react';
-import { useSessionStore } from '../stores/sessionStore';
-import { useSettingsStore } from '../stores/settingsStore';
-import type { FilterConfig } from '../types';
+import { useEffect, useCallback } from "react";
+import { useSessionStore } from "../stores/sessionStore";
+import { useSettingsStore } from "../stores/settingsStore";
+import type { FilterConfig } from "../types";
 
 // 后端请求用：始终加载全部内容块，前端侧再做用户过滤
 const FULL_FILTER: FilterConfig = {
@@ -56,7 +56,7 @@ export function useSessions() {
     (projectPath: string, providerName: string) => {
       selectProject(projectPath, providerName);
     },
-    [selectProject]
+    [selectProject],
   );
 
   // 始终用 FULL_FILTER 从后端加载全部内容块，
@@ -65,14 +65,14 @@ export function useSessions() {
     (sessionPath: string, providerName: string) => {
       selectSession(sessionPath, FULL_FILTER, providerName);
     },
-    [selectSession]
+    [selectSession],
   );
 
   const handleSearch = useCallback(
     (query: string) => {
       search(query, settings);
     },
-    [search, settings]
+    [search, settings],
   );
 
   return {

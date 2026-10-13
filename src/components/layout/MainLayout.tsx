@@ -1,4 +1,11 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+} from "react";
 import {
   Download,
   FolderOpen,
@@ -9,25 +16,25 @@ import {
   RefreshCw,
   Layout,
   Undo2,
-} from 'lucide-react';
-import { useSessionList } from '../../hooks/useSessionList';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { useTabStore } from '../../stores/tabStore';
-import { useToastStore } from '../../stores/toastStore';
+} from "lucide-react";
+import { useSessionList } from "../../hooks/useSessionList";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { useTabStore } from "../../stores/tabStore";
+import { useToastStore } from "../../stores/toastStore";
 import {
   openProjectFolderWithFeedback,
   runOpenFolderAction,
-} from '../../utils/openFolder';
-import { SessionNavigator } from './SessionNavigator';
-import { TabBar } from '../tabs/TabBar';
-import { TabContextMenu, type TabContextAction } from '../tabs/TabContextMenu';
-import { TabContent } from '../tabs/TabContent';
-import { ExportDialog } from '../export/ExportDialog';
-import { SettingsPanel } from '../settings/SettingsPanel';
-import { EmptyState } from '../common/EmptyState';
-import { LoadingOverlay } from '../common/LoadingOverlay';
-import * as tauri from '../../utils/tauri';
-import { CONTENT_ZOOM_DEFAULT, CONTENT_ZOOM_STEP } from '../../types';
+} from "../../utils/openFolder";
+import { SessionNavigator } from "./SessionNavigator";
+import { TabBar } from "../tabs/TabBar";
+import { TabContextMenu, type TabContextAction } from "../tabs/TabContextMenu";
+import { TabContent } from "../tabs/TabContent";
+import { ExportDialog } from "../export/ExportDialog";
+import { SettingsPanel } from "../settings/SettingsPanel";
+import { EmptyState } from "../common/EmptyState";
+import { LoadingOverlay } from "../common/LoadingOverlay";
+import * as tauri from "../../utils/tauri";
+import { CONTENT_ZOOM_DEFAULT, CONTENT_ZOOM_STEP } from "../../types";
 
 export const MainLayout: React.FC = () => {
   // 会话列表 store
@@ -61,15 +68,17 @@ export const MainLayout: React.FC = () => {
 
   const activeTab = useMemo(
     () => tabs.find((t) => t.id === activeTabId) ?? null,
-    [tabs, activeTabId]
+    [tabs, activeTabId],
   );
 
   const { settings } = useSettingsStore();
   const [showExport, setShowExport] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
   // 当前激活的搜索高亮词（同时用于左侧列表和右侧对话内容）
-  const [activeSearchHighlight, setActiveSearchHighlight] = useState<string | undefined>();
+  const [activeSearchHighlight, setActiveSearchHighlight] = useState<
+    string | undefined
+  >();
 
   // 标签栏右键菜单
   const [tabContextMenu, setTabContextMenu] = useState<{
@@ -79,7 +88,10 @@ export const MainLayout: React.FC = () => {
   } | null>(null);
 
   // 对话区域右键菜单
-  const [convContextMenu, setConvContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [convContextMenu, setConvContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [copiedPath, setCopiedPath] = useState(false);
   const [copiedSelection, setCopiedSelection] = useState(false);
   const convMenuRef = useRef<HTMLDivElement>(null);
@@ -88,21 +100,24 @@ export const MainLayout: React.FC = () => {
   useEffect(() => {
     if (!convContextMenu) return;
     const clickHandler = (e: MouseEvent) => {
-      if (convMenuRef.current && !convMenuRef.current.contains(e.target as Node)) {
+      if (
+        convMenuRef.current &&
+        !convMenuRef.current.contains(e.target as Node)
+      ) {
         setConvContextMenu(null);
       }
     };
     const keyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.stopPropagation();
         setConvContextMenu(null);
       }
     };
-    document.addEventListener('mousedown', clickHandler);
-    document.addEventListener('keydown', keyHandler);
+    document.addEventListener("mousedown", clickHandler);
+    document.addEventListener("keydown", keyHandler);
     return () => {
-      document.removeEventListener('mousedown', clickHandler);
-      document.removeEventListener('keydown', keyHandler);
+      document.removeEventListener("mousedown", clickHandler);
+      document.removeEventListener("keydown", keyHandler);
     };
   }, [convContextMenu]);
 
@@ -125,7 +140,7 @@ export const MainLayout: React.FC = () => {
   useEffect(() => {
     if (!list.highlightEnabled) {
       setActiveSearchHighlight(undefined);
-    } else if (list.viewMode === 'search' && localSearchQuery.trim()) {
+    } else if (list.viewMode === "search" && localSearchQuery.trim()) {
       setActiveSearchHighlight(localSearchQuery);
     }
   }, [list.highlightEnabled, list.viewMode, localSearchQuery]);
@@ -143,7 +158,7 @@ export const MainLayout: React.FC = () => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // Ctrl+F：打开/聚焦会话内查找栏
-      if (e.ctrlKey && !e.altKey && !e.metaKey && e.key === 'f') {
+      if (e.ctrlKey && !e.altKey && !e.metaKey && e.key === "f") {
         // 如果是由 Ctrl+G 触发的模拟 Ctrl+F，跳过拦截，让 WebView2 处理原生查找
         if ((window as any).__skip_ctrl_f_intercept) {
           delete (window as any).__skip_ctrl_f_intercept;
@@ -160,7 +175,7 @@ export const MainLayout: React.FC = () => {
         if (tab.showFindBar) {
           // 查找栏已打开 → 聚焦输入框
           const input = document.querySelector<HTMLInputElement>(
-            '[data-conversation-find-input]'
+            "[data-conversation-find-input]",
           );
           input?.focus();
           input?.select();
@@ -174,7 +189,7 @@ export const MainLayout: React.FC = () => {
       // Ctrl+G：触发浏览器原生查找
       // Rust 后端通过 keybd_event 发送模拟 Ctrl+F 按键
       // WebView2 原生响应，JS 层面由 __skip_ctrl_f_intercept 标志跳过拦截
-      if (e.ctrlKey && !e.altKey && !e.metaKey && e.key === 'g') {
+      if (e.ctrlKey && !e.altKey && !e.metaKey && e.key === "g") {
         e.preventDefault();
         (window as any).__skip_ctrl_f_intercept = true;
         tauri.triggerNativeFind();
@@ -182,8 +197,8 @@ export const MainLayout: React.FC = () => {
       }
     };
 
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   // 全局快捷键：Ctrl+0 重置内容缩放；Ctrl+= / Ctrl+- 放大缩小聊天内容
@@ -192,19 +207,19 @@ export const MainLayout: React.FC = () => {
       if (!e.ctrlKey || e.altKey || e.metaKey) return;
       const store = useSettingsStore.getState();
       const current = store.settings.contentZoom ?? CONTENT_ZOOM_DEFAULT;
-      if (e.key === '0') {
+      if (e.key === "0") {
         e.preventDefault();
         store.updateContentZoom(CONTENT_ZOOM_DEFAULT);
-      } else if (e.key === '=' || e.key === '+') {
+      } else if (e.key === "=" || e.key === "+") {
         e.preventDefault();
         store.updateContentZoom(current + CONTENT_ZOOM_STEP);
-      } else if (e.key === '-') {
+      } else if (e.key === "-") {
         e.preventDefault();
         store.updateContentZoom(current - CONTENT_ZOOM_STEP);
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   // 选择工作目录
@@ -212,7 +227,7 @@ export const MainLayout: React.FC = () => {
     (projectPath: string, providerName: string) => {
       list.selectProject(projectPath, providerName);
     },
-    [list]
+    [list],
   );
 
   const handleClearProjectFilter = useCallback(() => {
@@ -220,44 +235,44 @@ export const MainLayout: React.FC = () => {
   }, [list]);
 
   const handleSortChange = useCallback(
-    (config: import('../../types').SortConfig) => list.setSortConfig(config),
-    [list]
+    (config: import("../../types").SortConfig) => list.setSortConfig(config),
+    [list],
   );
 
   const handleTimeFieldChange = useCallback(
-    (field: import('../../types').TimeField) => {
+    (field: import("../../types").TimeField) => {
       list.setTimeField(field);
       // 排序跟随分组依据：创建时间 → created，修改时间 → modified
-      list.setSortConfig([{ field, direction: 'desc' }]);
+      list.setSortConfig([{ field, direction: "desc" }]);
     },
-    [list]
+    [list],
   );
 
   const handleSearch = useCallback(
     (query: string) => {
       list.search(query, settings);
     },
-    [list, settings]
+    [list, settings],
   );
 
   const handleViewModeChange = useCallback(
-    (mode: import('../../types').ViewMode) => {
+    (mode: import("../../types").ViewMode) => {
       list.setProjectFilter(null);
       list.setViewMode(mode);
     },
-    [list]
+    [list],
   );
 
   const handleLocateInFolderList = useCallback(
     (filePath: string, projectPath: string, providerName: string) => {
       // 切换到文件夹视图
-      list.setViewMode('by-project');
+      list.setViewMode("by-project");
       // 加载/选中该项目（确保 sessionsCache 中有数据）
       list.selectProject(projectPath, providerName);
       // 设置定位目标（触发 ProjectList 展开+滚动）
       list.setLocateTarget({ filePath, projectPath });
     },
-    [list]
+    [list],
   );
 
   // === 标签栏操作 ===
@@ -267,7 +282,7 @@ export const MainLayout: React.FC = () => {
       e.preventDefault();
       setTabContextMenu({ x: e.clientX, y: e.clientY, tabId });
     },
-    []
+    [],
   );
 
   const handleTabContextAction = useCallback(
@@ -276,40 +291,44 @@ export const MainLayout: React.FC = () => {
       if (!tab) return;
 
       switch (action) {
-        case 'refresh':
+        case "refresh":
           refreshTab(tabId);
           break;
-        case 'togglePin':
+        case "togglePin":
           togglePinTab(tabId);
           break;
-        case 'close':
+        case "close":
           closeTab(tabId);
           break;
-        case 'closeOthers':
+        case "closeOthers":
           closeOtherTabs(tabId);
           break;
-        case 'closeToRight':
+        case "closeToRight":
           closeTabsToRight(tabId);
           break;
-        case 'closeAll':
+        case "closeAll":
           closeAllTabs();
           break;
-        case 'copyPath':
+        case "copyPath":
           try {
             await navigator.clipboard.writeText(tab.sessionPath);
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
           break;
-        case 'copyId':
+        case "copyId":
           if (tab.sessionDetail?.id) {
             try {
               await navigator.clipboard.writeText(tab.sessionDetail.id);
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
           break;
-        case 'openFolder':
-          await runOpenFolderAction('打开存储目录', async () => {
-            if (tab.providerName === 'cursor') {
-              const dataDir = await tauri.getProviderDataDir('cursor');
+        case "openFolder":
+          await runOpenFolderAction("打开存储目录", async () => {
+            if (tab.providerName === "cursor") {
+              const dataDir = await tauri.getProviderDataDir("cursor");
               if (dataDir) {
                 await tauri.openProjectFolder(dataDir);
                 return;
@@ -318,10 +337,10 @@ export const MainLayout: React.FC = () => {
             await tauri.openContainingFolder(tab.sessionPath);
           });
           break;
-        case 'openProjectFolder': {
+        case "openProjectFolder": {
           // 查找该会话的工作目录
           const session = list.allSessions.find(
-            (s) => s.filePath === tab.sessionPath
+            (s) => s.filePath === tab.sessionPath,
           );
           const projectDir = session?.cwd || session?.projectPath;
           if (projectDir) {
@@ -329,11 +348,11 @@ export const MainLayout: React.FC = () => {
           } else {
             useToastStore
               .getState()
-              .showToast('找不到该会话的工作目录', { variant: 'error' });
+              .showToast("找不到该会话的工作目录", { variant: "error" });
           }
           break;
         }
-        case 'export':
+        case "export":
           activateTab(tabId);
           setShowExport(true);
           break;
@@ -349,7 +368,7 @@ export const MainLayout: React.FC = () => {
       closeTabsToRight,
       closeAllTabs,
       activateTab,
-    ]
+    ],
   );
 
   const handleConvContextMenu = (e: React.MouseEvent) => {
@@ -360,9 +379,9 @@ export const MainLayout: React.FC = () => {
   const handleOpenSessionFolder = async () => {
     setConvContextMenu(null);
     if (!activeTab?.sessionPath) return;
-    await runOpenFolderAction('打开存储目录', async () => {
-      if (activeTab.providerName === 'cursor') {
-        const dataDir = await tauri.getProviderDataDir('cursor');
+    await runOpenFolderAction("打开存储目录", async () => {
+      if (activeTab.providerName === "cursor") {
+        const dataDir = await tauri.getProviderDataDir("cursor");
         if (dataDir) {
           await tauri.openProjectFolder(dataDir);
           return;
@@ -380,7 +399,7 @@ export const MainLayout: React.FC = () => {
       setCopiedPath(true);
       setTimeout(() => setCopiedPath(false), 2000);
     } catch (err) {
-      console.error('复制路径失败:', err);
+      console.error("复制路径失败:", err);
     }
   };
 
@@ -392,7 +411,7 @@ export const MainLayout: React.FC = () => {
       setCopiedPath(true);
       setTimeout(() => setCopiedPath(false), 2000);
     } catch (err) {
-      console.error('复制会话ID失败:', err);
+      console.error("复制会话ID失败:", err);
     }
   };
 
@@ -404,22 +423,26 @@ export const MainLayout: React.FC = () => {
   const handleCopySelection = async () => {
     setConvContextMenu(null);
     try {
-      await navigator.clipboard.writeText(window.getSelection()?.toString() ?? '');
+      await navigator.clipboard.writeText(
+        window.getSelection()?.toString() ?? "",
+      );
       setCopiedSelection(true);
       setTimeout(() => setCopiedSelection(false), 2000);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   // 合并所有已知会话来源，去重（路径归一化处理）
   const allKnownSessions = useMemo(() => {
     const seen = new Set<string>();
-    const merged: import('../../types').SessionSummary[] = [];
+    const merged: import("../../types").SessionSummary[] = [];
     for (const s of [
       ...list.allSessions,
       ...list.searchResults,
       ...Object.values(list.projectSessionsCache).flat(),
     ]) {
-      const normalized = s.filePath.replace(/\\/g, '/');
+      const normalized = s.filePath.replace(/\\/g, "/");
       if (!seen.has(normalized)) {
         seen.add(normalized);
         merged.push(s);
@@ -431,9 +454,9 @@ export const MainLayout: React.FC = () => {
   // 获取当前会话的工作目录（用于右键菜单等）
   const currentProjectPath = useMemo(() => {
     if (!activeTab?.sessionPath) return null;
-    const normalizedPath = activeTab.sessionPath.replace(/\\/g, '/');
+    const normalizedPath = activeTab.sessionPath.replace(/\\/g, "/");
     const session = allKnownSessions.find(
-      (s) => s.filePath.replace(/\\/g, '/') === normalizedPath
+      (s) => s.filePath.replace(/\\/g, "/") === normalizedPath,
     );
     if (!session) return null;
     return session.cwd || session.projectPath;
@@ -445,7 +468,7 @@ export const MainLayout: React.FC = () => {
   const handleSelectSession = useCallback(
     (sessionPath: string, providerName: string, cwd?: string) => {
       if (
-        list.viewMode === 'search' &&
+        list.viewMode === "search" &&
         localSearchQuery.trim() &&
         list.highlightEnabled
       ) {
@@ -455,7 +478,7 @@ export const MainLayout: React.FC = () => {
       }
       openTab(sessionPath, providerName, true, cwd);
     },
-    [openTab, list.viewMode, localSearchQuery, list.highlightEnabled]
+    [openTab, list.viewMode, localSearchQuery, list.highlightEnabled],
   );
 
   /** Ctrl+Click / 中键 / 右键菜单 → 在后台新标签页打开 */
@@ -463,7 +486,7 @@ export const MainLayout: React.FC = () => {
     (sessionPath: string, providerName: string, cwd?: string) => {
       openTab(sessionPath, providerName, false, cwd);
     },
-    [openTab]
+    [openTab],
   );
 
   const handleOpenWorkingDir = async () => {
@@ -471,7 +494,7 @@ export const MainLayout: React.FC = () => {
     if (!currentProjectPath) {
       useToastStore
         .getState()
-        .showToast('找不到该会话的工作目录', { variant: 'error' });
+        .showToast("找不到该会话的工作目录", { variant: "error" });
       return;
     }
     await openProjectFolderWithFeedback(currentProjectPath);
@@ -492,13 +515,13 @@ export const MainLayout: React.FC = () => {
 
   const getKeepAliveRank = useCallback(
     (tabId: string) => keepAliveRanks.get(tabId) ?? 999,
-    [keepAliveRanks]
+    [keepAliveRanks],
   );
 
   // === 导出 ===
-  const exportSessionTitle = activeTab?.title || 'Untitled';
-  const exportSessionPath = activeTab?.sessionPath || '';
-  const exportProviderName = activeTab?.providerName || 'claude_code';
+  const exportSessionTitle = activeTab?.title || "Untitled";
+  const exportSessionPath = activeTab?.sessionPath || "";
+  const exportProviderName = activeTab?.providerName || "claude_code";
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -568,131 +591,134 @@ export const MainLayout: React.FC = () => {
             </div>
 
             {/* 标签栏右键菜单 */}
-            {tabContextMenu && (() => {
-              const maxPinned = settings.maxPinnedTabs ?? 4;
-              const pinnedCount = tabs.filter((t) => t.pinned).length;
-              return (
-              <TabContextMenu
-                x={tabContextMenu.x}
-                y={tabContextMenu.y}
-                tabId={tabContextMenu.tabId}
-                isPinned={
-                  tabs.find((t) => t.id === tabContextMenu.tabId)?.pinned ??
-                  false
-                }
-                sessionPath={
-                  tabs.find((t) => t.id === tabContextMenu.tabId)
-                    ?.sessionPath ?? ''
-                }
-                sessionId={
-                  tabs.find((t) => t.id === tabContextMenu.tabId)
-                    ?.sessionDetail?.id
-                }
-                pinDisabled={pinnedCount >= maxPinned}
-                maxPinnedCount={maxPinned}
-                onAction={handleTabContextAction}
-                onClose={() => setTabContextMenu(null)}
-              />
-              );
-            })()}
+            {tabContextMenu &&
+              (() => {
+                const maxPinned = settings.maxPinnedTabs ?? 4;
+                const pinnedCount = tabs.filter((t) => t.pinned).length;
+                return (
+                  <TabContextMenu
+                    x={tabContextMenu.x}
+                    y={tabContextMenu.y}
+                    tabId={tabContextMenu.tabId}
+                    isPinned={
+                      tabs.find((t) => t.id === tabContextMenu.tabId)?.pinned ??
+                      false
+                    }
+                    sessionPath={
+                      tabs.find((t) => t.id === tabContextMenu.tabId)
+                        ?.sessionPath ?? ""
+                    }
+                    sessionId={
+                      tabs.find((t) => t.id === tabContextMenu.tabId)
+                        ?.sessionDetail?.id
+                    }
+                    pinDisabled={pinnedCount >= maxPinned}
+                    maxPinnedCount={maxPinned}
+                    onAction={handleTabContextAction}
+                    onClose={() => setTabContextMenu(null)}
+                  />
+                );
+              })()}
 
             {/* 对话区域右键菜单 */}
-            {convContextMenu && activeTab && (() => {
-              // 检查右键位置是否在选取文本范围内
-              const selection = window.getSelection();
-              const selectedText = selection?.toString().trim();
-              let clickOnSelection = false;
-              if (selectedText && selection && selection.rangeCount > 0) {
-                const rects = selection.getRangeAt(0).getClientRects();
-                for (let i = 0; i < rects.length; i++) {
-                  const r = rects[i];
-                  if (
-                    convContextMenu.x >= r.left &&
-                    convContextMenu.x <= r.right &&
-                    convContextMenu.y >= r.top &&
-                    convContextMenu.y <= r.bottom
-                  ) {
-                    clickOnSelection = true;
-                    break;
+            {convContextMenu &&
+              activeTab &&
+              (() => {
+                // 检查右键位置是否在选取文本范围内
+                const selection = window.getSelection();
+                const selectedText = selection?.toString().trim();
+                let clickOnSelection = false;
+                if (selectedText && selection && selection.rangeCount > 0) {
+                  const rects = selection.getRangeAt(0).getClientRects();
+                  for (let i = 0; i < rects.length; i++) {
+                    const r = rects[i];
+                    if (
+                      convContextMenu.x >= r.left &&
+                      convContextMenu.x <= r.right &&
+                      convContextMenu.y >= r.top &&
+                      convContextMenu.y <= r.bottom
+                    ) {
+                      clickOnSelection = true;
+                      break;
+                    }
                   }
                 }
-              }
-              return (
-              <div
-                ref={convMenuRef}
-                className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px]"
-                style={{ left: convContextMenu.x, top: convContextMenu.y }}
-              >
-                {clickOnSelection && (
-                  <>
+                return (
+                  <div
+                    ref={convMenuRef}
+                    className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px]"
+                    style={{ left: convContextMenu.x, top: convContextMenu.y }}
+                  >
+                    {clickOnSelection && (
+                      <>
+                        <button
+                          onClick={handleCopySelection}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          {copiedSelection ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4 text-gray-400" />
+                          )}
+                          复制
+                        </button>
+                        <div className="border-t border-gray-100 my-1" />
+                      </>
+                    )}
                     <button
-                      onClick={handleCopySelection}
+                      onClick={handleRefreshSession}
                       className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
-                      {copiedSelection ? (
+                      <RefreshCw className="h-4 w-4 text-gray-400" />
+                      重新加载
+                    </button>
+                    <div className="border-t border-gray-100 my-1" />
+                    <button
+                      onClick={handleOpenSessionFolder}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <FolderOpen className="h-4 w-4 text-gray-400" />
+                      打开所在文件夹
+                    </button>
+                    <button
+                      onClick={handleOpenWorkingDir}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <Folder className="h-4 w-4 text-gray-400" />
+                      打开工作目录
+                    </button>
+                    <button
+                      onClick={handleCopySessionPath}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      {copiedPath ? (
                         <Check className="h-4 w-4 text-green-500" />
                       ) : (
                         <Copy className="h-4 w-4 text-gray-400" />
                       )}
-                      复制
+                      复制文件路径
+                    </button>
+                    <button
+                      onClick={handleCopySessionId}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <Hash className="h-4 w-4 text-gray-400" />
+                      复制会话 ID
                     </button>
                     <div className="border-t border-gray-100 my-1" />
-                  </>
-                )}
-                <button
-                  onClick={handleRefreshSession}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <RefreshCw className="h-4 w-4 text-gray-400" />
-                  重新加载
-                </button>
-                <div className="border-t border-gray-100 my-1" />
-                <button
-                  onClick={handleOpenSessionFolder}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <FolderOpen className="h-4 w-4 text-gray-400" />
-                  打开所在文件夹
-                </button>
-                <button
-                  onClick={handleOpenWorkingDir}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <Folder className="h-4 w-4 text-gray-400" />
-                  打开工作目录
-                </button>
-                <button
-                  onClick={handleCopySessionPath}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  {copiedPath ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4 text-gray-400" />
-                  )}
-                  复制文件路径
-                </button>
-                <button
-                  onClick={handleCopySessionId}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <Hash className="h-4 w-4 text-gray-400" />
-                  复制会话 ID
-                </button>
-                <div className="border-t border-gray-100 my-1" />
-                <button
-                  onClick={() => {
-                    setConvContextMenu(null);
-                    setShowExport(true);
-                  }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <Download className="h-4 w-4 text-gray-400" />
-                  导出会话...
-                </button>
-              </div>
-              );
-            })()}
+                    <button
+                      onClick={() => {
+                        setConvContextMenu(null);
+                        setShowExport(true);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <Download className="h-4 w-4 text-gray-400" />
+                      导出会话...
+                    </button>
+                  </div>
+                );
+              })()}
           </>
         ) : (
           /* 无标签页时的空状态 */
@@ -733,10 +759,7 @@ export const MainLayout: React.FC = () => {
       )}
 
       {/* 首次加载 — 半透明遮罩 */}
-      {list.isLoadingAll && list.allSessions.length === 0 && (
-        <LoadingOverlay />
-      )}
-
+      {list.isLoadingAll && list.allSessions.length === 0 && <LoadingOverlay />}
     </div>
   );
 };

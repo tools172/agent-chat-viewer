@@ -1,11 +1,17 @@
-import React, { useRef, useCallback, useState, useEffect, useMemo } from 'react';
-import type { TabState } from '../../types';
-import { TabItem } from './TabItem';
-import { TabPinService } from '../../utils/tabPinService';
+import React, {
+  useRef,
+  useCallback,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
+import type { TabState } from "../../types";
+import { TabItem } from "./TabItem";
+import { TabPinService } from "../../utils/tabPinService";
 import {
   scrollOneLeft as utilScrollOneLeft,
   scrollOneRight as utilScrollOneRight,
-} from '../../utils/tabScroll';
+} from "../../utils/tabScroll";
 
 interface TabBarProps {
   tabs: TabState[];
@@ -13,10 +19,7 @@ interface TabBarProps {
   onActivateTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onMoveTab: (fromIndex: number, toIndex: number) => void;
-  onOpenContextMenu: (
-    e: React.MouseEvent,
-    tabId: string
-  ) => void;
+  onOpenContextMenu: (e: React.MouseEvent, tabId: string) => void;
 }
 
 /** 溢出指示器 hook — 监听滚动容器的溢出状态 */
@@ -35,7 +38,7 @@ function useOverflowIndicator(
       // 使用 getBoundingClientRect — 与 tabScroll.ts 的 scrollOneRight/scrollOneLeft
       // 使用完全相同的测量方式，避免 offsetLeft (整数) vs rect (浮点) 的亚像素偏差
       const scrollRect = el.getBoundingClientRect();
-      const items = el.querySelectorAll<HTMLElement>('[data-tab-item]');
+      const items = el.querySelectorAll<HTMLElement>("[data-tab-item]");
       let hiddenLeft = 0;
       let hiddenRight = 0;
       for (let i = 0; i < items.length; i++) {
@@ -51,20 +54,18 @@ function useOverflowIndicator(
     };
 
     calc();
-    el.addEventListener('scroll', calc, { passive: true });
+    el.addEventListener("scroll", calc, { passive: true });
     const ro =
-      typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(calc)
-        : null;
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(calc) : null;
     // 同时观察滚动容器自身和父容器，确保钉住区增减时宽度变化也能触发重算
     ro?.observe(el);
     const containerEl = el.parentElement;
     if (containerEl) ro?.observe(containerEl);
-    window.addEventListener('resize', calc);
+    window.addEventListener("resize", calc);
     return () => {
-      el.removeEventListener('scroll', calc);
+      el.removeEventListener("scroll", calc);
       ro?.disconnect();
-      window.removeEventListener('resize', calc);
+      window.removeEventListener("resize", calc);
     };
   }, [scrollRef, tabs]);
 
@@ -73,42 +74,62 @@ function useOverflowIndicator(
 
 /** 溢出指示器按钮 */
 const OverflowIndicator: React.FC<{
-  direction: 'left' | 'right';
+  direction: "left" | "right";
   count: number;
   title: string;
   onClick?: React.MouseEventHandler<HTMLDivElement>;
 }> = ({ direction, count, title, onClick }) => {
   const active = count > 0;
   const borderClass =
-    direction === 'left' ? 'border-r border-gray-200' : 'border-l border-gray-200';
+    direction === "left"
+      ? "border-r border-gray-200"
+      : "border-l border-gray-200";
   // 非对称：外侧留白，数字贴近图标
   // 左侧 [3<]：pl-1 把数字往右(图标方向)推，pr-0 图标紧贴边框
   // 右侧 [>3]：pr-1 把数字往左(图标方向)推，pl-0 图标紧贴边框
-  const padClass =
-    direction === 'left' ? 'pl-1 pr-0' : 'pl-0 pr-1';
+  const padClass = direction === "left" ? "pl-1 pr-0" : "pl-0 pr-1";
 
   return (
     <div
       className={`flex-shrink-0 flex items-center text-xs bg-gray-50/80 cursor-pointer select-none ${borderClass} ${padClass}
-        ${active ? 'text-primary-600 hover:text-primary-700 hover:bg-gray-100 font-bold' : 'text-gray-300'}`}
+        ${active ? "text-primary-600 hover:text-primary-700 hover:bg-gray-100 font-bold" : "text-gray-300"}`}
       title={title}
       onClick={active ? onClick : undefined}
     >
-      {direction === 'left' ? (
+      {direction === "left" ? (
         <>
           <span className="tabular-nums min-w-[0.5em] text-right">{count}</span>
-          <svg width="14" height="20" viewBox="0 0 24 24" fill="none" className="-ml-0.5"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="14"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="-ml-0.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="15,18 9,12 15,6" />
           </svg>
         </>
       ) : (
         <>
-          <svg width="14" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="14"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="9,18 15,12 9,6" />
           </svg>
-          <span className="tabular-nums min-w-[0.5em] text-left -ml-0.5">{count}</span>
+          <span className="tabular-nums min-w-[0.5em] text-left -ml-0.5">
+            {count}
+          </span>
         </>
       )}
     </div>
@@ -146,11 +167,13 @@ export const TabBar: React.FC<TabBarProps> = ({
 
   // === 拖拽状态 ===
   const dragIndexRef = useRef<number | null>(null);
-  const dragSectionRef = useRef<'pinned' | 'regular' | null>(null);
+  const dragSectionRef = useRef<"pinned" | "regular" | null>(null);
   const dragCancelledRef = useRef(false);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [dragOverSection, setDragOverSection] = useState<'pinned' | 'regular' | null>(null);
-  const [dragOverSide, setDragOverSide] = useState<'left' | 'right'>('right');
+  const [dragOverSection, setDragOverSection] = useState<
+    "pinned" | "regular" | null
+  >(null);
+  const [dragOverSide, setDragOverSide] = useState<"left" | "right">("right");
 
   const resetDragState = useCallback(() => {
     dragIndexRef.current = null;
@@ -163,12 +186,12 @@ export const TabBar: React.FC<TabBarProps> = ({
   // Escape 取消拖拽
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dragIndexRef.current !== null) {
+      if (e.key === "Escape" && dragIndexRef.current !== null) {
         dragCancelledRef.current = true;
       }
     };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   // 激活标签时滚动到视野内
@@ -181,11 +204,11 @@ export const TabBar: React.FC<TabBarProps> = ({
       const activeItem = el.querySelector<HTMLElement>(
         `[data-tab-id="${activeTabId}"]`,
       );
-      if (activeItem && typeof activeItem.scrollIntoView === 'function') {
+      if (activeItem && typeof activeItem.scrollIntoView === "function") {
         activeItem.scrollIntoView({
-          block: 'nearest',
-          inline: 'nearest',
-          behavior: 'smooth',
+          block: "nearest",
+          inline: "nearest",
+          behavior: "smooth",
         });
       }
     });
@@ -194,37 +217,37 @@ export const TabBar: React.FC<TabBarProps> = ({
 
   // === 拖拽事件处理 ===
   const handleDragStart = useCallback(
-    (section: 'pinned' | 'regular') =>
-      (_e: React.DragEvent, index: number) => {
-        dragIndexRef.current = index;
-        dragSectionRef.current = section;
-        dragCancelledRef.current = false;
-        setDragOverIndex(null);
-        setDragOverSection(null);
-        if (_e.dataTransfer) {
-          _e.dataTransfer.effectAllowed = 'move';
-          _e.dataTransfer.setData('text/plain', String(index));
-        }
-      },
+    (section: "pinned" | "regular") => (_e: React.DragEvent, index: number) => {
+      dragIndexRef.current = index;
+      dragSectionRef.current = section;
+      dragCancelledRef.current = false;
+      setDragOverIndex(null);
+      setDragOverSection(null);
+      if (_e.dataTransfer) {
+        _e.dataTransfer.effectAllowed = "move";
+        _e.dataTransfer.setData("text/plain", String(index));
+      }
+    },
     [],
   );
 
   const handleDragOver = useCallback(
-    (section: 'pinned' | 'regular') =>
-      (e: React.DragEvent, index: number) => {
-        if (dragSectionRef.current !== section) {
-          if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
-          return;
-        }
-        e.preventDefault();
-        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-        // 跟踪插入位置
-        const el = e.currentTarget as HTMLElement;
-        const rect = el.getBoundingClientRect();
-        setDragOverIndex(index);
-        setDragOverSection(section);
-        setDragOverSide(e.clientX - rect.left < rect.width / 2 ? 'left' : 'right');
-      },
+    (section: "pinned" | "regular") => (e: React.DragEvent, index: number) => {
+      if (dragSectionRef.current !== section) {
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
+        return;
+      }
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      // 跟踪插入位置
+      const el = e.currentTarget as HTMLElement;
+      const rect = el.getBoundingClientRect();
+      setDragOverIndex(index);
+      setDragOverSection(section);
+      setDragOverSide(
+        e.clientX - rect.left < rect.width / 2 ? "left" : "right",
+      );
+    },
     [],
   );
 
@@ -233,7 +256,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   }, [resetDragState]);
 
   const handleDrop = useCallback(
-    (section: 'pinned' | 'regular', sectionStart: number) =>
+    (section: "pinned" | "regular", sectionStart: number) =>
       (e: React.DragEvent, toIndex: number) => {
         e.preventDefault();
         if (dragSectionRef.current !== section) return;
@@ -245,7 +268,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         if (fromIndex !== null && fromIndex !== toIndex) {
           // 计算目标索引（考虑 splice-remove 偏移）
           let targetGlobal: number;
-          if (dragOverSide === 'right') {
+          if (dragOverSide === "right") {
             targetGlobal = fromIndex < toIndex ? toIndex : toIndex + 1;
           } else {
             targetGlobal = fromIndex < toIndex ? toIndex - 1 : toIndex;
@@ -266,7 +289,7 @@ export const TabBar: React.FC<TabBarProps> = ({
 
   // 容器级 drop — 处理落在标签间隙或最后一个标签右侧蓝色指示条上的情况
   const handleContainerDrop = useCallback(
-    (section: 'pinned' | 'regular', sectionStart: number) =>
+    (section: "pinned" | "regular", sectionStart: number) =>
       (e: React.DragEvent) => {
         e.preventDefault();
         if (dragSectionRef.current !== section) return;
@@ -275,7 +298,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         const toIndex = dragOverIndex;
         if (toIndex === null || fromIndex === toIndex) return;
         let targetGlobal: number;
-        if (dragOverSide === 'right') {
+        if (dragOverSide === "right") {
           targetGlobal = fromIndex < toIndex ? toIndex : toIndex + 1;
         } else {
           targetGlobal = fromIndex < toIndex ? toIndex - 1 : toIndex;
@@ -333,7 +356,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   const scrollToStart = useCallback(
     (ref: React.RefObject<HTMLDivElement | null>) => (e: React.MouseEvent) => {
       if (e.shiftKey && ref.current) {
-        ref.current.scrollTo({ left: 0, behavior: 'smooth' });
+        ref.current.scrollTo({ left: 0, behavior: "smooth" });
       } else {
         scrollOneLeft(ref)();
       }
@@ -347,7 +370,7 @@ export const TabBar: React.FC<TabBarProps> = ({
       if (e.shiftKey && ref.current) {
         ref.current.scrollTo({
           left: ref.current.scrollWidth,
-          behavior: 'smooth',
+          behavior: "smooth",
         });
       } else {
         scrollOneRight(ref)();
@@ -374,33 +397,50 @@ export const TabBar: React.FC<TabBarProps> = ({
             ref={pinnedScrollRef}
             onWheel={handleWheel}
             onDragOver={handleContainerDragOver}
-            onDrop={handleContainerDrop('pinned', pinnedStart)}
+            onDrop={handleContainerDrop("pinned", pinnedStart)}
             onDragEnd={handleDragEnd}
             className="flex items-stretch min-w-0 overflow-x-auto"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
             {pinnedTabs.map((tab, i) => (
               <React.Fragment key={tab.id}>
-                {dragOverIndex === i && dragOverSection === 'pinned' && dragOverSide === 'left' && (
-                  <div className="flex-shrink-0 w-0.5 bg-primary-500 rounded" style={{ height: 36 }} />
-                )}
-                <div data-tab-item data-tab-id={tab.id} className="flex-shrink-0">
+                {dragOverIndex === i &&
+                  dragOverSection === "pinned" &&
+                  dragOverSide === "left" && (
+                    <div
+                      className="flex-shrink-0 w-0.5 bg-primary-500 rounded"
+                      style={{ height: 36 }}
+                    />
+                  )}
+                <div
+                  data-tab-item
+                  data-tab-id={tab.id}
+                  className="flex-shrink-0"
+                >
                   <TabItem
                     tab={tab}
                     isActive={tab.id === activeTabId}
-                    isDragging={dragIndexRef.current === i && dragSectionRef.current === 'pinned'}
+                    isDragging={
+                      dragIndexRef.current === i &&
+                      dragSectionRef.current === "pinned"
+                    }
                     index={i}
                     onActivate={handleActivate}
                     onClose={onCloseTab}
                     onContextMenu={onOpenContextMenu}
-                    onDragStart={handleDragStart('pinned')}
-                    onDragOver={handleDragOver('pinned')}
-                    onDrop={handleDrop('pinned', pinnedStart)}
+                    onDragStart={handleDragStart("pinned")}
+                    onDragOver={handleDragOver("pinned")}
+                    onDrop={handleDrop("pinned", pinnedStart)}
                   />
                 </div>
-                {dragOverIndex === i && dragOverSection === 'pinned' && dragOverSide === 'right' && (
-                  <div className="flex-shrink-0 w-0.5 bg-primary-500 rounded" style={{ height: 36 }} />
-                )}
+                {dragOverIndex === i &&
+                  dragOverSection === "pinned" &&
+                  dragOverSide === "right" && (
+                    <div
+                      className="flex-shrink-0 w-0.5 bg-primary-500 rounded"
+                      style={{ height: 36 }}
+                    />
+                  )}
               </React.Fragment>
             ))}
           </div>
@@ -429,7 +469,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         title={
           regularOverflow.overflowLeft > 0
             ? `点击向左滚动一个标签 · Shift+点击直接跳到最左侧（左侧还有 ${regularOverflow.overflowLeft} 个标签页）`
-            : '已到最左侧'
+            : "已到最左侧"
         }
         onClick={scrollToStart(regularScrollRef)}
       />
@@ -438,33 +478,46 @@ export const TabBar: React.FC<TabBarProps> = ({
         ref={regularScrollRef}
         onWheel={handleWheel}
         onDragOver={handleContainerDragOver}
-        onDrop={handleContainerDrop('regular', regularStart)}
+        onDrop={handleContainerDrop("regular", regularStart)}
         onDragEnd={handleDragEnd}
         className="flex items-stretch flex-1 min-w-0 overflow-x-auto"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {regularTabs.map((tab, i) => (
           <React.Fragment key={tab.id}>
-            {dragOverIndex === i && dragOverSection === 'regular' && dragOverSide === 'left' && (
-              <div className="flex-shrink-0 w-0.5 bg-primary-500 rounded" style={{ height: 36 }} />
-            )}
+            {dragOverIndex === i &&
+              dragOverSection === "regular" &&
+              dragOverSide === "left" && (
+                <div
+                  className="flex-shrink-0 w-0.5 bg-primary-500 rounded"
+                  style={{ height: 36 }}
+                />
+              )}
             <div data-tab-item data-tab-id={tab.id} className="flex-shrink-0">
               <TabItem
                 tab={tab}
                 isActive={tab.id === activeTabId}
-                isDragging={dragIndexRef.current === i && dragSectionRef.current === 'regular'}
+                isDragging={
+                  dragIndexRef.current === i &&
+                  dragSectionRef.current === "regular"
+                }
                 index={i}
                 onActivate={handleActivate}
                 onClose={onCloseTab}
                 onContextMenu={onOpenContextMenu}
-                onDragStart={handleDragStart('regular')}
-                onDragOver={handleDragOver('regular')}
-                onDrop={handleDrop('regular', regularStart)}
+                onDragStart={handleDragStart("regular")}
+                onDragOver={handleDragOver("regular")}
+                onDrop={handleDrop("regular", regularStart)}
               />
             </div>
-            {dragOverIndex === i && dragOverSection === 'regular' && dragOverSide === 'right' && (
-              <div className="flex-shrink-0 w-0.5 bg-primary-500 rounded" style={{ height: 36 }} />
-            )}
+            {dragOverIndex === i &&
+              dragOverSection === "regular" &&
+              dragOverSide === "right" && (
+                <div
+                  className="flex-shrink-0 w-0.5 bg-primary-500 rounded"
+                  style={{ height: 36 }}
+                />
+              )}
           </React.Fragment>
         ))}
       </div>
@@ -476,7 +529,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         title={
           regularOverflow.overflowRight > 0
             ? `点击向右滚动一个标签 · Shift+点击直接跳到最右侧（右侧还有 ${regularOverflow.overflowRight} 个标签页）`
-            : '所有标签页已展示'
+            : "所有标签页已展示"
         }
         onClick={scrollToEnd(regularScrollRef)}
       />

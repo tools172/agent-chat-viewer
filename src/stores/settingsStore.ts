@@ -1,5 +1,10 @@
-import { create } from 'zustand';
-import type { AppSettings, FilterConfig, WatchDirectory, ThemeMode } from '../types';
+import { create } from "zustand";
+import type {
+  AppSettings,
+  FilterConfig,
+  WatchDirectory,
+  ThemeMode,
+} from "../types";
 import {
   SIDEBAR_MIN_WIDTH,
   SIDEBAR_MAX_WIDTH,
@@ -13,8 +18,8 @@ import {
   CONTENT_ZOOM_MIN,
   CONTENT_ZOOM_MAX,
   CONTENT_ZOOM_DEFAULT,
-} from '../types';
-import * as tauri from '../utils/tauri';
+} from "../types";
+import * as tauri from "../utils/tauri";
 
 interface SettingsState {
   // Data
@@ -32,7 +37,9 @@ interface SettingsState {
   removeWatchDirectory: (path: string) => void;
   toggleWatchDirectory: (path: string) => void;
   toggleProvider: (name: string, enabled: boolean) => void;
-  updateSearchColors: (colors: Partial<import('../types').SearchColors>) => void;
+  updateSearchColors: (
+    colors: Partial<import("../types").SearchColors>,
+  ) => void;
   updateNavCollapsed: (collapsed: boolean) => void;
   updateAutoSavePanelWidths: (autoSave: boolean) => void;
   updateSidebarWidth: (width: number) => void;
@@ -69,8 +76,8 @@ const defaultSettings: AppSettings = {
     openclaw: false,
   },
   searchColors: {
-    search: '#fef08a',
-    find: '#fed7aa',
+    search: "#fef08a",
+    find: "#fed7aa",
   },
   navCollapsed: false,
   autoSavePanelWidths: true,
@@ -78,11 +85,11 @@ const defaultSettings: AppSettings = {
   navigatorWidth: TURN_NAV_DEFAULT_WIDTH,
   polishBatchSize: 5,
   restoreTabsOnStartup: true,
-  theme: 'system',
+  theme: "system",
   maxPinnedTabs: 4,
   displayFirstUserMessage: true,
-  timeBase: 'modified',
-  sessionListStyle: 'loose',
+  timeBase: "modified",
+  sessionListStyle: "loose",
   // settingsPanelOffset 缺省 = 停靠右侧
   settingsPanelOpacity: PANEL_OPACITY_DEFAULT,
   // 毛玻璃默认勾选：面板带磨砂模糊质感
@@ -180,7 +187,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const { settings } = get();
     const newSettings = {
       ...settings,
-      watchDirectories: settings.watchDirectories.filter((d) => d.path !== path),
+      watchDirectories: settings.watchDirectories.filter(
+        (d) => d.path !== path,
+      ),
     };
     set({ settings: newSettings });
   },
@@ -243,7 +252,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({
       settings: {
         ...settings,
-        sidebarWidth: Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width)),
+        sidebarWidth: Math.max(
+          SIDEBAR_MIN_WIDTH,
+          Math.min(SIDEBAR_MAX_WIDTH, width),
+        ),
       },
     });
   },
@@ -253,7 +265,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({
       settings: {
         ...settings,
-        navigatorWidth: Math.max(TURN_NAV_MIN_WIDTH, Math.min(TURN_NAV_MAX_WIDTH, width)),
+        navigatorWidth: Math.max(
+          TURN_NAV_MIN_WIDTH,
+          Math.min(TURN_NAV_MAX_WIDTH, width),
+        ),
       },
     });
   },
@@ -264,7 +279,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         // 比例存储：0~1，窗口缩放后按比例重新定位；保留 4 位小数避免抖动
-        settingsPanelOffset: Math.round(Math.min(1, Math.max(0, offset)) * 10000) / 10000,
+        settingsPanelOffset:
+          Math.round(Math.min(1, Math.max(0, offset)) * 10000) / 10000,
       },
     });
   },
@@ -276,8 +292,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         ...settings,
         // 钳制到 0.3~0.95 并保留两位小数，避免浮点抖动
         settingsPanelOpacity:
-          Math.round(Math.min(PANEL_OPACITY_MAX, Math.max(PANEL_OPACITY_MIN, opacity)) * 100) /
-          100,
+          Math.round(
+            Math.min(PANEL_OPACITY_MAX, Math.max(PANEL_OPACITY_MIN, opacity)) *
+              100,
+          ) / 100,
       },
     });
   },
@@ -298,7 +316,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       settings: {
         ...settings,
         // 钳制到 50~200，四舍五入到整数，避免浮点抖动
-        contentZoom: Math.round(Math.min(CONTENT_ZOOM_MAX, Math.max(CONTENT_ZOOM_MIN, zoom))),
+        contentZoom: Math.round(
+          Math.min(CONTENT_ZOOM_MAX, Math.max(CONTENT_ZOOM_MIN, zoom)),
+        ),
       },
     });
   },

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   List,
   Folder,
@@ -9,19 +9,25 @@ import {
   RefreshCw,
   PanelLeftClose,
   PanelLeftOpen,
-} from 'lucide-react';
-import type { ViewMode, Project, SessionSummary, SortConfig, TimeField } from '../../types';
-import { FlatSessionList } from '../sessions/FlatSessionList';
-import { ProjectList } from '../projects/ProjectList';
-import { TimelineView } from '../sessions/TimelineView';
-import { SearchPanel } from '../search/SearchPanel';
-import SortBar from '../filter/SortBar';
-import { LoadingSkeleton } from '../common/LoadingSkeleton';
-import { LoadingBar } from '../common/LoadingBar';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { version } from '../../../package.json';
+} from "lucide-react";
+import type {
+  ViewMode,
+  Project,
+  SessionSummary,
+  SortConfig,
+  TimeField,
+} from "../../types";
+import { FlatSessionList } from "../sessions/FlatSessionList";
+import { ProjectList } from "../projects/ProjectList";
+import { TimelineView } from "../sessions/TimelineView";
+import { SearchPanel } from "../search/SearchPanel";
+import SortBar from "../filter/SortBar";
+import { LoadingSkeleton } from "../common/LoadingSkeleton";
+import { LoadingBar } from "../common/LoadingBar";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { version } from "../../../package.json";
 
-import { SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from '../../types';
+import { SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "../../types";
 
 interface ViewDef {
   mode: ViewMode;
@@ -30,10 +36,10 @@ interface ViewDef {
 }
 
 const VIEWS: ViewDef[] = [
-  { mode: 'flat', label: '全部', icon: <List className="h-4 w-4" /> },
-  { mode: 'by-project', label: '文件夹', icon: <Folder className="h-4 w-4" /> },
-  { mode: 'by-time', label: '时间线', icon: <Clock className="h-4 w-4" /> },
-  { mode: 'search', label: '搜索', icon: <Search className="h-4 w-4" /> },
+  { mode: "flat", label: "全部", icon: <List className="h-4 w-4" /> },
+  { mode: "by-project", label: "文件夹", icon: <Folder className="h-4 w-4" /> },
+  { mode: "by-time", label: "时间线", icon: <Clock className="h-4 w-4" /> },
+  { mode: "search", label: "搜索", icon: <Search className="h-4 w-4" /> },
 ];
 
 interface SessionNavigatorProps {
@@ -62,7 +68,11 @@ interface SessionNavigatorProps {
   onSelectProject: (path: string, providerName: string) => void;
   onSelectSession: (path: string, providerName: string, cwd?: string) => void;
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
-  onLocateInFolderList?: (filePath: string, projectPath: string, providerName: string) => void;
+  onLocateInFolderList?: (
+    filePath: string,
+    projectPath: string,
+    providerName: string,
+  ) => void;
   onSearchQueryChange: (query: string) => void;
   onSearch: (query: string) => void;
   onToggleHighlight: () => void;
@@ -105,7 +115,9 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
 }) => {
   const store = useSettingsStore();
   const navCollapsed = useSettingsStore((s) => s.settings.navCollapsed);
-  const autoSavePanelWidths = useSettingsStore((s) => s.settings.autoSavePanelWidths);
+  const autoSavePanelWidths = useSettingsStore(
+    (s) => s.settings.autoSavePanelWidths,
+  );
   const updateNavCollapsed = useSettingsStore((s) => s.updateNavCollapsed);
   const totalSessions =
     allSessions.length > 0
@@ -125,36 +137,42 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
     }
   }, [sidebarWidth]);
 
-  const onDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    draggingRef.current = true;
-    startXRef.current = e.clientX;
-    startWRef.current = width;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [width]);
+  const onDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      draggingRef.current = true;
+      startXRef.current = e.clientX;
+      startWRef.current = width;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [width],
+  );
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!draggingRef.current) return;
       const delta = e.clientX - startXRef.current; // 右拖 = 变宽
-      const next = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, startWRef.current + delta));
+      const next = Math.min(
+        SIDEBAR_MAX_WIDTH,
+        Math.max(SIDEBAR_MIN_WIDTH, startWRef.current + delta),
+      );
       setWidth(next);
     };
     const onUp = () => {
       if (!draggingRef.current) return;
       draggingRef.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
       if (autoSavePanelWidths ?? true) {
         store.updateSidebarWidth(width);
       }
     };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
     return () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
     };
   }, [width, store, autoSavePanelWidths]);
 
@@ -191,7 +209,10 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
       <LoadingBar
         visible={
           (isLoadingAll && allSessions.length > 0) ||
-          (isLoadingProject && (projectFilter ? (projectSessionsCache[projectFilter]?.length ?? 0) > 0 : false)) ||
+          (isLoadingProject &&
+            (projectFilter
+              ? (projectSessionsCache[projectFilter]?.length ?? 0) > 0
+              : false)) ||
           (isSearching && searchResults.length > 0)
         }
       />
@@ -216,7 +237,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               title="刷新列表"
             >
               <RefreshCw
-                className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
               />
             </button>
             <button
@@ -244,8 +265,8 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               onClick={() => onViewModeChange(mode)}
               className={`flex items-center justify-center gap-1 flex-1 py-1.5 text-[11px] font-medium rounded-md transition-colors ${
                 viewMode === mode
-                  ? 'bg-white text-primary-700 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? "bg-white text-primary-700 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               {icon}
@@ -255,7 +276,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
         </div>
 
         {/* 排序栏（时间线视图内部自己渲染，放在过滤条下方） */}
-        {viewMode !== 'by-time' && (
+        {viewMode !== "by-time" && (
           <SortBar config={sortConfig} onChange={onSortChange} />
         )}
       </div>
@@ -265,7 +286,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
         {/* 全部会话 */}
         <div
           className="absolute inset-0 overflow-y-auto"
-          style={{ display: viewMode === 'flat' ? undefined : 'none' }}
+          style={{ display: viewMode === "flat" ? undefined : "none" }}
         >
           {isLoadingAll && allSessions.length === 0 ? (
             <LoadingSkeleton rows={8} variant="list" />
@@ -284,7 +305,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
         {/* 文件夹 */}
         <div
           className="absolute inset-0 overflow-y-auto"
-          style={{ display: viewMode === 'by-project' ? undefined : 'none' }}
+          style={{ display: viewMode === "by-project" ? undefined : "none" }}
         >
           {isLoadingAll && projects.length === 0 ? (
             <LoadingSkeleton rows={6} variant="list" />
@@ -307,21 +328,23 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
         {/* 时间线 */}
         <div
           className="absolute inset-0 overflow-y-auto"
-          style={{ display: viewMode === 'by-time' ? undefined : 'none' }}
+          style={{ display: viewMode === "by-time" ? undefined : "none" }}
         >
           {isLoadingAll && allSessions.length === 0 ? (
             <LoadingSkeleton rows={8} variant="list" />
           ) : (
             <TimelineView
               sessions={
-                projectFilter ? (projectSessionsCache[projectFilter] ?? []) : allSessions
+                projectFilter
+                  ? (projectSessionsCache[projectFilter] ?? [])
+                  : allSessions
               }
               sortConfig={sortConfig}
               onSortChange={onSortChange}
               timeField={timeField}
               onTimeFieldChange={onTimeFieldChange}
               selectedSessionPath={selectedSessionPath}
-              filterContext={projectFilter ?? 'all'}
+              filterContext={projectFilter ?? "all"}
               filterContextLabel={
                 projectFilter
                   ? projects.find((p) => p.path === projectFilter)?.name
@@ -330,9 +353,7 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               onSelectSession={onSelectSession}
               onOpenInNewTab={onOpenInNewTab}
               onLocateInFolderList={onLocateInFolderList}
-              onClearFilter={
-                projectFilter ? onClearProjectFilter : undefined
-              }
+              onClearFilter={projectFilter ? onClearProjectFilter : undefined}
             />
           )}
         </div>
@@ -340,14 +361,14 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
         {/* 搜索 */}
         <div
           className="absolute inset-0 overflow-y-auto"
-          style={{ display: viewMode === 'search' ? undefined : 'none' }}
+          style={{ display: viewMode === "search" ? undefined : "none" }}
         >
           <SearchPanel
             query={searchQuery}
             results={searchResults}
             isLoading={isSearching}
             highlightEnabled={highlightEnabled}
-            visible={viewMode === 'search'}
+            visible={viewMode === "search"}
             onQueryChange={onSearchQueryChange}
             onSearch={onSearch}
             onSelectSession={onSelectSession}

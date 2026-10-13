@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   X,
   FolderPlus,
@@ -24,10 +24,10 @@ import {
   Keyboard,
   ZoomIn,
   ZoomOut,
-} from 'lucide-react';
-import { open } from '@tauri-apps/plugin-dialog';
-import { useSettingsStore } from '../../stores/settingsStore';
-import type { ThemeMode } from '../../types';
+} from "lucide-react";
+import { open } from "@tauri-apps/plugin-dialog";
+import { useSettingsStore } from "../../stores/settingsStore";
+import type { ThemeMode } from "../../types";
 import {
   SIDEBAR_MIN_WIDTH,
   SIDEBAR_MAX_WIDTH,
@@ -42,11 +42,11 @@ import {
   CONTENT_ZOOM_MAX,
   CONTENT_ZOOM_DEFAULT,
   CONTENT_ZOOM_STEP,
-} from '../../types';
-import * as tauri from '../../utils/tauri';
-import { getProviderEnabledColor } from '../../utils/providers';
-import { DockablePanel } from '../common/DockablePanel';
-import { runOpenFolderAction } from '../../utils/openFolder';
+} from "../../types";
+import * as tauri from "../../utils/tauri";
+import { getProviderEnabledColor } from "../../utils/providers";
+import { DockablePanel } from "../common/DockablePanel";
+import { runOpenFolderAction } from "../../utils/openFolder";
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -75,7 +75,10 @@ const TITLE_SLIDER_CLASSES = `w-28 h-2 appearance-none bg-transparent cursor-def
 const PANEL_TRANSPARENCY_MIN_PCT = Math.round((1 - PANEL_OPACITY_MAX) * 100);
 const PANEL_TRANSPARENCY_MAX_PCT = Math.round((1 - PANEL_OPACITY_MIN) * 100);
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSettingsSaved }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({
+  onClose,
+  onSettingsSaved,
+}) => {
   const store = useSettingsStore();
   const { settings } = store;
   const panelOpacity = settings.settingsPanelOpacity ?? PANEL_OPACITY_DEFAULT;
@@ -84,17 +87,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
   // 毛玻璃开关：true 时面板背景叠加 backdrop-filter 磨砂模糊（缺省视为开启，与默认设置一致）
   const glass = settings.settingsPanelGlass ?? true;
   const contentZoom = settings.contentZoom ?? CONTENT_ZOOM_DEFAULT;
-  const [saveMessage, setSaveMessage] = useState('');
-  const [newDir, setNewDir] = useState('');
+  const [saveMessage, setSaveMessage] = useState("");
+  const [newDir, setNewDir] = useState("");
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
 
   // 防御：确保 searchColors 存在
-  const searchColors = settings.searchColors || { search: '#fef08a', find: '#fed7aa' };
+  const searchColors = settings.searchColors || {
+    search: "#fef08a",
+    find: "#fed7aa",
+  };
 
   const handlePickDirectory = async () => {
-    await runOpenFolderAction('打开文件夹选择器', async () => {
+    await runOpenFolderAction("打开文件夹选择器", async () => {
       const selected = await open({ directory: true, multiple: false });
-      if (selected && typeof selected === 'string') {
+      if (selected && typeof selected === "string") {
         setNewDir(selected);
       }
     });
@@ -104,7 +110,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
     const trimmed = newDir.trim();
     if (trimmed && !settings.watchDirectories.some((d) => d.path === trimmed)) {
       store.addWatchDirectory(trimmed);
-      setNewDir('');
+      setNewDir("");
     }
   };
 
@@ -118,20 +124,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
       setCopiedPath(path);
       setTimeout(() => setCopiedPath(null), 2000);
     } catch (err) {
-      console.error('复制路径失败:', err);
+      console.error("复制路径失败:", err);
     }
   };
 
   const handleSave = async () => {
     await store.save();
-    setSaveMessage('设置已保存');
-    setTimeout(() => setSaveMessage(''), 2000);
+    setSaveMessage("设置已保存");
+    setTimeout(() => setSaveMessage(""), 2000);
     // 通知父组件设置已保存，以便刷新数据
     onSettingsSaved?.();
   };
 
   const handleOpenSettingsFile = async () => {
-    await runOpenFolderAction('打开设置文件', async () => {
+    await runOpenFolderAction("打开设置文件", async () => {
       const path = await tauri.getSettingsPath();
       await tauri.openContainingFolder(path);
     });
@@ -157,7 +163,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             className="flex items-center gap-1 min-w-0 flex-1"
             title="面板透明度：数值越大越透明（5% ~ 95%）"
           >
-            <span className="text-xs text-gray-400 shrink-0 cursor-default">透明度</span>
+            <span className="text-xs text-gray-400 shrink-0 cursor-default">
+              透明度
+            </span>
             <input
               type="range"
               min={PANEL_TRANSPARENCY_MIN_PCT}
@@ -165,7 +173,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               step={5}
               value={panelTransparencyPct}
               onChange={(e) =>
-                store.updateSettingsPanelOpacity((100 - Number(e.target.value)) / 100)
+                store.updateSettingsPanelOpacity(
+                  (100 - Number(e.target.value)) / 100,
+                )
               }
               aria-label="面板透明度"
               className={`${TITLE_SLIDER_CLASSES} flex-1 min-w-14`}
@@ -207,31 +217,33 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               🔌 Agent 支持
             </h3>
             <div className="space-y-2">
-              {Object.entries(settings.providerEnabled).map(([name, enabled]) => (
-                <label
-                  key={name}
-                  className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={enabled}
-                    onChange={(e) =>
-                      store.toggleProvider(name, e.target.checked)
-                    }
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="capitalize">{name.replace('_', ' ')}</span>
-                  <span
-                    className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
-                      enabled
-                        ? getProviderEnabledColor(name)
-                        : 'bg-gray-100 text-gray-400'
-                    }`}
+              {Object.entries(settings.providerEnabled).map(
+                ([name, enabled]) => (
+                  <label
+                    key={name}
+                    className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer"
                   >
-                    {enabled ? '已启用' : '未启用'}
-                  </span>
-                </label>
-              ))}
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={(e) =>
+                        store.toggleProvider(name, e.target.checked)
+                      }
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="capitalize">{name.replace("_", " ")}</span>
+                    <span
+                      className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
+                        enabled
+                          ? getProviderEnabledColor(name)
+                          : "bg-gray-100 text-gray-400"
+                      }`}
+                    >
+                      {enabled ? "已启用" : "未启用"}
+                    </span>
+                  </label>
+                ),
+              )}
             </div>
           </section>
 
@@ -243,9 +255,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             </h3>
             <div className="space-y-1.5 mb-3">
               {settings.watchDirectories.length === 0 && (
-                <p className="text-xs text-gray-400 py-2">
-                  暂无自定义监控目录
-                </p>
+                <p className="text-xs text-gray-400 py-2">暂无自定义监控目录</p>
               )}
               {settings.watchDirectories.map((dir) => (
                 <div
@@ -258,14 +268,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                     onClick={() => store.toggleWatchDirectory(dir.path)}
                     className={`flex-shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${
                       dir.enabled
-                        ? 'bg-green-500 border-green-500'
-                        : 'bg-gray-300 border-gray-300'
+                        ? "bg-green-500 border-green-500"
+                        : "bg-gray-300 border-gray-300"
                     }`}
-                    title={dir.enabled ? '已启用，点击禁用' : '已禁用，点击启用'}
+                    title={
+                      dir.enabled ? "已启用，点击禁用" : "已禁用，点击启用"
+                    }
                   />
                   <span
                     className={`flex-1 text-xs truncate ${
-                      dir.enabled ? 'text-gray-600' : 'text-gray-400 line-through'
+                      dir.enabled
+                        ? "text-gray-600"
+                        : "text-gray-400 line-through"
                     }`}
                   >
                     {dir.path}
@@ -298,7 +312,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   type="text"
                   value={newDir}
                   onChange={(e) => setNewDir(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddDirectory()}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddDirectory()}
                   placeholder="粘贴路径或点击浏览..."
                   className="flex-1 border-none outline-none bg-transparent text-xs min-w-0"
                 />
@@ -387,27 +401,27 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             <div className="space-y-2">
               {[
                 {
-                  key: 'showThinking',
-                  label: '显示思考过程',
+                  key: "showThinking",
+                  label: "显示思考过程",
                   icon: <Brain className="h-3.5 w-3.5" />,
                 },
                 {
-                  key: 'showToolCalls',
-                  label: '显示工具调用',
+                  key: "showToolCalls",
+                  label: "显示工具调用",
                   icon: <Wrench className="h-3.5 w-3.5" />,
                 },
                 {
-                  key: 'showToolResults',
-                  label: '显示工具结果',
+                  key: "showToolResults",
+                  label: "显示工具结果",
                   icon: <FileOutput className="h-3.5 w-3.5" />,
                 },
                 {
-                  key: 'hideEmptyToolResults',
-                  label: '隐藏空工具结果',
+                  key: "hideEmptyToolResults",
+                  label: "隐藏空工具结果",
                 },
                 {
-                  key: 'collapseConsecutive',
-                  label: '合并连发',
+                  key: "collapseConsecutive",
+                  label: "合并连发",
                 },
               ].map(({ key, label, icon }) => (
                 <label
@@ -440,28 +454,28 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               布局
             </h3>
             <div className="space-y-0.5">
-              {([
+              {[
                 {
-                  label: '左侧边栏（会话记录导航）',
+                  label: "左侧边栏（会话记录导航）",
                   min: SIDEBAR_MIN_WIDTH,
                   max: SIDEBAR_MAX_WIDTH,
                   value: settings.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH,
                   onChange: (v: number) => store.updateSidebarWidth(v),
                 },
                 {
-                  label: '右侧边栏（轮次导航）',
+                  label: "右侧边栏（轮次导航）",
                   min: TURN_NAV_MIN_WIDTH,
                   max: TURN_NAV_MAX_WIDTH,
                   value: settings.navigatorWidth ?? TURN_NAV_DEFAULT_WIDTH,
                   onChange: (v: number) => store.updateNavigatorWidth(v),
                 },
-              ]).map(({ label, min, max, value, onChange }) => {
+              ].map(({ label, min, max, value, onChange }) => {
                 const pct = ((value - min) / (max - min)) * 100;
                 return (
                   <div
                     key={label}
                     className="grid items-end"
-                    style={{ gridTemplateColumns: '176px 1fr' }}
+                    style={{ gridTemplateColumns: "176px 1fr" }}
                   >
                     <label className="text-sm text-gray-600 pb-0.5">
                       {label}
@@ -472,7 +486,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                           className="absolute text-[10px] text-gray-600 font-medium tabular-nums leading-none"
                           style={{
                             left: `calc(${pct}% + 7px - ${pct * 0.14}px)`,
-                            transform: 'translateX(-50%)',
+                            transform: "translateX(-50%)",
                           }}
                         >
                           {value}
@@ -504,14 +518,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             {/* 内容缩放 */}
             <div className="flex items-center justify-between">
               <div className="mr-4">
-                <span className="text-sm font-medium text-gray-700">内容缩放</span>
+                <span className="text-sm font-medium text-gray-700">
+                  内容缩放
+                </span>
                 <p className="text-xs text-gray-400 mt-0.5">
                   聊天内容区缩放，Ctrl + 滚轮 / Ctrl + 0 快速调节
                 </p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button
-                  onClick={() => store.updateContentZoom(contentZoom - CONTENT_ZOOM_STEP)}
+                  onClick={() =>
+                    store.updateContentZoom(contentZoom - CONTENT_ZOOM_STEP)
+                  }
                   disabled={contentZoom <= CONTENT_ZOOM_MIN}
                   className="p-1.5 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   title="缩小"
@@ -522,7 +540,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                   {contentZoom}%
                 </span>
                 <button
-                  onClick={() => store.updateContentZoom(contentZoom + CONTENT_ZOOM_STEP)}
+                  onClick={() =>
+                    store.updateContentZoom(contentZoom + CONTENT_ZOOM_STEP)
+                  }
                   disabled={contentZoom >= CONTENT_ZOOM_MAX}
                   className="p-1.5 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   title="放大"
@@ -553,22 +573,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               <button
                 onClick={() =>
                   store.updateAutoSavePanelWidths(
-                    !(settings.autoSavePanelWidths ?? true)
+                    !(settings.autoSavePanelWidths ?? true),
                   )
                 }
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                   (settings.autoSavePanelWidths ?? true)
-                    ? 'bg-primary-600'
-                    : 'bg-gray-300'
+                    ? "bg-primary-600"
+                    : "bg-gray-300"
                 }`}
               >
                 <span
                   className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform ${
                     (settings.autoSavePanelWidths ?? true)
-                      ? 'translate-x-[18px]'
-                      : 'translate-x-[3px]'
+                      ? "translate-x-[18px]"
+                      : "translate-x-[3px]"
                   }`}
-                  style={{ backgroundColor: '#fff' }}
+                  style={{ backgroundColor: "#fff" }}
                 />
               </button>
             </div>
@@ -586,22 +606,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               <button
                 onClick={() =>
                   store.updateRestoreTabsOnStartup(
-                    !(settings.restoreTabsOnStartup ?? true)
+                    !(settings.restoreTabsOnStartup ?? true),
                   )
                 }
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                   (settings.restoreTabsOnStartup ?? true)
-                    ? 'bg-primary-600'
-                    : 'bg-gray-300'
+                    ? "bg-primary-600"
+                    : "bg-gray-300"
                 }`}
               >
                 <span
                   className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform ${
                     (settings.restoreTabsOnStartup ?? true)
-                      ? 'translate-x-[18px]'
-                      : 'translate-x-[3px]'
+                      ? "translate-x-[18px]"
+                      : "translate-x-[3px]"
                   }`}
-                  style={{ backgroundColor: '#fff' }}
+                  style={{ backgroundColor: "#fff" }}
                 />
               </button>
             </div>
@@ -624,7 +644,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                  <option key={n} value={n}>{n}</option>
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
                 ))}
               </select>
             </div>
@@ -647,35 +669,43 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
                 className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 {[5, 10, 20, 30, 50].map((n) => (
-                  <option key={n} value={n}>{n} 个/批</option>
+                  <option key={n} value={n}>
+                    {n} 个/批
+                  </option>
                 ))}
               </select>
             </div>
             {/* 会话列表样式 */}
             <div className="flex items-center justify-between">
               <div className="mr-4">
-                <span className="text-sm font-medium text-gray-700">会话列表样式</span>
+                <span className="text-sm font-medium text-gray-700">
+                  会话列表样式
+                </span>
                 <p className="text-xs text-gray-400 mt-0.5">
                   紧凑压缩间距一屏显示更多会话，宽松更易浏览
                 </p>
               </div>
               <div className="flex rounded-full bg-gray-100/70 p-0.5 flex-shrink-0">
                 <button
-                  onClick={() => store.setSetting({ sessionListStyle: 'compact' })}
+                  onClick={() =>
+                    store.setSetting({ sessionListStyle: "compact" })
+                  }
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
-                    (settings.sessionListStyle ?? 'loose') === 'compact'
-                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
-                      : 'text-gray-500 hover:text-gray-700'
+                    (settings.sessionListStyle ?? "loose") === "compact"
+                      ? "bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   紧凑
                 </button>
                 <button
-                  onClick={() => store.setSetting({ sessionListStyle: 'loose' })}
+                  onClick={() =>
+                    store.setSetting({ sessionListStyle: "loose" })
+                  }
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
-                    (settings.sessionListStyle ?? 'loose') === 'loose'
-                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
-                      : 'text-gray-500 hover:text-gray-700'
+                    (settings.sessionListStyle ?? "loose") === "loose"
+                      ? "bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   宽松
@@ -686,28 +716,34 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             {/* 会话标题 */}
             <div className="flex items-center justify-between">
               <div className="mr-4">
-                <span className="text-sm font-medium text-gray-700">会话标题</span>
+                <span className="text-sm font-medium text-gray-700">
+                  会话标题
+                </span>
                 <p className="text-xs text-gray-400 mt-0.5">
                   控制会话列表标题的显示来源
                 </p>
               </div>
               <div className="flex rounded-full bg-gray-100/70 p-0.5 flex-shrink-0">
                 <button
-                  onClick={() => store.setSetting({ displayFirstUserMessage: true })}
+                  onClick={() =>
+                    store.setSetting({ displayFirstUserMessage: true })
+                  }
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
-                    (settings.displayFirstUserMessage !== false)
-                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
-                      : 'text-gray-500 hover:text-gray-700'
+                    settings.displayFirstUserMessage !== false
+                      ? "bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   第一条
                 </button>
                 <button
-                  onClick={() => store.setSetting({ displayFirstUserMessage: false })}
+                  onClick={() =>
+                    store.setSetting({ displayFirstUserMessage: false })
+                  }
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
-                    (settings.displayFirstUserMessage === false)
-                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
-                      : 'text-gray-500 hover:text-gray-700'
+                    settings.displayFirstUserMessage === false
+                      ? "bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   最后一条
@@ -718,35 +754,36 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
             {/* 时间基准 */}
             <div className="flex items-center justify-between">
               <div className="mr-4">
-                <span className="text-sm font-medium text-gray-700">时间基准</span>
+                <span className="text-sm font-medium text-gray-700">
+                  时间基准
+                </span>
                 <p className="text-xs text-gray-400 mt-0.5">
                   左侧会话列表的时间显示基准
                 </p>
               </div>
               <div className="flex rounded-full bg-gray-100/70 p-0.5 flex-shrink-0">
                 <button
-                  onClick={() => store.setSetting({ timeBase: 'created' })}
+                  onClick={() => store.setSetting({ timeBase: "created" })}
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
-                    (settings.timeBase ?? 'created') === 'created'
-                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
-                      : 'text-gray-500 hover:text-gray-700'
+                    (settings.timeBase ?? "created") === "created"
+                      ? "bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   创建时间
                 </button>
                 <button
-                  onClick={() => store.setSetting({ timeBase: 'modified' })}
+                  onClick={() => store.setSetting({ timeBase: "modified" })}
                   className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all ${
-                    settings.timeBase === 'modified'
-                      ? 'bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25'
-                      : 'text-gray-500 hover:text-gray-700'
+                    settings.timeBase === "modified"
+                      ? "bg-gradient-to-b from-primary-500 to-primary-600 text-white shadow shadow-primary-900/25"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   修改时间
                 </button>
               </div>
             </div>
-
           </section>
 
           {/* 快捷键 */}
@@ -781,29 +818,53 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               主题
             </h3>
             <div className="grid grid-cols-4 gap-2">
-              {([
-                { value: 'light' as ThemeMode, label: '浅色', icon: Sun, preview: 'bg-white' },
-                { value: 'dark' as ThemeMode, label: '深色', icon: Moon, preview: 'bg-gray-800' },
-                { value: 'eyecare' as ThemeMode, label: '护眼', icon: Leaf, preview: 'bg-[#c7edcc]' },
-                { value: 'system' as ThemeMode, label: '系统', icon: Monitor, preview: 'bg-gradient-to-br from-white to-gray-800' },
-              ]).map(({ value, label, icon: Icon, preview }) => {
-                const isSelected = (settings.theme ?? 'system') === value;
+              {[
+                {
+                  value: "light" as ThemeMode,
+                  label: "浅色",
+                  icon: Sun,
+                  preview: "bg-white",
+                },
+                {
+                  value: "dark" as ThemeMode,
+                  label: "深色",
+                  icon: Moon,
+                  preview: "bg-gray-800",
+                },
+                {
+                  value: "eyecare" as ThemeMode,
+                  label: "护眼",
+                  icon: Leaf,
+                  preview: "bg-[#c7edcc]",
+                },
+                {
+                  value: "system" as ThemeMode,
+                  label: "系统",
+                  icon: Monitor,
+                  preview: "bg-gradient-to-br from-white to-gray-800",
+                },
+              ].map(({ value, label, icon: Icon, preview }) => {
+                const isSelected = (settings.theme ?? "system") === value;
                 return (
                   <button
                     key={value}
                     onClick={() => store.updateTheme(value)}
                     className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg border-2 transition-all ${
                       isSelected
-                        ? 'border-primary-500 bg-primary-50 shadow-sm'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? "border-primary-500 bg-primary-50 shadow-sm"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-md border border-gray-300 shadow-sm overflow-hidden ${preview}`}>
+                    <div
+                      className={`w-8 h-8 rounded-md border border-gray-300 shadow-sm overflow-hidden ${preview}`}
+                    >
                       <Icon className="h-5 w-5 m-1.5 text-gray-500 mix-blend-difference invert" />
                     </div>
-                    <span className={`text-xs font-medium ${
-                      isSelected ? 'text-primary-700' : 'text-gray-600'
-                    }`}>
+                    <span
+                      className={`text-xs font-medium ${
+                        isSelected ? "text-primary-700" : "text-gray-600"
+                      }`}
+                    >
                       {label}
                     </span>
                   </button>
@@ -811,7 +872,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, onSetting
               })}
             </div>
           </section>
-
         </div>
 
         {/* Footer（半透明，让玻璃背景透出来，透明度设置可见） */}

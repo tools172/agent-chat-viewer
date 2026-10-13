@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useEffect } from "react";
+import { useSettingsStore } from "../stores/settingsStore";
 
 /**
  * Hook to load and manage application settings.
