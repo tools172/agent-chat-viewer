@@ -14,6 +14,11 @@ pub struct FilterConfig {
     /// 合并连发：折叠同一角色的连续消息，只显示最后一条
     #[serde(default)]
     pub collapse_consecutive: bool,
+    /// 显示「过程」：关闭后隐藏「含工具调用的 assistant 消息」里的叙述文本
+    /// （agent 在工具调用之间的工作叙述），只保留最终回复；工具调用/结果
+    /// 仍由各自开关控制。默认关闭（默认隐藏叙述）。
+    #[serde(default)]
+    pub show_process: bool,
 }
 
 impl Default for FilterConfig {
@@ -26,6 +31,7 @@ impl Default for FilterConfig {
             show_system_messages: false,
             show_file_snapshots: false,
             collapse_consecutive: false,
+            show_process: false,
         }
     }
 }

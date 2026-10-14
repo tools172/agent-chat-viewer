@@ -388,6 +388,7 @@ fn test_filter_all_off_shows_everything() {
         show_system_messages: true,
         show_file_snapshots: true,
         collapse_consecutive: false,
+        show_process: true,
     };
     let filtered = services::filter::filter_events(&events, &filter);
     let filtered_total: usize = filtered.iter().map(|e| e.content.len()).sum();
@@ -662,6 +663,7 @@ fn test_serialize_roundtrip_with_collapse_consecutive() {
         show_system_messages: true,
         show_file_snapshots: true,
         collapse_consecutive: true,
+        show_process: true,
     };
 
     let json = serde_json::to_string(&config).expect("序列化不应失败");

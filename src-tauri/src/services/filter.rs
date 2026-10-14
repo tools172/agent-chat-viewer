@@ -53,9 +53,21 @@ fn should_show_block(block: &ContentBlock, config: &FilterConfig, _event_type: &
 
 /// Filter individual content blocks within an event
 fn filter_event_content(event: &ChatEvent, config: &FilterConfig) -> ChatEvent {
+    let has_tool_use = event
+        .content
+        .iter()
+        .any(|b| matches!(b, ContentBlock::ToolUse { .. }));
     let filtered_content: Vec<ContentBlock> = event
         .content
         .iter()
+        // 「过程」过滤：关闭时隐藏「含工具调用的 assistant 消息」里的 text 叙述
+        .filter(|block| {
+            if !config.show_process && has_tool_use {
+                !matches!(block, ContentBlock::Text { .. })
+            } else {
+                true
+            }
+        })
         .filter(|block| should_show_block(block, config, &event.event_type))
         .cloned()
         .collect();
@@ -249,5 +261,73 @@ mod tests {
             filtered[0].content[0],
             ContentBlock::ToolResult { .. }
         ));
+    }
+
+    #[test]
+    fn test_filter_hides_process_narration_by_default() {
+        // show_process 默认 false：隐藏「含 tool_use」事件里的叙述 text
+        let config = FilterConfig::default();
+        let events = vec![make_event(
+            EventType::Assistant,
+            vec![
+                ContentBlock::Text {
+                    text: "Let me check the file".to_string(),
+                },
+                ContentBlock::ToolUse {
+                    tool_id: "call_1".to_string(),
+                    tool_name: "read".to_string(),
+                    tool_input: serde_json::json!({"path": "a.ts"}),
+                },
+            ],
+        )];
+
+        let filtered = filter_events(&events, &config);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].content.len(), 1);
+        assert!(matches!(
+            filtered[0].content[0],
+            ContentBlock::ToolUse { .. }
+        ));
+    }
+
+    #[test]
+    fn test_filter_shows_process_narration_when_enabled() {
+        let config = FilterConfig {
+            show_process: true,
+            ..FilterConfig::default()
+        };
+        let events = vec![make_event(
+            EventType::Assistant,
+            vec![
+                ContentBlock::Text {
+                    text: "Let me check".to_string(),
+                },
+                ContentBlock::ToolUse {
+                    tool_id: "call_1".to_string(),
+                    tool_name: "read".to_string(),
+                    tool_input: serde_json::json!({"path": "a.ts"}),
+                },
+            ],
+        )];
+
+        let filtered = filter_events(&events, &config);
+        assert_eq!(filtered[0].content.len(), 2);
+        assert!(matches!(filtered[0].content[0], ContentBlock::Text { .. }));
+    }
+
+    #[test]
+    fn test_filter_keeps_final_answer_text_without_tool_use() {
+        // 纯 text 的 assistant 事件（无 tool_use）是最终答复，text 应保留
+        let config = FilterConfig::default();
+        let events = vec![make_event(
+            EventType::Assistant,
+            vec![ContentBlock::Text {
+                text: "最终答复".to_string(),
+            }],
+        )];
+
+        let filtered = filter_events(&events, &config);
+        assert_eq!(filtered.len(), 1);
+        assert!(matches!(filtered[0].content[0], ContentBlock::Text { .. }));
     }
 }

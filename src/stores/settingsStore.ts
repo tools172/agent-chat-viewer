@@ -68,6 +68,7 @@ const defaultSettings: AppSettings = {
     showSystemMessages: false,
     showFileSnapshots: false,
     collapseConsecutive: false,
+    showProcess: false,
   },
   providerEnabled: {
     claude_code: true,

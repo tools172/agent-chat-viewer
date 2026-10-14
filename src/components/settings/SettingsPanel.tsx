@@ -24,6 +24,7 @@ import {
   Keyboard,
   ZoomIn,
   ZoomOut,
+  Workflow,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useSettingsStore } from "../../stores/settingsStore";
@@ -404,6 +405,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   key: "showThinking",
                   label: "显示思考过程",
                   icon: <Brain className="h-3.5 w-3.5" />,
+                },
+                {
+                  key: "showProcess",
+                  label: "显示过程",
+                  icon: <Workflow className="h-3.5 w-3.5" />,
                 },
                 {
                   key: "showToolCalls",

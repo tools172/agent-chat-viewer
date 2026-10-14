@@ -147,7 +147,16 @@ function isOriginallyAdjacent(
 }
 
 function filterEventContent(event: ChatEvent, config: FilterConfig): ChatEvent {
-  const filteredContent = event.content.filter((block) =>
+  let blocks = event.content;
+  // 「过程」过滤：关闭时隐藏「含工具调用的 assistant 消息」里的 text 叙述，
+  // 只保留最终回复（纯 text 的 assistant 事件）；工具调用/结果仍由各自开关控制。
+  if (config.showProcess === false) {
+    const hasToolUse = event.content.some((b) => b.blockType === "tool_use");
+    if (hasToolUse) {
+      blocks = event.content.filter((b) => b.blockType !== "text");
+    }
+  }
+  const filteredContent = blocks.filter((block) =>
     shouldShowBlock(block, config),
   );
   return { ...event, content: filteredContent };

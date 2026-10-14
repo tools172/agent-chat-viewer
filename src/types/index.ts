@@ -160,6 +160,8 @@ export interface FilterConfig {
   showFileSnapshots: boolean;
   /** 合并连发：折叠同一角色的连续消息，只显示最后一条 */
   collapseConsecutive?: boolean;
+  /** 显示「过程」：关闭后隐藏「含工具调用的 assistant 消息」里的叙述文本，只保留最终回复 */
+  showProcess?: boolean;
 }
 
 export interface SearchColors {
