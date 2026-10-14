@@ -2,15 +2,16 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::models::{ChatEvent, SessionDetail, SessionSummary};
-use crate::providers::base::ChatProvider;
+use crate::providers::base::{ChatProvider, ParseError};
+use crate::utils::path::read_session_text;
 
 /// Parse a JSONL session file and return all parsed events
 pub fn parse_session_file(
     file_path: &Path,
     provider: &Arc<dyn ChatProvider>,
 ) -> Result<Vec<ChatEvent>, String> {
-    let content =
-        std::fs::read_to_string(file_path).map_err(|e| format!("Failed to read file: {}", e))?;
+    let content = read_session_text(file_path)
+        .ok_or_else(|| format!("Failed to read file: {}", file_path.display()))?;
 
     let mut events = Vec::new();
 
@@ -22,6 +23,9 @@ pub fn parse_session_file(
 
         match provider.parse_event(trimmed) {
             Ok(event) => events.push(event),
+            // Bookkeeping lines a provider intentionally drops (e.g. DeepSeek
+            // Harness turn/step boundaries) are skipped silently.
+            Err(ParseError::Skipped) => {}
             Err(e) => {
                 // Log the error but continue parsing
                 eprintln!(
@@ -131,7 +135,7 @@ pub fn create_session_summary(
     provider: &Arc<dyn ChatProvider>,
     quick: bool,
 ) -> Option<SessionSummary> {
-    let content = std::fs::read_to_string(file_path).ok()?;
+    let content = read_session_text(file_path)?;
     let metadata = std::fs::metadata(file_path).ok()?;
     let file_size = metadata.len();
     let file_mtime = metadata
@@ -280,7 +284,7 @@ pub struct SessionPolish {
 
 /// 对单个会话文件执行内容解析，返回 polish 结果。
 pub fn polish_session(file_path: &Path, provider: &Arc<dyn ChatProvider>) -> Option<SessionPolish> {
-    let content = std::fs::read_to_string(file_path).ok()?;
+    let content = read_session_text(file_path)?;
     let mut display = String::from("(Empty session)");
     let mut last_user_text = String::new();
     let mut timestamp = String::new();

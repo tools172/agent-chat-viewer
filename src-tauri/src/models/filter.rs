@@ -173,6 +173,7 @@ impl Default for AppSettings {
         provider_enabled.insert("codex".to_string(), true);
         provider_enabled.insert("cursor".to_string(), true);
         provider_enabled.insert("openclaw".to_string(), false);
+        provider_enabled.insert("deepseek_harness".to_string(), false);
 
         Self {
             watch_directories: Vec::new(),

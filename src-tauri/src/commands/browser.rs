@@ -66,7 +66,7 @@ pub(crate) fn discover_session_files(dir: &Path, depth: u32) -> HashMap<PathBuf,
             let files: Vec<PathBuf> = session_entries
                 .flatten()
                 .map(|e| e.path())
-                .filter(|p| crate::utils::path::is_jsonl_file(p))
+                .filter(|p| crate::utils::path::is_session_data_file(p))
                 .collect();
             if !files.is_empty() {
                 projects.insert(dir.to_path_buf(), files);
@@ -74,11 +74,11 @@ pub(crate) fn discover_session_files(dir: &Path, depth: u32) -> HashMap<PathBuf,
         }
     }
 
-    // 检查当前目录下的直接 .jsonl 文件
+    // 检查当前目录下的直接 .jsonl / .zstd 文件
     let direct_files: Vec<PathBuf> = entries
         .iter()
         .map(|e| e.path())
-        .filter(|p| p.is_file() && crate::utils::path::is_jsonl_file(p))
+        .filter(|p| p.is_file() && crate::utils::path::is_session_data_file(p))
         .collect();
     if !direct_files.is_empty() {
         projects
@@ -107,8 +107,8 @@ pub(crate) fn detect_provider_from_file(
     file_path: &Path,
     registry: &ProviderRegistry,
 ) -> Option<String> {
-    // 只读文件的前 4KB 足够覆盖第一行 JSON
-    if let Ok(content) = std::fs::read_to_string(file_path) {
+    // 只读文件的前几行足够覆盖第一行 JSON；zstd 压缩的会话会透明解压
+    if let Some(content) = crate::utils::path::read_session_text(file_path) {
         if let Some(provider) = registry.detect_by_content(&content) {
             return Some(provider.name().to_string());
         }
@@ -623,7 +623,7 @@ pub async fn search_sessions(
                         None => continue,
                     };
                     for file_path in files {
-                        if let Ok(content) = std::fs::read_to_string(file_path) {
+                        if let Some(content) = crate::utils::path::read_session_text(file_path) {
                             if content.to_lowercase().contains(&query_lower) {
                                 if let Some(summary) =
                                     crate::services::parser::create_session_summary(
@@ -662,7 +662,7 @@ pub async fn search_sessions(
                         session_files = provider.enumerate_session_files(base_path);
                     }
                     for file_path in &session_files {
-                        if let Ok(content) = std::fs::read_to_string(file_path) {
+                        if let Some(content) = crate::utils::path::read_session_text(file_path) {
                             if content.to_lowercase().contains(&query_lower) {
                                 let cwd = provider
                                     .read_session_cwd_from_file(file_path)
@@ -697,7 +697,9 @@ pub async fn search_sessions(
                                 .map(|n| n.to_string_lossy().to_string())
                                 .unwrap_or_default();
                             for file_path in provider.enumerate_session_files(&project_path) {
-                                if let Ok(content) = std::fs::read_to_string(&file_path) {
+                                if let Some(content) =
+                                    crate::utils::path::read_session_text(&file_path)
+                                {
                                     if content.to_lowercase().contains(&query_lower) {
                                         if let Some(summary) =
                                             crate::services::parser::create_session_summary(

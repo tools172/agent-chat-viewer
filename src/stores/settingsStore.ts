@@ -74,6 +74,7 @@ const defaultSettings: AppSettings = {
     codex: true,
     cursor: true,
     openclaw: false,
+    deepseek_harness: false,
   },
   searchColors: {
     search: "#fef08a",

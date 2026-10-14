@@ -70,6 +70,7 @@ mod tests {
         assert!(settings.provider_enabled.contains_key("codex"));
         assert!(settings.provider_enabled.contains_key("cursor"));
         assert!(settings.provider_enabled.contains_key("openclaw"));
+        assert!(settings.provider_enabled.contains_key("deepseek_harness"));
         assert!(!settings.default_filter.show_thinking);
     }
 

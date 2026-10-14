@@ -1,6 +1,6 @@
 # Provider 检测策略
 
-本文档说明 Agent Chat Viewer 如何判断一个 `.jsonl` 会话文件属于哪个 Agent（Claude Code、Cursor、Codex、OpenClaw 或未来的其他工具），以及如何从任意目录结构中自动发现和组织会话记录。
+本文档说明 Agent Chat Viewer 如何判断一个会话文件属于哪个 Agent（Claude Code、Cursor、Codex、OpenClaw、DeepSeek Harness 或未来的其他工具），以及如何从任意目录结构中自动发现和组织会话记录。
 
 ---
 
@@ -193,7 +193,7 @@ impl ProviderRegistry {
 }
 ```
 
-**检测顺序**：按注册顺序依次尝试，第一个返回 `true` 的 provider 胜出。当前注册顺序为 Claude Code → Codex → OpenClaw，但指纹设计保证了互斥性，顺序不影响结果。
+**检测顺序**：`ProviderRegistry` 用 `HashMap` 存储，迭代顺序不保证等于注册顺序，因此各 provider 的指纹必须**互斥**——每个文件只可能被一个 provider 认领，顺序不影响结果。
 
 ### 当前指纹对照表
 
@@ -202,7 +202,8 @@ impl ProviderRegistry {
 | Claude Code | `type: "user"` / `"assistant"` / `"system"` | 其他 provider 不会有这些 type 值 |
 | Cursor | `type: "session_meta"` + `composerId` 字段 | `session_meta` 与 Codex 同名但由 `composerId` 字段区分 |
 | Codex (OpenAI) | `type: "session_meta"` / `"response_item"` / `"event_msg"` | Codex 的 `session_meta` 无 `composerId`，由 `payload.id` 区分 |
-| OpenClaw | `type: "session"` + `version` 字段 | Claude Code / Codex 不会有 `type: "session"` |
+| OpenClaw | `type: "session"` + `version` + `timestamp` 字段 | DeepSeek Harness 的 header 也用 `type:"session"` + `version`，但没有 `timestamp`（用 `createdAt`），据此区分 |
+| DeepSeek Harness | `type: "session"` + `version` + `delegationDepth` 字段 | `delegationDepth` 是 dsh header 的必填字段，OpenClaw 没有 |
 
 ---
 
@@ -298,6 +299,29 @@ Cursor 是唯一一个**非文件型** Provider：
 - **内容检测**：首行 `type: "session_meta"` + `composerId` 字段存在
 
 > Cursor 证明：`ChatProvider` trait 不仅支持文件型 Agent，也支持 DB 型 Agent。只需桥接到 JSONL 缓存即可复用全部解析/渲染管线。
+
+---
+
+### DeepSeek Harness 特殊架构
+
+DeepSeek Harness（`dsh`）是文件型 Provider，但和其余 provider 有两点显著差异：
+
+- **默认存储是 Zstandard 压缩**：正文在 `~/.dsh/sessions/--<cwd>--/<session-id>/session.v4.jsonl.zstd`，是多个独立 zstd frame 拼接而成（须按 magic `28 B5 2F FD` 切帧分别解压）。`ruzstd::StreamingDecoder` 只解单帧，故 `utils::path::read_session_text` 做了透明切帧解压，`parser.rs`/`browser.rs` 里所有 `read_to_string` 都已换成它。
+- **两套存储目录**：`~/.dsh/storages/session_projcache/session-*.json` 只是项目级缓存（标题 + turn 大纲 + token 统计），不是正文，**不解析**；真正的会话在 `~/.dsh/sessions/` 下。
+
+**JSONL 结构**（解压后）：首行是不可变 header `{"type":"session","version":4,"id","createdAt","cwd","delegationDepth",...}`，其后是 `{"type","seq","time","data"}` 事件行：
+
+| dsh 事件 | 映射 |
+|----------|------|
+| `user/message` | `data.source.kind == "user"` → User（真实输入）；其他 kind（`runtime-context` / `skill-catalog` / `model-selection` / `user-approval` / `agent-instructions`）是系统注入 → System（默认隐藏） |
+| `assistant/message` | Assistant，`data.message.content` 里 `reasoning`→Thinking、`text`→Text、`tool-call`→ToolUse（`arguments` 是原始 JSON 字符串，解析回对象） |
+| `tool/result` | ToolResult（`data.message.{toolCallId, content, isError}`） |
+| `system/message` | System |
+| `turn/*`、`step/*`、`request/*`、`session/title`、独立 `tool/call` 等 | 跳过（`ParseError::Skipped`，不刷警告；`tool/call` 已内嵌在 `assistant/message` 里） |
+
+该版本的 dsh **没有** packed chunk 行（`text-chunks` 等），最终文本/思考/工具调用已完整落在 `assistant/message.message.content`，因此解析无需做 chunk 展开。
+
+**分组方式**：使用 `use_cwd_grouping()`，从 header 读权威 `cwd` 分组（`--<cwd>--` 目录名是有损/截断的，只作路径定位）。`enumerate_session_files` 递归两到三层找 `session*.jsonl(.zstd)`，`extract_session_id` 取父目录名（文件名固定是 `session.*`，不能取 file stem）。
 
 ---
 
