@@ -70,8 +70,15 @@ export function collapseConsecutiveEvents(
   const originalIndex = originalEvents
     ? (() => {
         const map = new Map<string, number>();
-        originalEvents.forEach((e, idx) => {
-          if (!map.has(e.uuid)) map.set(e.uuid, idx);
+        let idx = 0;
+        originalEvents.forEach((e) => {
+          // System / Developer 是结构性消息（默认隐藏，通常是系统提示、模型切换通知），
+          // 在"相邻"判断中当作透明，避免它们既不可见、又阻止合并造成的矛盾。
+          if (e.eventType === "system" || e.eventType === "developer") return;
+          if (!map.has(e.uuid)) {
+            map.set(e.uuid, idx);
+            idx++;
+          }
         });
         return map;
       })()
