@@ -89,10 +89,19 @@ pub fn create_skeleton_summary(
     file_path: &Path,
     project_name: &str,
     project_path: &str,
-    provider_name: &str,
+    provider: &Arc<dyn ChatProvider>,
 ) -> Option<SessionSummary> {
     let metadata = std::fs::metadata(file_path).ok()?;
-    let id = file_path.file_stem()?.to_str()?.to_string();
+    // 使用 provider 特定的会话 ID（如 DeepSeek Harness 取父目录名），
+    // 避免文件名固定（session.v4.jsonl）导致所有会话 ID 相同、React key 冲突。
+    let id = provider.extract_session_id(file_path).unwrap_or_else(|| {
+        file_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown")
+            .to_string()
+    });
+    let provider_name = provider.name().to_string();
     let file_size = metadata.len();
     let file_mtime = metadata
         .modified()
@@ -113,7 +122,7 @@ pub fn create_skeleton_summary(
         file_size,
         cwd: String::new(), // polish 后填充
         file_path: file_path.to_string_lossy().to_string(),
-        provider_name: provider_name.to_string(),
+        provider_name,
         file_mtime,
         client_type: String::new(),    // polish 后填充
         last_user_text: String::new(), // polish 后填充
@@ -589,8 +598,9 @@ mod tests {
         let (dir, file_path) = create_temp_jsonl(
             r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u1","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#,
         );
+        let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
         let summary =
-            create_skeleton_summary(&file_path, "test-proj", "/test/proj", "claude_code").unwrap();
+            create_skeleton_summary(&file_path, "test-proj", "/test/proj", &provider).unwrap();
 
         assert_eq!(summary.project_name, "test-proj");
         assert_eq!(summary.provider_name, "claude_code");
@@ -608,12 +618,9 @@ mod tests {
 
     #[test]
     fn test_skeleton_returns_none_for_missing_file() {
-        let result = create_skeleton_summary(
-            Path::new("/nonexistent/file.jsonl"),
-            "p",
-            "/p",
-            "claude_code",
-        );
+        let provider: Arc<dyn ChatProvider> = Arc::new(ClaudeCodeProvider::new());
+        let result =
+            create_skeleton_summary(Path::new("/nonexistent/file.jsonl"), "p", "/p", &provider);
         assert!(result.is_none());
     }
 

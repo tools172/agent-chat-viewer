@@ -345,7 +345,7 @@ pub async fn list_sessions(
                         file_path,
                         &project_name,
                         &project_path,
-                        &provider_name,
+                        &provider,
                     )
                     .map(|mut s| {
                         if let Some(dir) = provider.data_dir() {
@@ -374,7 +374,7 @@ pub async fn list_sessions(
                     file_path,
                     &project_name,
                     &project_path,
-                    &provider_name,
+                    &provider,
                 )
                 .map(|mut s| {
                     if let Some(dir) = provider.data_dir() {
@@ -426,12 +426,16 @@ pub async fn list_all_sessions(
                     {
                         continue;
                     }
+                    let detected = match reg.get(&detected_provider) {
+                        Some(p) => p.clone(),
+                        None => continue,
+                    };
                     for file_path in files {
                         if let Some(summary) = crate::services::parser::create_skeleton_summary(
                             file_path,
                             &project_name,
                             &project_path_str,
-                            &detected_provider,
+                            &detected,
                         ) {
                             all.push(summary);
                         }
@@ -470,7 +474,7 @@ pub async fn list_all_sessions(
                             file_path,
                             &project_name,
                             &cwd,
-                            provider_name,
+                            &provider,
                         ) {
                             if let Some(dir) = provider.data_dir() {
                                 summary.storage_path = dir.to_string_lossy().to_string();
@@ -495,7 +499,7 @@ pub async fn list_all_sessions(
                                         &file_path,
                                         &project_name,
                                         &project_path.to_string_lossy(),
-                                        provider_name,
+                                        &provider,
                                     )
                                 {
                                     if let Some(dir) = provider.data_dir() {
@@ -965,6 +969,35 @@ mod tests {
         assert!(
             paths.iter().all(|(name, _)| !name.is_empty()),
             "禁用的自定义目录应被跳过"
+        );
+    }
+
+    #[test]
+    fn test_collect_base_paths_excludes_disabled_provider() {
+        use crate::models::AppSettings;
+        use std::collections::HashMap;
+
+        let registry = crate::providers::ProviderRegistry::new();
+
+        let mut provider_enabled = HashMap::new();
+        provider_enabled.insert("claude_code".to_string(), true);
+        provider_enabled.insert("deepseek_harness".to_string(), false);
+
+        let settings = AppSettings {
+            provider_enabled,
+            ..AppSettings::default()
+        };
+
+        let paths = collect_base_paths(&settings, &registry);
+
+        let has_deepseek = paths.iter().any(|(name, _)| name == "deepseek_harness");
+        assert!(
+            !has_deepseek,
+            "禁用的 provider 默认路径应被排除，实际 paths: {:?}",
+            paths
+                .iter()
+                .map(|(n, p)| (n.as_str(), p.to_string_lossy()))
+                .collect::<Vec<_>>()
         );
     }
 }
