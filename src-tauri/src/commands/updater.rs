@@ -214,11 +214,14 @@ fn download_to_temp(
     let mut buf = [0u8; 256 * 1024];
     let mut received: u64 = 0;
     loop {
-        let n = reader.read(&mut buf).map_err(|e| format!("读取失败: {}", e))?;
+        let n = reader
+            .read(&mut buf)
+            .map_err(|e| format!("读取失败: {}", e))?;
         if n == 0 {
             break;
         }
-        file.write_all(&buf[..n]).map_err(|e| format!("写入失败: {}", e))?;
+        file.write_all(&buf[..n])
+            .map_err(|e| format!("写入失败: {}", e))?;
         received += n as u64;
         let _ = on_event.send(DownloadProgress { received, total });
     }
