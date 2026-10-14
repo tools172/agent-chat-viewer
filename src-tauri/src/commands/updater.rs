@@ -17,6 +17,10 @@ const REPO: &str = "tools172/agent-chat-viewer";
 const USER_AGENT: &str = "agent-chat-viewer-updater";
 
 /// 安装包类型
+///
+/// 仅在 Windows 上由 `detect_installer_kind` 构造；非 Windows 平台恒返回 `None`，
+/// 变体只被匹配、不被构造，故非 Windows 下抑制 dead_code。
+#[cfg_attr(not(windows), allow(dead_code))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InstallerKind {
     /// NSIS 打包的 `.exe` 安装器
