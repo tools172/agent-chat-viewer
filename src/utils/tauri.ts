@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, Channel } from "@tauri-apps/api/core";
 import type {
   Project,
   SessionSummary,
@@ -6,6 +6,8 @@ import type {
   FilterConfig,
   AppSettings,
   ProviderInfo,
+  UpdateInfo,
+  DownloadProgress,
 } from "../types";
 
 /**
@@ -161,4 +163,30 @@ export async function getProviderDataDir(
 /** 触发 WebView 原生查找栏（模拟 Ctrl+F 按键） */
 export async function triggerNativeFind(): Promise<void> {
   return invoke<void>("trigger_native_find");
+}
+
+// ===== Update Commands =====
+
+/** 检查是否有新版本：有则返回 UpdateInfo，无/出错返回 null */
+export async function checkForUpdate(): Promise<UpdateInfo | null> {
+  return invoke<UpdateInfo | null>("check_for_update");
+}
+
+/** 下载安装包到临时目录（经 Channel 推送进度），返回保存路径 */
+export async function downloadUpdate(
+  assetUrl: string,
+  assetName: string,
+  onEvent: Channel<DownloadProgress>,
+): Promise<string> {
+  return invoke<string>("download_update", { assetUrl, assetName, onEvent });
+}
+
+/** 启动安装器并退出应用 */
+export async function installUpdate(filePath: string): Promise<void> {
+  return invoke<void>("install_update", { filePath });
+}
+
+/** 在系统默认浏览器打开外部链接 */
+export async function openExternal(url: string): Promise<void> {
+  return invoke<void>("open_external", { url });
 }

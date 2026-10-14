@@ -21,6 +21,10 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
     label: "OpenClaw",
     color: "bg-fuchsia-200 text-fuchsia-800 border-fuchsia-400",
   },
+  deepseek_harness: {
+    label: "DeepSeek Harness",
+    color: "bg-blue-200 text-blue-800 border-blue-400",
+  },
 };
 
 /**
@@ -46,6 +50,7 @@ const PROVIDER_ENABLED_COLORS: Record<string, string> = {
   codex: "bg-lime-100 text-lime-700",
   cursor: "bg-cyan-100 text-cyan-700",
   openclaw: "bg-fuchsia-100 text-fuchsia-700",
+  deepseek_harness: "bg-blue-100 text-blue-700",
 };
 
 /**
@@ -61,6 +66,7 @@ const PROVIDER_DOT_COLORS: Record<string, string> = {
   codex: "bg-lime-500",
   cursor: "bg-cyan-500",
   openclaw: "bg-fuchsia-500",
+  deepseek_harness: "bg-blue-500",
 };
 
 /**

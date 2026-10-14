@@ -66,7 +66,7 @@ pub(crate) fn discover_session_files(dir: &Path, depth: u32) -> HashMap<PathBuf,
             let files: Vec<PathBuf> = session_entries
                 .flatten()
                 .map(|e| e.path())
-                .filter(|p| crate::utils::path::is_jsonl_file(p))
+                .filter(|p| crate::utils::path::is_session_data_file(p))
                 .collect();
             if !files.is_empty() {
                 projects.insert(dir.to_path_buf(), files);
@@ -74,11 +74,11 @@ pub(crate) fn discover_session_files(dir: &Path, depth: u32) -> HashMap<PathBuf,
         }
     }
 
-    // 检查当前目录下的直接 .jsonl 文件
+    // 检查当前目录下的直接 .jsonl / .zstd 文件
     let direct_files: Vec<PathBuf> = entries
         .iter()
         .map(|e| e.path())
-        .filter(|p| p.is_file() && crate::utils::path::is_jsonl_file(p))
+        .filter(|p| p.is_file() && crate::utils::path::is_session_data_file(p))
         .collect();
     if !direct_files.is_empty() {
         projects
@@ -107,8 +107,8 @@ pub(crate) fn detect_provider_from_file(
     file_path: &Path,
     registry: &ProviderRegistry,
 ) -> Option<String> {
-    // 只读文件的前 4KB 足够覆盖第一行 JSON
-    if let Ok(content) = std::fs::read_to_string(file_path) {
+    // 只读文件的前几行足够覆盖第一行 JSON；zstd 压缩的会话会透明解压
+    if let Some(content) = crate::utils::path::read_session_text(file_path) {
         if let Some(provider) = registry.detect_by_content(&content) {
             return Some(provider.name().to_string());
         }
@@ -345,7 +345,7 @@ pub async fn list_sessions(
                         file_path,
                         &project_name,
                         &project_path,
-                        &provider_name,
+                        &provider,
                     )
                     .map(|mut s| {
                         if let Some(dir) = provider.data_dir() {
@@ -374,7 +374,7 @@ pub async fn list_sessions(
                     file_path,
                     &project_name,
                     &project_path,
-                    &provider_name,
+                    &provider,
                 )
                 .map(|mut s| {
                     if let Some(dir) = provider.data_dir() {
@@ -426,12 +426,16 @@ pub async fn list_all_sessions(
                     {
                         continue;
                     }
+                    let detected = match reg.get(&detected_provider) {
+                        Some(p) => p.clone(),
+                        None => continue,
+                    };
                     for file_path in files {
                         if let Some(summary) = crate::services::parser::create_skeleton_summary(
                             file_path,
                             &project_name,
                             &project_path_str,
-                            &detected_provider,
+                            &detected,
                         ) {
                             all.push(summary);
                         }
@@ -470,7 +474,7 @@ pub async fn list_all_sessions(
                             file_path,
                             &project_name,
                             &cwd,
-                            provider_name,
+                            &provider,
                         ) {
                             if let Some(dir) = provider.data_dir() {
                                 summary.storage_path = dir.to_string_lossy().to_string();
@@ -495,7 +499,7 @@ pub async fn list_all_sessions(
                                         &file_path,
                                         &project_name,
                                         &project_path.to_string_lossy(),
-                                        provider_name,
+                                        &provider,
                                     )
                                 {
                                     if let Some(dir) = provider.data_dir() {
@@ -623,7 +627,7 @@ pub async fn search_sessions(
                         None => continue,
                     };
                     for file_path in files {
-                        if let Ok(content) = std::fs::read_to_string(file_path) {
+                        if let Some(content) = crate::utils::path::read_session_text(file_path) {
                             if content.to_lowercase().contains(&query_lower) {
                                 if let Some(summary) =
                                     crate::services::parser::create_session_summary(
@@ -662,7 +666,7 @@ pub async fn search_sessions(
                         session_files = provider.enumerate_session_files(base_path);
                     }
                     for file_path in &session_files {
-                        if let Ok(content) = std::fs::read_to_string(file_path) {
+                        if let Some(content) = crate::utils::path::read_session_text(file_path) {
                             if content.to_lowercase().contains(&query_lower) {
                                 let cwd = provider
                                     .read_session_cwd_from_file(file_path)
@@ -697,7 +701,9 @@ pub async fn search_sessions(
                                 .map(|n| n.to_string_lossy().to_string())
                                 .unwrap_or_default();
                             for file_path in provider.enumerate_session_files(&project_path) {
-                                if let Ok(content) = std::fs::read_to_string(&file_path) {
+                                if let Some(content) =
+                                    crate::utils::path::read_session_text(&file_path)
+                                {
                                     if content.to_lowercase().contains(&query_lower) {
                                         if let Some(summary) =
                                             crate::services::parser::create_session_summary(
@@ -963,6 +969,35 @@ mod tests {
         assert!(
             paths.iter().all(|(name, _)| !name.is_empty()),
             "禁用的自定义目录应被跳过"
+        );
+    }
+
+    #[test]
+    fn test_collect_base_paths_excludes_disabled_provider() {
+        use crate::models::AppSettings;
+        use std::collections::HashMap;
+
+        let registry = crate::providers::ProviderRegistry::new();
+
+        let mut provider_enabled = HashMap::new();
+        provider_enabled.insert("claude_code".to_string(), true);
+        provider_enabled.insert("deepseek_harness".to_string(), false);
+
+        let settings = AppSettings {
+            provider_enabled,
+            ..AppSettings::default()
+        };
+
+        let paths = collect_base_paths(&settings, &registry);
+
+        let has_deepseek = paths.iter().any(|(name, _)| name == "deepseek_harness");
+        assert!(
+            !has_deepseek,
+            "禁用的 provider 默认路径应被排除，实际 paths: {:?}",
+            paths
+                .iter()
+                .map(|(n, p)| (n.as_str(), p.to_string_lossy()))
+                .collect::<Vec<_>>()
         );
     }
 }

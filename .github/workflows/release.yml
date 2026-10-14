@@ -24,6 +24,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify tag matches version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          if ($tag -ne "v$ver") { throw "tag '$tag' 与 tauri.conf.json 版本 '$ver' 不一致" }
+          $pkg = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($pkg -ne $ver) { throw "package.json 版本 '$pkg' 与 tauri.conf.json 版本 '$ver' 不一致" }
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 

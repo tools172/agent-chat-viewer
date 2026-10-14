@@ -160,6 +160,8 @@ export interface FilterConfig {
   showFileSnapshots: boolean;
   /** 合并连发：折叠同一角色的连续消息，只显示最后一条 */
   collapseConsecutive?: boolean;
+  /** 显示「过程」：关闭后隐藏「含工具调用的 assistant 消息」里的叙述文本，只保留最终回复 */
+  showProcess?: boolean;
 }
 
 export interface SearchColors {
@@ -218,6 +220,28 @@ export interface AppSettings {
   settingsPanelGlass?: boolean;
   /** 聊天内容区缩放比例（百分比，50~200），默认 100 */
   contentZoom?: number;
+  /** 用户已忽略的更新版本号（忽略后该版本不再弹窗，直到出现更新版本） */
+  skippedUpdateVersion?: string | null;
+}
+
+export interface UpdateInfo {
+  /** 最新版本号，如 "0.2.2" */
+  version: string;
+  /** 当前本地版本号，如 "0.2.1" */
+  currentVersion: string;
+  /** 更新说明（release body，markdown） */
+  notes: string;
+  /** 安装包直链 */
+  assetUrl: string;
+  /** 安装包文件名 */
+  assetName: string;
+}
+
+export interface DownloadProgress {
+  /** 已下载字节数 */
+  received: number;
+  /** 总字节数（0 表示未知） */
+  total: number;
 }
 
 export interface ProviderInfo {

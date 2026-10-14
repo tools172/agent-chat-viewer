@@ -2,9 +2,12 @@ import React, { useEffect, useCallback, useRef } from "react";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useTabStore } from "./stores/tabStore";
+import { useUpdateStore } from "./stores/updateStore";
 import { MainLayout } from "./components/layout/MainLayout";
 import { LoadingSpinner } from "./components/common/LoadingSpinner";
 import { ToastContainer } from "./stores/toastStore";
+import { UpdateDialog } from "./components/update/UpdateDialog";
+import { UpdateWidget } from "./components/update/UpdateWidget";
 import { MessageSquare, RefreshCw } from "lucide-react";
 
 const App: React.FC = () => {
@@ -50,6 +53,15 @@ const App: React.FC = () => {
       if (restoreTabsOnStartup && tabSnapshots && tabSnapshots.length > 0) {
         useTabStore.getState().restoreTabs();
       }
+    }
+  }, [isLoaded]);
+
+  // 启动时检查更新（静默：无更新或失败都不打扰，仅在有新版且未忽略时弹窗）
+  const hasCheckedUpdate = useRef(false);
+  useEffect(() => {
+    if (isLoaded && !hasCheckedUpdate.current) {
+      hasCheckedUpdate.current = true;
+      useUpdateStore.getState().checkAndMaybeShow();
     }
   }, [isLoaded]);
 
@@ -125,6 +137,8 @@ const App: React.FC = () => {
     <>
       <MainLayout />
       <ToastContainer />
+      <UpdateDialog />
+      <UpdateWidget />
     </>
   );
 };

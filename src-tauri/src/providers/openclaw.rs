@@ -347,11 +347,16 @@ impl ChatProvider for OpenClawProvider {
     }
 
     fn detect_by_content(&self, first_lines: &str) -> bool {
-        // OpenClaw sessions start with a "session" metadata line containing version
+        // OpenClaw sessions start with a "session" metadata line containing
+        // version + timestamp. The `timestamp` field distinguishes it from
+        // DeepSeek Harness, whose header also reads `type:"session"` +
+        // `version` but carries `createdAt`/`delegationDepth` instead.
         if let Some(first_line) = first_lines.lines().find(|l| !l.trim().is_empty()) {
             if let Ok(value) = serde_json::from_str::<serde_json::Value>(first_line) {
                 if let Some(event_type) = value["type"].as_str() {
-                    return event_type == "session" && value["version"].as_u64().is_some();
+                    return event_type == "session"
+                        && value["version"].as_u64().is_some()
+                        && value["timestamp"].is_string();
                 }
             }
         }

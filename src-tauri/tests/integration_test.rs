@@ -388,6 +388,7 @@ fn test_filter_all_off_shows_everything() {
         show_system_messages: true,
         show_file_snapshots: true,
         collapse_consecutive: false,
+        show_process: true,
     };
     let filtered = services::filter::filter_events(&events, &filter);
     let filtered_total: usize = filtered.iter().map(|e| e.content.len()).sum();
@@ -662,6 +663,7 @@ fn test_serialize_roundtrip_with_collapse_consecutive() {
         show_system_messages: true,
         show_file_snapshots: true,
         collapse_consecutive: true,
+        show_process: true,
     };
 
     let json = serde_json::to_string(&config).expect("序列化不应失败");
@@ -705,4 +707,104 @@ fn test_detect_by_content_unknown_format() {
     let content = r#"{"some":"random","json":"data"}"#;
     let provider = registry.detect_by_content(content);
     assert!(provider.is_none());
+}
+
+// ============================================================
+// DeepSeek Harness Provider 集成测试
+// ============================================================
+
+#[test]
+fn test_deepseek_parse_minimal_session() {
+    let fixture = include_str!("fixtures/deepseek_harness/minimal.jsonl");
+    let provider = Arc::new(
+        agent_chat_viewer_lib::providers::deepseek_harness::DeepSeekHarnessProvider::new(),
+    );
+
+    let events: Vec<_> = fixture
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .filter_map(|l| provider.parse_event(l).ok())
+        .collect();
+
+    // 6 lines: header + user + assistant + tool/result + turn/start + turn/end
+    // turn/start 与 turn/end 是簿记事件，被跳过（Skipped）
+    assert_eq!(events.len(), 4);
+
+    let users = events
+        .iter()
+        .filter(|e| matches!(e.event_type, agent_chat_viewer_lib::models::EventType::User))
+        .count();
+    let assistants = events
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.event_type,
+                agent_chat_viewer_lib::models::EventType::Assistant
+            )
+        })
+        .count();
+    let systems = events
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.event_type,
+                agent_chat_viewer_lib::models::EventType::System
+            )
+        })
+        .count();
+
+    // user/message 与 tool/result 都映射为 User
+    assert_eq!(users, 2);
+    assert_eq!(assistants, 1);
+    assert_eq!(systems, 1);
+
+    let has_thinking = events.iter().any(|e| {
+        e.content.iter().any(|b| {
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::Thinking { .. }
+            )
+        })
+    });
+    let has_tool_use = events.iter().any(|e| {
+        e.content.iter().any(|b| {
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolUse { .. }
+            )
+        })
+    });
+    let has_tool_result = events.iter().any(|e| {
+        e.content.iter().any(|b| {
+            matches!(
+                b,
+                agent_chat_viewer_lib::models::ContentBlock::ToolResult { .. }
+            )
+        })
+    });
+    assert!(has_thinking, "fixture 应解析出 reasoning -> Thinking");
+    assert!(has_tool_use, "fixture 应解析出 tool-call -> ToolUse");
+    assert!(
+        has_tool_result,
+        "fixture 应解析出 tool/result -> ToolResult"
+    );
+}
+
+#[test]
+fn test_detect_by_content_deepseek_via_registry() {
+    let registry = agent_chat_viewer_lib::providers::ProviderRegistry::new();
+    let content = r#"{"type":"session","version":4,"id":"session-test","createdAt":1791911108529,"cwd":"/work","delegationDepth":0}"#;
+    let provider = registry.detect_by_content(content);
+    assert!(provider.is_some());
+    assert_eq!(provider.unwrap().name(), "deepseek_harness");
+}
+
+#[test]
+fn test_deepseek_app_settings_default() {
+    let settings = AppSettings::default();
+    // deepseek_harness 默认禁用（与 openclaw 一致）
+    assert!(!settings
+        .provider_enabled
+        .get("deepseek_harness")
+        .unwrap_or(&true));
 }

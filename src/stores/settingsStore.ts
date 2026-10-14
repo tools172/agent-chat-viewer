@@ -68,12 +68,14 @@ const defaultSettings: AppSettings = {
     showSystemMessages: false,
     showFileSnapshots: false,
     collapseConsecutive: false,
+    showProcess: false,
   },
   providerEnabled: {
     claude_code: true,
     codex: true,
     cursor: true,
     openclaw: false,
+    deepseek_harness: false,
   },
   searchColors: {
     search: "#fef08a",
@@ -95,6 +97,7 @@ const defaultSettings: AppSettings = {
   // 毛玻璃默认勾选：面板带磨砂模糊质感
   settingsPanelGlass: true,
   contentZoom: CONTENT_ZOOM_DEFAULT,
+  skippedUpdateVersion: null,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

@@ -1,0 +1,6 @@
+{"type":"session","version":4,"id":"session-test","createdAt":1791911108529,"cwd":"C:\\work\\repo","isSeeded":false,"delegationDepth":0,"agentPreset":"standard"}
+{"type":"user/message","seq":8,"time":1791911122009,"data":{"content":[{"type":"text","text":"写一个俄罗斯方块"}],"source":{"kind":"user"},"role":"user","id":"u-1"},"surfaceOp":"append"}
+{"type":"assistant/message","seq":9,"time":1791911123009,"data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"reasoning","text":"思考如何实现"},{"type":"text","text":"好的，开始写"},{"type":"tool-call","id":"call_1","name":"write","arguments":"{\"file_path\":\"C:/work/tetris.ps1\",\"content\":\"echo hi\"}"}],"id":"a-1"},"usage":{"inputTokens":10,"outputTokens":20}},"surfaceOp":"append"}
+{"type":"tool/result","seq":10,"time":1791911124009,"data":{"turn":1,"step":1,"message":{"role":"tool","toolCallId":"call_1","content":[{"type":"text","text":"Created file"}],"isError":false,"id":"tr-1"}},"sourceEventSeqs":[9],"surfaceOp":"append"}
+{"type":"turn/start","seq":4,"time":1791911121940,"data":{"turn":1}}
+{"type":"turn/end","seq":20,"time":1791911130000,"data":{"turn":1,"reason":{"kind":"completed"}}}

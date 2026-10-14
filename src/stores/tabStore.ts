@@ -24,6 +24,7 @@ const FULL_FILTER: FilterConfig = {
   hideEmptyToolResults: false,
   showSystemMessages: true,
   showFileSnapshots: false,
+  showProcess: true,
 };
 
 let tabCounter = 0;

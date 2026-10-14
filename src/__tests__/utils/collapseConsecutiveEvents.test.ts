@@ -387,4 +387,42 @@ describe("collapseConsecutiveEvents", () => {
     expect(result).toHaveLength(1);
     expect(result[0].content[0]).toMatchObject({ text: "u2" });
   });
+
+  it("originalEvents：中间的 System 事件是结构性消息，不阻止合并", () => {
+    const original = [
+      makeEvent("user", "u1"),
+      makeEvent("system", "sys"),
+      makeEvent("user", "u2"),
+    ];
+    // 过滤后 system 被隐藏，只剩两条 user
+    const filtered = [original[0], original[2]];
+    const result = collapseConsecutiveEvents(filtered, original);
+    expect(result).toHaveLength(1);
+    expect(result[0].content[0]).toMatchObject({ text: "u2" });
+  });
+
+  it("originalEvents：中间的 Developer 事件是结构性消息，不阻止合并", () => {
+    const original = [
+      makeEvent("user", "u1"),
+      makeEvent("developer", "instr"),
+      makeEvent("user", "u2"),
+    ];
+    const filtered = [original[0], original[2]];
+    const result = collapseConsecutiveEvents(filtered, original);
+    expect(result).toHaveLength(1);
+    expect(result[0].content[0]).toMatchObject({ text: "u2" });
+  });
+
+  it("originalEvents：中间的 Assistant 事件仍阻止合并", () => {
+    const original = [
+      makeEvent("user", "u1"),
+      makeEvent("assistant", "reply"),
+      makeEvent("user", "u2"),
+    ];
+    const filtered = [original[0], original[2]];
+    const result = collapseConsecutiveEvents(filtered, original);
+    expect(result).toHaveLength(2);
+    expect(result[0].content[0]).toMatchObject({ text: "u1" });
+    expect(result[1].content[0]).toMatchObject({ text: "u2" });
+  });
 });

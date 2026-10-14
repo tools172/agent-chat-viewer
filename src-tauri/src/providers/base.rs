@@ -12,6 +12,10 @@ pub enum ParseError {
     UnknownEventType(String),
     #[error("Missing required field: {0}")]
     MissingField(String),
+    /// Line intentionally skipped (bookkeeping/metadata event with no
+    /// user-visible content). Callers should ignore it without warning.
+    #[error("Skipped event")]
+    Skipped,
 }
 
 /// Core trait that all chat providers must implement.

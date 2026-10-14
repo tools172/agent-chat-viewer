@@ -9,6 +9,7 @@ import {
   Combine,
   Search,
   Cpu,
+  Workflow,
 } from "lucide-react";
 import type { FilterConfig } from "../../types";
 
@@ -68,6 +69,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           icon={<Brain className="h-3 w-3" />}
           enabled={filter.showThinking}
           onChange={(v) => onChange({ showThinking: v })}
+        />
+        <FilterToggle
+          label="过程"
+          icon={<Workflow className="h-3 w-3" />}
+          enabled={filter.showProcess ?? false}
+          onChange={(v) => onChange({ showProcess: v })}
         />
         <FilterToggle
           label="工具调用"

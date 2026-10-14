@@ -14,6 +14,11 @@ pub struct FilterConfig {
     /// 合并连发：折叠同一角色的连续消息，只显示最后一条
     #[serde(default)]
     pub collapse_consecutive: bool,
+    /// 显示「过程」：关闭后隐藏「含工具调用的 assistant 消息」里的叙述文本
+    /// （agent 在工具调用之间的工作叙述），只保留最终回复；工具调用/结果
+    /// 仍由各自开关控制。默认关闭（默认隐藏叙述）。
+    #[serde(default)]
+    pub show_process: bool,
 }
 
 impl Default for FilterConfig {
@@ -26,6 +31,7 @@ impl Default for FilterConfig {
             show_system_messages: false,
             show_file_snapshots: false,
             collapse_consecutive: false,
+            show_process: false,
         }
     }
 }
@@ -128,6 +134,9 @@ pub struct AppSettings {
     /// 聊天内容区缩放比例（百分比），默认 100
     #[serde(default = "default_content_zoom")]
     pub content_zoom: u32,
+    /// 用户已忽略的更新版本号（忽略后该版本不再弹窗提示，直到出现更新版本）
+    #[serde(default)]
+    pub skipped_update_version: Option<String>,
 }
 
 fn default_time_base() -> String {
@@ -173,6 +182,7 @@ impl Default for AppSettings {
         provider_enabled.insert("codex".to_string(), true);
         provider_enabled.insert("cursor".to_string(), true);
         provider_enabled.insert("openclaw".to_string(), false);
+        provider_enabled.insert("deepseek_harness".to_string(), false);
 
         Self {
             watch_directories: Vec::new(),
@@ -190,6 +200,7 @@ impl Default for AppSettings {
             display_first_user_message: true,
             time_base: "modified".to_string(),
             content_zoom: 100,
+            skipped_update_version: None,
         }
     }
 }

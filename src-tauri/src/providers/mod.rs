@@ -2,6 +2,7 @@ pub mod base;
 pub mod claude_code;
 pub mod codex;
 pub mod cursor;
+pub mod deepseek_harness;
 pub mod openclaw;
 
 use std::collections::HashMap;
@@ -34,6 +35,7 @@ impl ProviderRegistry {
         registry.register(Arc::new(claude_code::ClaudeCodeProvider::new()));
         registry.register(Arc::new(codex::CodexProvider::new()));
         registry.register(Arc::new(cursor::CursorProvider::new()));
+        registry.register(Arc::new(deepseek_harness::DeepSeekHarnessProvider::new()));
         registry.register(Arc::new(openclaw::OpenClawProvider::new()));
 
         registry

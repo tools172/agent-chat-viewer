@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   X,
   FolderPlus,
@@ -24,9 +24,13 @@ import {
   Keyboard,
   ZoomIn,
   ZoomOut,
+  Workflow,
+  RefreshCw,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { getVersion } from "@tauri-apps/api/app";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { useUpdateStore } from "../../stores/updateStore";
 import type { ThemeMode } from "../../types";
 import {
   SIDEBAR_MIN_WIDTH,
@@ -90,11 +94,27 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const [saveMessage, setSaveMessage] = useState("");
   const [newDir, setNewDir] = useState("");
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const updateStore = useUpdateStore();
+  const [currentVersion, setCurrentVersion] = useState("");
+
+  useEffect(() => {
+    getVersion()
+      .then(setCurrentVersion)
+      .catch(() => setCurrentVersion(""));
+  }, []);
 
   // 防御：确保 searchColors 存在
   const searchColors = settings.searchColors || {
     search: "#fef08a",
     find: "#fed7aa",
+  };
+
+  const handleCheckUpdate = async () => {
+    await updateStore.check();
+  };
+
+  const handleDownloadInstall = async () => {
+    await updateStore.startDownload();
   };
 
   const handlePickDirectory = async () => {
@@ -211,6 +231,75 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       <div className="flex flex-col flex-1 min-h-0">
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+          {/* 软件更新 */}
+          <section>
+            <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+              <RefreshCw className="h-4 w-4" />
+              软件更新
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">
+                  当前版本{" "}
+                  <span className="font-medium text-gray-800">
+                    {currentVersion ? `v${currentVersion}` : "—"}
+                  </span>
+                </span>
+                <button
+                  onClick={handleCheckUpdate}
+                  disabled={updateStore.isChecking}
+                  className="px-3 py-1.5 text-xs border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 disabled:opacity-50 flex items-center gap-1"
+                >
+                  {updateStore.isChecking ? "检测中…" : "检测升级"}
+                </button>
+              </div>
+
+              {updateStore.latest ? (
+                <div className="p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                  <p className="text-sm text-gray-700">
+                    发现新版本{" "}
+                    <span className="font-semibold">
+                      v{updateStore.latest.version}
+                    </span>
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={handleDownloadInstall}
+                      disabled={updateStore.phase === "downloading"}
+                      className="px-3 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                    >
+                      {updateStore.phase === "downloading"
+                        ? "下载中…"
+                        : "下载并安装"}
+                    </button>
+                    <button
+                      onClick={() => updateStore.dismissCurrent()}
+                      disabled={updateStore.phase === "downloading"}
+                      className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                    >
+                      忽略此版本
+                    </button>
+                  </div>
+                  {updateStore.error && (
+                    <p className="text-xs text-red-600 mt-1">
+                      {updateStore.error}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                !updateStore.isChecking &&
+                updateStore.didCheck &&
+                (updateStore.error ? (
+                  <p className="text-xs text-red-600">
+                    检查失败：{updateStore.error}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400">已是最新版本</p>
+                ))
+              )}
+            </div>
+          </section>
+
           {/* Agent 支持 */}
           <section>
             <h3 className="text-base font-semibold text-gray-700 mb-2">
@@ -404,6 +493,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   key: "showThinking",
                   label: "显示思考过程",
                   icon: <Brain className="h-3.5 w-3.5" />,
+                },
+                {
+                  key: "showProcess",
+                  label: "显示过程",
+                  icon: <Workflow className="h-3.5 w-3.5" />,
                 },
                 {
                   key: "showToolCalls",

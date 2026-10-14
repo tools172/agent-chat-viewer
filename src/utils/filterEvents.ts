@@ -70,8 +70,15 @@ export function collapseConsecutiveEvents(
   const originalIndex = originalEvents
     ? (() => {
         const map = new Map<string, number>();
-        originalEvents.forEach((e, idx) => {
-          if (!map.has(e.uuid)) map.set(e.uuid, idx);
+        let idx = 0;
+        originalEvents.forEach((e) => {
+          // System / Developer 是结构性消息（默认隐藏，通常是系统提示、模型切换通知），
+          // 在"相邻"判断中当作透明，避免它们既不可见、又阻止合并造成的矛盾。
+          if (e.eventType === "system" || e.eventType === "developer") return;
+          if (!map.has(e.uuid)) {
+            map.set(e.uuid, idx);
+            idx++;
+          }
         });
         return map;
       })()
@@ -147,7 +154,16 @@ function isOriginallyAdjacent(
 }
 
 function filterEventContent(event: ChatEvent, config: FilterConfig): ChatEvent {
-  const filteredContent = event.content.filter((block) =>
+  let blocks = event.content;
+  // 「过程」过滤：关闭时隐藏「含工具调用的 assistant 消息」里的 text 叙述，
+  // 只保留最终回复（纯 text 的 assistant 事件）；工具调用/结果仍由各自开关控制。
+  if (config.showProcess === false) {
+    const hasToolUse = event.content.some((b) => b.blockType === "tool_use");
+    if (hasToolUse) {
+      blocks = event.content.filter((b) => b.blockType !== "text");
+    }
+  }
+  const filteredContent = blocks.filter((block) =>
     shouldShowBlock(block, config),
   );
   return { ...event, content: filteredContent };
