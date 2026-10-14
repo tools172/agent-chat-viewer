@@ -1,6 +1,6 @@
 [package]
 name = "agent-chat-viewer"
-version = "0.2.1"
+version = "0.2.2"
 description = "A desktop app for viewing Claude Code chat records"
 authors = ["dev"]
 edition = "2021"
@@ -25,6 +25,11 @@ walkdir = "2"
 tauri-plugin-shell = "2.3.5"
 rusqlite = { version = "0.31", features = ["bundled"] }
 ruzstd = "0.7"
+ureq = { version = "2", features = ["json"] }
+semver = "1"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
 
 [dev-dependencies]
 tempfile = "3"

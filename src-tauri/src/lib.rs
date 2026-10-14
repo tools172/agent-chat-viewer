@@ -11,6 +11,9 @@ use providers::ProviderRegistry;
 pub fn run() {
     let registry = ProviderRegistry::new();
 
+    // 启动时清理上次升级留下的安装包（best-effort）
+    commands::updater::cleanup_update_artifacts();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
@@ -28,12 +31,16 @@ pub fn run() {
             commands::export::write_text_file,
             commands::export::open_containing_folder,
             commands::export::open_project_folder,
+            commands::export::open_external,
             commands::settings::get_default_paths,
             commands::settings::load_settings,
             commands::settings::save_settings,
             commands::settings::get_settings_path,
             commands::settings::list_providers,
             commands::settings::get_provider_data_dir,
+            commands::updater::check_for_update,
+            commands::updater::download_update,
+            commands::updater::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

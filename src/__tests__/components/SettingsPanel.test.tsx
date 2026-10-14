@@ -37,9 +37,32 @@ vi.mock("../../stores/settingsStore", () => ({
   useSettingsStore: vi.fn(() => mockStore),
 }));
 
+const updateMockStore = {
+  latest: null as { version: string } | null,
+  isChecking: false,
+  phase: "idle" as "idle" | "downloading" | "ready",
+  didCheck: false,
+  error: null as string | null,
+  check: vi.fn(),
+  startDownload: vi.fn(),
+  dismissCurrent: vi.fn(),
+};
+
+vi.mock("../../stores/updateStore", () => ({
+  useUpdateStore: vi.fn(() => updateMockStore),
+}));
+
+vi.mock("@tauri-apps/api/app", () => ({
+  getVersion: vi.fn().mockResolvedValue("0.2.1"),
+}));
+
 describe("SettingsPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    updateMockStore.latest = null;
+    updateMockStore.error = null;
+    updateMockStore.isChecking = false;
+    updateMockStore.phase = "idle";
   });
 
   it("渲染设置面板标题和所有设置区域", () => {
@@ -140,5 +163,26 @@ describe("SettingsPanel", () => {
     expect(checkbox).toBeChecked();
     fireEvent.click(checkbox);
     expect(mockStore.updateSettingsPanelGlass).toHaveBeenCalledWith(false);
+  });
+
+  it("渲染软件更新区块（当前版本 + 检测升级按钮）", async () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    expect(screen.getByText("软件更新")).toBeInTheDocument();
+    expect(screen.getByText("检测升级")).toBeInTheDocument();
+    expect(await screen.findByText(/v0\.2\.1/)).toBeInTheDocument();
+  });
+
+  it("点击「检测升级」触发更新检测", () => {
+    render(<SettingsPanel onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("检测升级"));
+    expect(updateMockStore.check).toHaveBeenCalledTimes(1);
+  });
+
+  it("检测到新版本时直接显示下载并安装交互", () => {
+    updateMockStore.latest = { version: "0.2.2" };
+    render(<SettingsPanel onClose={vi.fn()} />);
+    expect(screen.getByText(/发现新版本/)).toBeInTheDocument();
+    expect(screen.getByText("下载并安装")).toBeInTheDocument();
+    expect(screen.getByText("忽略此版本")).toBeInTheDocument();
   });
 });

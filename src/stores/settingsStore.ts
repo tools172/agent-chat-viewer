@@ -97,6 +97,7 @@ const defaultSettings: AppSettings = {
   // 毛玻璃默认勾选：面板带磨砂模糊质感
   settingsPanelGlass: true,
   contentZoom: CONTENT_ZOOM_DEFAULT,
+  skippedUpdateVersion: null,
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

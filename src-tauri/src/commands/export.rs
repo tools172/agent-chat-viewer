@@ -167,3 +167,37 @@ pub fn open_project_folder(folder_path: String) -> Result<(), String> {
 
     Ok(())
 }
+
+/// 在系统默认浏览器中打开外部链接（用于版本说明里的 changelog 等 URL）。
+#[tauri::command]
+pub fn open_external(url: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: cmd /C start "" <url> 用默认浏览器打开
+        std::process::Command::new("cmd")
+            .arg("/C")
+            .arg("start")
+            .arg("")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("打开链接失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("打开链接失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("打开链接失败: {}", e))?;
+    }
+
+    Ok(())
+}

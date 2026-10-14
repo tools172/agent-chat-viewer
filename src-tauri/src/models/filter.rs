@@ -134,6 +134,9 @@ pub struct AppSettings {
     /// 聊天内容区缩放比例（百分比），默认 100
     #[serde(default = "default_content_zoom")]
     pub content_zoom: u32,
+    /// 用户已忽略的更新版本号（忽略后该版本不再弹窗提示，直到出现更新版本）
+    #[serde(default)]
+    pub skipped_update_version: Option<String>,
 }
 
 fn default_time_base() -> String {
@@ -197,6 +200,7 @@ impl Default for AppSettings {
             display_first_user_message: true,
             time_base: "modified".to_string(),
             content_zoom: 100,
+            skipped_update_version: None,
         }
     }
 }
