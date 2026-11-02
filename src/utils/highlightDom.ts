@@ -42,6 +42,10 @@ export function highlightTextInDOM(
       if (parent && parent.tagName === "MARK") {
         return NodeFilter.FILTER_REJECT;
       }
+      // 跳过代码块按钮等 UI 文案，避免被当成正文高亮
+      if (parent && parent.closest("[data-no-highlight]")) {
+        return NodeFilter.FILTER_REJECT;
+      }
       return NodeFilter.FILTER_ACCEPT;
     },
   });

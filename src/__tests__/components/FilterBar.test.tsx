@@ -197,6 +197,53 @@ describe("FilterBar", () => {
     expect(onChange).toHaveBeenCalledWith({ collapseConsecutive: false });
   });
 
+  // ======================== 代码块全部折叠 ========================
+
+  it("有统计信息时在查找左侧显示折叠代码按钮并响应点击", () => {
+    const onToggle = vi.fn();
+    render(
+      <FilterBar
+        filter={makeFilter()}
+        onChange={vi.fn()}
+        stats={{
+          totalEvents: 3,
+          userCount: 1,
+          assistantCount: 2,
+          thinkingCount: 0,
+        }}
+        showFindBar={false}
+        onToggleFind={vi.fn()}
+        allCodeBlocksCollapsed={false}
+        onToggleCodeBlocks={onToggle}
+      />,
+    );
+
+    const btn = screen.getByText("折叠代码段").closest("button")!;
+    expect(btn).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("全部折叠时按钮显示为展开代码", () => {
+    render(
+      <FilterBar
+        filter={makeFilter()}
+        onChange={vi.fn()}
+        stats={{
+          totalEvents: 3,
+          userCount: 1,
+          assistantCount: 2,
+          thinkingCount: 0,
+        }}
+        allCodeBlocksCollapsed={true}
+        onToggleCodeBlocks={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("展开代码段")).toBeInTheDocument();
+    expect(screen.queryByText("折叠代码段")).toBeNull();
+  });
+
   it("连续操作：依次切换 5 个按钮", () => {
     const calls: Partial<FilterConfig>[] = [];
     const onChange = vi
