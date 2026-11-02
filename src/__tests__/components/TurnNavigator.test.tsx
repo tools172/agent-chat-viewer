@@ -284,7 +284,52 @@ describe("TurnNavigator", () => {
 
     render(<TurnNavigator events={events} containerRef={containerRef} />);
 
-    expect(screen.getByText("共 2 轮")).toBeInTheDocument();
+    // 顶部和底部各显示一次
+    expect(screen.getAllByText("共 2 轮")).toHaveLength(2);
+  });
+
+  // ========== 滚轮滚动 ==========
+
+  it("滚轮一次最多滚动一个轮次条目的高度", () => {
+    const events = [
+      makeEvent("u1", "第一条消息"),
+      makeEvent("u2", "第二条消息"),
+    ];
+
+    render(<TurnNavigator events={events} containerRef={containerRef} />);
+
+    const firstItem = document.querySelector(
+      '[data-turn-index="1"]',
+    ) as HTMLElement;
+    const list = firstItem.parentElement as HTMLDivElement;
+    Object.defineProperty(list, "clientHeight", {
+      value: 100,
+      configurable: true,
+    });
+    Object.defineProperty(list, "scrollHeight", {
+      value: 1000,
+      configurable: true,
+    });
+    Object.defineProperty(list, "scrollTop", {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(firstItem, "offsetHeight", {
+      value: 30,
+      configurable: true,
+    });
+
+    const event = new WheelEvent("wheel", {
+      deltaY: 200,
+      bubbles: true,
+      cancelable: true,
+    });
+    list.dispatchEvent(event);
+
+    // 一格滚轮 deltaY 远大于条目高度时，也只滚动一条
+    expect(list.scrollTop).toBe(30);
+    expect(event.defaultPrevented).toBe(true);
   });
 
   // ========== containerRef is null ==========
