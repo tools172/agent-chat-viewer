@@ -10,6 +10,8 @@ import {
   Search,
   Cpu,
   Workflow,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from "lucide-react";
 import type { FilterConfig } from "../../types";
 
@@ -28,6 +30,10 @@ interface FilterBarProps {
   onToggleFind?: () => void;
   /** 当前会话的 provider，用于条件渲染特定过滤按钮 */
   providerName?: string;
+  /** 代码块是否已全部折叠 */
+  allCodeBlocksCollapsed?: boolean;
+  /** 一键折叠 / 展开全部代码块 */
+  onToggleCodeBlocks?: () => void;
 }
 
 const FilterToggle: React.FC<{
@@ -58,6 +64,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   showFindBar,
   onToggleFind,
   providerName,
+  allCodeBlocksCollapsed,
+  onToggleCodeBlocks,
 }) => {
   return (
     <div className="flex items-center gap-2 overflow-hidden">
@@ -138,6 +146,31 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <span>{stats.userCount} 用户消息</span>
           <span>{stats.assistantCount} 助手回复</span>
           {stats.thinkingCount > 0 && <span>{stats.thinkingCount} 思考块</span>}
+          {onToggleCodeBlocks && (
+            <>
+              <span className="text-gray-300 ml-1">|</span>
+              <button
+                onClick={onToggleCodeBlocks}
+                className={`flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors ${
+                  allCodeBlocksCollapsed
+                    ? "bg-primary-100 text-primary-700"
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
+                }`}
+                title={
+                  allCodeBlocksCollapsed ? "展开所有代码块" : "折叠所有代码块"
+                }
+              >
+                {allCodeBlocksCollapsed ? (
+                  <ChevronsUpDown className="h-3 w-3" />
+                ) : (
+                  <ChevronsDownUp className="h-3 w-3" />
+                )}
+                <span>
+                  {allCodeBlocksCollapsed ? "展开代码段" : "折叠代码段"}
+                </span>
+              </button>
+            </>
+          )}
           {onToggleFind && (
             <>
               <span className="text-gray-300 ml-1">|</span>

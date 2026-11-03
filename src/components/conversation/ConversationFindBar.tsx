@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Search, ChevronUp, ChevronDown, X } from "lucide-react";
 import type { ChatEvent } from "../../types";
 import { searchEvents, type EventMatch } from "../../utils/searchEvents";
+import { useCodeBlockControls } from "./CodeBlockContext";
 
 interface ConversationFindBarProps {
   events: ChatEvent[];
@@ -22,6 +23,7 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
   const [query, setQuery] = useState("");
   const [currentIdx, setCurrentIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const codeBlockControls = useCodeBlockControls();
 
   const matches = useMemo(() => searchEvents(events, query), [events, query]);
 
@@ -71,8 +73,23 @@ export const ConversationFindBar: React.FC<ConversationFindBarProps> = ({
     const target =
       markEl ?? document.querySelector(`[data-event-uuid="${uuid}"]`);
 
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    // 命中折叠代码块时先展开，避免高亮藏在折叠区域里
+    let needExpand = false;
+    const blockEl = markEl?.closest("[data-code-block-id]");
+    const blockId = blockEl?.getAttribute("data-code-block-id");
+    if (blockId && !codeBlockControls?.isExpanded(blockId)) {
+      codeBlockControls?.expandOne(blockId);
+      needExpand = true;
+    }
+
+    const doScroll = () => {
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    // 展开后等 React 提交并完成布局，再滚动到匹配位置
+    if (needExpand) {
+      requestAnimationFrame(() => requestAnimationFrame(doScroll));
+    } else {
+      doScroll();
     }
 
     // 事件卡片加闪烁环

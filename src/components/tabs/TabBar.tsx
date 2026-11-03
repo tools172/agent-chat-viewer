@@ -310,17 +310,43 @@ export const TabBar: React.FC<TabBarProps> = ({
   );
 
   // === 滚轮事件 ===
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    wheelTimeRef.current = Date.now();
-    const el = e.currentTarget as HTMLDivElement;
-    if (!el) return;
-    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
-    const atStart = el.scrollLeft <= 0;
-    if ((e.deltaY > 0 && !atEnd) || (e.deltaY < 0 && !atStart)) {
-      e.preventDefault();
-      el.scrollLeft += e.deltaY;
-    }
-  }, []);
+  // React 的 onWheel 是 passive 监听，preventDefault 无法阻止原生滚动，
+  // 必须用原生 non-passive 监听，否则原生滚动会叠加在手动滚动之上。
+  const lastWheelStepRef = useRef(0);
+  useEffect(() => {
+    const els = [pinnedScrollRef.current, regularScrollRef.current].filter(
+      (el): el is HTMLDivElement => el !== null,
+    );
+    const handlers = els.map((el) => {
+      const onWheel = (e: WheelEvent) => {
+        wheelTimeRef.current = Date.now();
+        if (e.deltaY === 0) return;
+        const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+        const atStart = el.scrollLeft <= 0;
+        const direction = e.deltaY > 0 ? 1 : -1;
+        if ((direction > 0 && atEnd) || (direction < 0 && atStart)) return;
+
+        e.preventDefault();
+
+        // 同一格滚轮可能触发多次事件，短时间内的后续事件直接忽略
+        const now = Date.now();
+        if (now - lastWheelStepRef.current < 50) return;
+        lastWheelStepRef.current = now;
+
+        // 单次滚轮最多跨越一个标签，避免一格滚轮跳动两个以上
+        const tabWidth =
+          el.querySelector<HTMLElement>("[data-tab-item]")?.offsetWidth || 120;
+        el.scrollLeft += direction * Math.min(Math.abs(e.deltaY), tabWidth);
+      };
+      el.addEventListener("wheel", onWheel, { passive: false });
+      return { el, onWheel };
+    });
+    return () => {
+      for (const { el, onWheel } of handlers) {
+        el.removeEventListener("wheel", onWheel);
+      }
+    };
+  }, [pinnedTabs.length, regularTabs.length]);
 
   // === 滚轮后抑制激活（防误触） ===
   const handleActivate = useCallback(
@@ -395,7 +421,6 @@ export const TabBar: React.FC<TabBarProps> = ({
         <>
           <div
             ref={pinnedScrollRef}
-            onWheel={handleWheel}
             onDragOver={handleContainerDragOver}
             onDrop={handleContainerDrop("pinned", pinnedStart)}
             onDragEnd={handleDragEnd}
@@ -476,7 +501,6 @@ export const TabBar: React.FC<TabBarProps> = ({
 
       <div
         ref={regularScrollRef}
-        onWheel={handleWheel}
         onDragOver={handleContainerDragOver}
         onDrop={handleContainerDrop("regular", regularStart)}
         onDragEnd={handleDragEnd}

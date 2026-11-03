@@ -7,6 +7,10 @@ import {
   collapseConsecutiveEvents,
 } from "../../utils/filterEvents";
 import { FilterBar } from "../filter/FilterBar";
+import {
+  CodeBlockContext,
+  useCodeBlockController,
+} from "../conversation/CodeBlockContext";
 import { ConversationView } from "../conversation/ConversationView";
 import { TurnNavigator } from "../conversation/TurnNavigator";
 import { EmptyState } from "../common/EmptyState";
@@ -38,6 +42,8 @@ export const TabContent: React.FC<TabContentProps> = React.memo(
       assistantCount: number;
       thinkingCount: number;
     } | null>(null);
+    // 代码块折叠状态（按标签页独立）
+    const { allCollapsed, toggleAll, controls } = useCodeBlockController();
 
     // 前端侧过滤
     const filteredEvents = useMemo(() => {
@@ -99,45 +105,49 @@ export const TabContent: React.FC<TabContentProps> = React.memo(
     }
 
     return (
-      <div
-        style={containerStyle}
-        className="flex-1 flex flex-col h-full min-w-0"
-      >
-        {/* FilterBar */}
-        <div className="px-4 py-2 border-b bg-white">
-          <FilterBar
-            filter={tab.filter}
-            onChange={(filterUpdate) => onFilterChange(tab.id, filterUpdate)}
-            stats={convStats ?? undefined}
-            showFindBar={tab.showFindBar}
-            onToggleFind={() => onFindBarToggle(tab.id, !tab.showFindBar)}
-            providerName={tab.providerName}
-          />
-        </div>
+      <CodeBlockContext.Provider value={controls}>
+        <div
+          style={containerStyle}
+          className="flex-1 flex flex-col h-full min-w-0"
+        >
+          {/* FilterBar */}
+          <div className="px-4 py-2 border-b bg-white">
+            <FilterBar
+              filter={tab.filter}
+              onChange={(filterUpdate) => onFilterChange(tab.id, filterUpdate)}
+              stats={convStats ?? undefined}
+              showFindBar={tab.showFindBar}
+              onToggleFind={() => onFindBarToggle(tab.id, !tab.showFindBar)}
+              providerName={tab.providerName}
+              allCodeBlocksCollapsed={allCollapsed}
+              onToggleCodeBlocks={toggleAll}
+            />
+          </div>
 
-        {/* 对话内容 + TurnNavigator */}
-        <div className="flex-1 flex overflow-hidden">
-          <ConversationView
-            events={filteredEvents}
-            isLoading={tab.isLoading}
-            searchHighlight={tab.searchHighlight}
-            scrollHostRef={scrollHostRef}
-            showFindBar={tab.showFindBar}
-            onToggleFind={() => onFindBarToggle(tab.id, !tab.showFindBar)}
-            onStatsChange={setConvStats}
-          />
-          <TurnNavigator
-            events={filteredEvents}
-            containerRef={scrollHostRef}
-            defaultWidth={navigatorWidth}
-            onWidthChange={(w) => {
-              if (autoSavePanelWidths ?? true) {
-                updateNavigatorWidth(w);
-              }
-            }}
-          />
+          {/* 对话内容 + TurnNavigator */}
+          <div className="flex-1 flex overflow-hidden">
+            <ConversationView
+              events={filteredEvents}
+              isLoading={tab.isLoading}
+              searchHighlight={tab.searchHighlight}
+              scrollHostRef={scrollHostRef}
+              showFindBar={tab.showFindBar}
+              onToggleFind={() => onFindBarToggle(tab.id, !tab.showFindBar)}
+              onStatsChange={setConvStats}
+            />
+            <TurnNavigator
+              events={filteredEvents}
+              containerRef={scrollHostRef}
+              defaultWidth={navigatorWidth}
+              onWidthChange={(w) => {
+                if (autoSavePanelWidths ?? true) {
+                  updateNavigatorWidth(w);
+                }
+              }}
+            />
+          </div>
         </div>
-      </div>
+      </CodeBlockContext.Provider>
     );
   },
   // 自定义比较函数：只有关键 props 变化时才重渲染

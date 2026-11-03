@@ -161,6 +161,37 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({
     calcOverflow();
   }, [calcOverflow]);
 
+  // 滚轮一次最多跨越一个轮次条目。
+  // React 的 onWheel 是 passive 监听，preventDefault 无法阻止原生滚动，
+  // 必须用原生 non-passive 监听，否则原生滚动会叠加在手动滚动之上。
+  const lastWheelStepRef = useRef(0);
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      const atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+      const atStart = el.scrollTop <= 0;
+      const direction = e.deltaY > 0 ? 1 : -1;
+      if ((direction > 0 && atEnd) || (direction < 0 && atStart)) return;
+
+      e.preventDefault();
+
+      // 同一格滚轮可能触发多次事件，短时间内的后续事件直接忽略
+      const now = Date.now();
+      if (now - lastWheelStepRef.current < 50) return;
+      lastWheelStepRef.current = now;
+
+      const itemHeight =
+        el.querySelector<HTMLElement>("[data-turn-index]")?.offsetHeight || 0;
+      el.scrollTop +=
+        direction *
+        Math.min(Math.abs(e.deltaY), itemHeight || Math.abs(e.deltaY));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [collapsed, turns.length]);
+
   // ---- IntersectionObserver ----
   useEffect(() => {
     if (!containerRef.current) return;
@@ -387,19 +418,26 @@ export const TurnNavigator: React.FC<TurnNavigatorProps> = ({
         ))}
       </div>
 
-      {/* 底部按钮 */}
-      <button
-        onClick={scrollToBottom}
-        className="flex items-center justify-center gap-0.5 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors border-t border-gray-200"
-        title="回到底部"
-      >
-        <ScrollBottomIcon />
-        {overflowBelow > 0 && (
-          <span className="text-xs font-semibold tabular-nums text-gray-900">
-            {overflowBelow}
-          </span>
-        )}
-      </button>
+      {/* 底部按钮行 */}
+      <div className="flex items-center border-t border-gray-200">
+        <span className="pl-2 text-xs font-semibold text-gray-700 whitespace-nowrap select-none">
+          共 {turns.length} 轮
+        </span>
+        <button
+          onClick={scrollToBottom}
+          className="flex-1 flex items-center justify-center gap-0.5 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          title="回到底部"
+        >
+          <ScrollBottomIcon />
+          {overflowBelow > 0 && (
+            <span className="text-xs font-semibold tabular-nums text-gray-900">
+              {overflowBelow}
+            </span>
+          )}
+        </button>
+        {/* 与顶部折叠按钮同宽的占位，保持上下箭头对齐 */}
+        <span aria-hidden="true" className="w-[22px] flex-shrink-0" />
+      </div>
     </div>
   );
 };

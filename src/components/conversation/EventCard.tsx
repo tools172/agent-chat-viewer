@@ -66,6 +66,8 @@ const HighlightedMarkdown: React.FC<{
   searchColors: { search: string; find: string };
   activeFindOccurrence?: number;
   blockIdx?: number;
+  /** 代码块 id 前缀，避免不同事件中的相同代码共用折叠状态 */
+  codeBlockIdPrefix?: string;
 }> = React.memo(
   ({
     content,
@@ -74,6 +76,7 @@ const HighlightedMarkdown: React.FC<{
     searchColors,
     activeFindOccurrence,
     blockIdx,
+    codeBlockIdPrefix,
   }) => {
     const ref = useRef<HTMLDivElement>(null);
 
@@ -110,7 +113,10 @@ const HighlightedMarkdown: React.FC<{
 
     return (
       <div ref={ref} className="mb-1">
-        <MarkdownRenderer content={content} />
+        <MarkdownRenderer
+          content={content}
+          codeBlockIdPrefix={codeBlockIdPrefix}
+        />
       </div>
     );
   },
@@ -213,6 +219,7 @@ export const EventCard: React.FC<EventCardProps> = React.memo(
               findHighlight={findHighlight}
               searchColors={searchColors}
               blockIdx={index}
+              codeBlockIdPrefix={key}
               activeFindOccurrence={
                 index === activeFindBlockIdx
                   ? activeFindOccurrenceIdx
