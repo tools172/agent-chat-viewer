@@ -431,4 +431,75 @@ describe("ProjectList", () => {
     // claude_code: aaa, bbb (按 path); openclaw: ccc
     expectTextOrder(container, ["aaa-project", "bbb-project", "ccc-project"]);
   });
+
+  // ============================================================
+  // 右键菜单 — 搜索范围
+  // ============================================================
+
+  it("右键菜单：仅在此工作目录中搜索", () => {
+    const onSearchInProject = vi.fn();
+    render(
+      <ProjectList
+        {...defaultProps}
+        onSearchInProject={onSearchInProject}
+      />,
+    );
+
+    fireEvent.contextMenu(screen.getByText("project-a").closest("button")!);
+    fireEvent.click(screen.getByText("仅在此工作目录中搜索"));
+
+    expect(onSearchInProject).toHaveBeenCalledWith(
+      mockProjects[0],
+      "replace",
+    );
+  });
+
+  it("selected 模式下未选中的项目显示添加项", () => {
+    const onSearchInProject = vi.fn();
+    render(
+      <ProjectList
+        {...defaultProps}
+        searchScopeMode="selected"
+        searchScopes={[]}
+        onSearchInProject={onSearchInProject}
+      />,
+    );
+
+    fireEvent.contextMenu(screen.getByText("project-a").closest("button")!);
+    fireEvent.click(screen.getByText("添加到搜索范围"));
+
+    expect(onSearchInProject).toHaveBeenCalledWith(mockProjects[0], "add");
+  });
+
+  it("selected 模式下已选中的项目显示移除项", () => {
+    const onSearchInProject = vi.fn();
+    render(
+      <ProjectList
+        {...defaultProps}
+        searchScopeMode="selected"
+        searchScopes={[
+          { projectPath: "/data/project-a", providerName: "claude_code" },
+        ]}
+        onSearchInProject={onSearchInProject}
+      />,
+    );
+
+    fireEvent.contextMenu(screen.getByText("project-a").closest("button")!);
+    fireEvent.click(screen.getByText("从搜索范围中移除"));
+
+    expect(onSearchInProject).toHaveBeenCalledWith(
+      mockProjects[0],
+      "remove",
+    );
+  });
+
+  it("未提供 onSearchInProject 时不显示搜索菜单项", () => {
+    render(<ProjectList {...defaultProps} />);
+
+    fireEvent.contextMenu(screen.getByText("project-a").closest("button")!);
+
+    expect(
+      screen.queryByText("仅在此工作目录中搜索"),
+    ).not.toBeInTheDocument();
+  });
 });

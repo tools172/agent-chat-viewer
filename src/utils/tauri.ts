@@ -6,6 +6,7 @@ import type {
   FilterConfig,
   AppSettings,
   ProviderInfo,
+  SearchScope,
   UpdateInfo,
   DownloadProgress,
 } from "../types";
@@ -71,14 +72,20 @@ export async function polishSessions(
   return invoke<SessionPolish[]>("polish_sessions", { sessions });
 }
 
-/** Search across all sessions */
+/**
+ * Search across sessions.
+ * Pass a non-empty scope list to search only those working directories;
+ * null searches all sessions (original behavior).
+ */
 export async function searchSessions(
   query: string,
   settings: AppSettings,
+  scope: SearchScope[] | null = null,
 ): Promise<SessionSummary[]> {
   return invoke<SessionSummary[]>("search_sessions", {
     query,
     settings,
+    scope: scope && scope.length > 0 ? scope : null,
   });
 }
 

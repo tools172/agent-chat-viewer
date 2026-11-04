@@ -16,6 +16,9 @@ import type {
   SessionSummary,
   SortConfig,
   TimeField,
+  SearchScope,
+  SearchScopeMode,
+  SearchInProjectAction,
 } from "../../types";
 import { FlatSessionList } from "../sessions/FlatSessionList";
 import { ProjectList } from "../projects/ProjectList";
@@ -55,6 +58,8 @@ interface SessionNavigatorProps {
   searchQuery: string;
   searchResults: SessionSummary[];
   highlightEnabled: boolean;
+  searchScopeMode: SearchScopeMode;
+  searchScopes: SearchScope[];
   isSearching: boolean;
   isLoadingAll: boolean;
   isLoadingProject: boolean;
@@ -76,6 +81,10 @@ interface SessionNavigatorProps {
   onSearchQueryChange: (query: string) => void;
   onSearch: (query: string) => void;
   onToggleHighlight: () => void;
+  onSearchScopeModeChange: (mode: SearchScopeMode) => void;
+  onToggleSearchScope: (scope: SearchScope) => void;
+  onSetSearchScopes: (scopes: SearchScope[]) => void;
+  onSearchInProject: (project: Project, action: SearchInProjectAction) => void;
   onClearProjectFilter: () => void;
   onOpenSettings: () => void;
   onRefresh: () => void;
@@ -92,6 +101,8 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   searchQuery,
   searchResults,
   highlightEnabled,
+  searchScopeMode,
+  searchScopes,
   isSearching,
   isLoadingAll,
   isLoadingProject,
@@ -109,6 +120,10 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
   onSearchQueryChange,
   onSearch,
   onToggleHighlight,
+  onSearchScopeModeChange,
+  onToggleSearchScope,
+  onSetSearchScopes,
+  onSearchInProject,
   onClearProjectFilter,
   onOpenSettings,
   onRefresh,
@@ -321,6 +336,9 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
               onSelectSession={onSelectSession}
               onOpenInNewTab={onOpenInNewTab}
               isLoadingProject={isLoadingProject}
+              searchScopeMode={searchScopeMode}
+              searchScopes={searchScopes}
+              onSearchInProject={onSearchInProject}
             />
           )}
         </div>
@@ -369,12 +387,18 @@ export const SessionNavigator: React.FC<SessionNavigatorProps> = ({
             isLoading={isSearching}
             highlightEnabled={highlightEnabled}
             visible={viewMode === "search"}
+            projects={projects}
+            scopeMode={searchScopeMode}
+            scopes={searchScopes}
             onQueryChange={onSearchQueryChange}
             onSearch={onSearch}
             onSelectSession={onSelectSession}
             onOpenInNewTab={onOpenInNewTab}
             onLocateInFolderList={onLocateInFolderList}
             onToggleHighlight={onToggleHighlight}
+            onScopeModeChange={onSearchScopeModeChange}
+            onToggleScope={onToggleSearchScope}
+            onSetScopes={onSetSearchScopes}
             selectedSessionPath={selectedSessionPath}
           />
         </div>

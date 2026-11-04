@@ -44,6 +44,8 @@ describe("sessionListStore", () => {
       projectFilter: null,
       searchQuery: "",
       highlightEnabled: true,
+      searchScopeMode: "all",
+      searchScopes: [],
       isLoadingAll: false,
       isLoadingProjects: false,
       isLoadingProject: false,
@@ -121,7 +123,11 @@ describe("sessionListStore", () => {
 
       await useSessionListStore.getState().refresh(mockSettings);
 
-      expect(mockedSearchSessions).toHaveBeenCalledWith("hello", mockSettings);
+      expect(mockedSearchSessions).toHaveBeenCalledWith(
+        "hello",
+        mockSettings,
+        null,
+      );
       expect(useSessionListStore.getState().searchResults).toHaveLength(1);
     });
 
@@ -339,5 +345,122 @@ describe("sessionListStore", () => {
     // 切换到 by-project，该视图之前未保存过 timeField
     useSessionListStore.getState().setViewMode("by-project");
     expect(useSessionListStore.getState().timeField).toBe("created");
+  });
+
+  // ============================================================
+  // 指定工作目录范围搜索
+  // ============================================================
+
+  describe("scoped search", () => {
+    const scopeA = { projectPath: "/p/a", providerName: "claude_code" };
+    const scopeB = { projectPath: "/p/b", providerName: "codex" };
+
+    it("all 模式向 invoke 传 null", async () => {
+      mockedSearchSessions.mockResolvedValue([]);
+
+      await useSessionListStore.getState().search("hello", mockSettings);
+
+      expect(mockedSearchSessions).toHaveBeenCalledWith(
+        "hello",
+        mockSettings,
+        null,
+      );
+    });
+
+    it("selected 模式向 invoke 传选中范围", async () => {
+      mockedSearchSessions.mockResolvedValue([]);
+      useSessionListStore.setState({
+        searchScopeMode: "selected",
+        searchScopes: [scopeA, scopeB],
+      });
+
+      await useSessionListStore.getState().search("hello", mockSettings);
+
+      expect(mockedSearchSessions).toHaveBeenCalledWith(
+        "hello",
+        mockSettings,
+        [scopeA, scopeB],
+      );
+    });
+
+    it("selected 模式但未选目录时不调用 invoke，并清空结果", async () => {
+      useSessionListStore.setState({
+        searchScopeMode: "selected",
+        searchScopes: [],
+        searchResults: [
+          {
+            id: "old",
+            projectName: "old",
+            projectPath: "/old",
+            display: "old",
+            timestamp: "",
+            messageCount: 0,
+            fileSize: 0,
+            cwd: "",
+            filePath: "/old/old.jsonl",
+            providerName: "claude_code",
+            fileMtime: "",
+            clientType: "",
+            storagePath: "",
+          },
+        ],
+      });
+
+      await useSessionListStore.getState().search("hello", mockSettings);
+
+      expect(mockedSearchSessions).not.toHaveBeenCalled();
+      expect(useSessionListStore.getState().searchResults).toEqual([]);
+      expect(useSessionListStore.getState().isLoadingSearch).toBe(false);
+    });
+
+    it("setSearchScopes 自动切到 selected 模式", () => {
+      useSessionListStore.getState().setSearchScopes([scopeA]);
+
+      expect(useSessionListStore.getState().searchScopeMode).toBe("selected");
+      expect(useSessionListStore.getState().searchScopes).toEqual([scopeA]);
+    });
+
+    it("toggleSearchScope 添加后再次切换会移除同一项", () => {
+      useSessionListStore.getState().toggleSearchScope(scopeA);
+      expect(useSessionListStore.getState().searchScopes).toEqual([scopeA]);
+
+      useSessionListStore.getState().toggleSearchScope(scopeA);
+      expect(useSessionListStore.getState().searchScopes).toEqual([]);
+      expect(useSessionListStore.getState().searchScopeMode).toBe("selected");
+    });
+
+    it("空查询会让在途搜索失效", async () => {
+      let resolveSearch!: (value: unknown[]) => void;
+      mockedSearchSessions.mockImplementation(
+        () => new Promise((resolve) => (resolveSearch = resolve)),
+      );
+
+      const pending = useSessionListStore
+        .getState()
+        .search("hello", mockSettings);
+
+      // 清空查询后，旧请求才返回
+      await useSessionListStore.getState().search("", mockSettings);
+      resolveSearch([
+        {
+          id: "stale",
+          projectName: "stale",
+          projectPath: "/stale",
+          display: "stale",
+          timestamp: "",
+          messageCount: 0,
+          fileSize: 0,
+          cwd: "",
+          filePath: "/stale/s.jsonl",
+          providerName: "claude_code",
+          fileMtime: "",
+          clientType: "",
+          storagePath: "",
+        },
+      ]);
+      await pending;
+
+      expect(useSessionListStore.getState().searchResults).toEqual([]);
+    });
   });
 });

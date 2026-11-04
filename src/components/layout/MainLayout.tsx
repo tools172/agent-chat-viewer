@@ -18,6 +18,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { useSessionList } from "../../hooks/useSessionList";
+import { useSessionListStore } from "../../stores/sessionListStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useTabStore } from "../../stores/tabStore";
 import { useToastStore } from "../../stores/toastStore";
@@ -35,6 +36,12 @@ import { EmptyState } from "../common/EmptyState";
 import { LoadingOverlay } from "../common/LoadingOverlay";
 import * as tauri from "../../utils/tauri";
 import { CONTENT_ZOOM_DEFAULT, CONTENT_ZOOM_STEP } from "../../types";
+import type {
+  Project,
+  SearchScope,
+  SearchScopeMode,
+  SearchInProjectAction,
+} from "../../types";
 
 export const MainLayout: React.FC = () => {
   // 会话列表 store
@@ -253,6 +260,71 @@ export const MainLayout: React.FC = () => {
       list.search(query, settings);
     },
     [list, settings],
+  );
+
+  // 范围变化后，若已有查询则立即重搜（读取 store 的最新范围状态）
+  const handleSearchScopeModeChange = useCallback(
+    (mode: SearchScopeMode) => {
+      useSessionListStore.getState().setSearchScopeMode(mode);
+      if (localSearchQuery.trim()) list.search(localSearchQuery, settings);
+    },
+    [list, localSearchQuery, settings],
+  );
+
+  const handleToggleSearchScope = useCallback(
+    (scope: SearchScope) => {
+      useSessionListStore.getState().toggleSearchScope(scope);
+      if (localSearchQuery.trim()) list.search(localSearchQuery, settings);
+    },
+    [list, localSearchQuery, settings],
+  );
+
+  const handleSetSearchScopes = useCallback(
+    (scopes: SearchScope[]) => {
+      useSessionListStore.getState().setSearchScopes(scopes);
+      if (localSearchQuery.trim()) list.search(localSearchQuery, settings);
+    },
+    [list, localSearchQuery, settings],
+  );
+
+  /** 文件夹右键：仅搜索此目录 / 加入范围 / 从范围移除 */
+  const handleSearchInProject = useCallback(
+    (project: Project, action: SearchInProjectAction) => {
+      const scope: SearchScope = {
+        projectPath: project.path,
+        providerName: project.providerName,
+      };
+      const current = useSessionListStore.getState().searchScopes;
+      const exists = current.some(
+        (s) =>
+          s.projectPath === scope.projectPath &&
+          s.providerName === scope.providerName,
+      );
+
+      let next: SearchScope[];
+      switch (action) {
+        case "replace":
+          next = [scope];
+          break;
+        case "add":
+          next = exists ? current : [...current, scope];
+          break;
+        case "remove":
+          next = current.filter(
+            (s) =>
+              !(
+                s.projectPath === scope.projectPath &&
+                s.providerName === scope.providerName
+              ),
+          );
+          break;
+      }
+
+      useSessionListStore.getState().setSearchScopes(next);
+      list.setViewMode("search");
+      if (localSearchQuery.trim()) list.search(localSearchQuery, settings);
+    },
+    [list, localSearchQuery, settings],
   );
 
   const handleViewModeChange = useCallback(
@@ -537,6 +609,8 @@ export const MainLayout: React.FC = () => {
         searchQuery={localSearchQuery}
         searchResults={list.searchResults}
         highlightEnabled={list.highlightEnabled}
+        searchScopeMode={list.searchScopeMode}
+        searchScopes={list.searchScopes}
         isSearching={list.isLoadingSearch}
         isLoadingAll={list.isLoadingAll}
         isLoadingProject={list.isLoadingProject}
@@ -554,6 +628,10 @@ export const MainLayout: React.FC = () => {
         onSearchQueryChange={setLocalSearchQuery}
         onSearch={handleSearch}
         onToggleHighlight={list.toggleHighlight}
+        onSearchScopeModeChange={handleSearchScopeModeChange}
+        onToggleSearchScope={handleToggleSearchScope}
+        onSetSearchScopes={handleSetSearchScopes}
+        onSearchInProject={handleSearchInProject}
         onClearProjectFilter={handleClearProjectFilter}
         onOpenSettings={() => setShowSettings(true)}
         onRefresh={list.reload}
