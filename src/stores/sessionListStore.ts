@@ -5,6 +5,8 @@ import type {
   SortConfig,
   TimeField,
   AppSettings,
+  SearchScope,
+  SearchScopeMode,
 } from "../types";
 import { DEFAULT_SORTS } from "../utils/sort";
 import { useSettingsStore } from "./settingsStore";
@@ -17,6 +19,17 @@ const DEFAULT_TIME_FIELDS: Record<string, TimeField> = {
   "by-time": "created",
   search: "created",
 };
+
+/** 判断两个范围项是否指向同一个工作目录 */
+function sameScope(a: SearchScope, b: SearchScope): boolean {
+  return a.providerName === b.providerName && a.projectPath === b.projectPath;
+}
+
+/**
+ * 搜索请求序号：快速切换范围或输入时，旧请求的结果可能晚于新请求返回，
+ * 只接受最后一次请求的结果。
+ */
+let searchRequestSeq = 0;
 
 interface SessionListState {
   viewMode: ViewMode;
@@ -40,6 +53,10 @@ interface SessionListState {
   // 搜索
   searchQuery: string;
   highlightEnabled: boolean;
+  /** 搜索范围模式：全部工作目录 / 指定工作目录 */
+  searchScopeMode: SearchScopeMode;
+  /** 指定搜索范围（仅 searchScopeMode === "selected" 时生效） */
+  searchScopes: SearchScope[];
 
   // 文件夹视图定位目标（右键菜单 "定位到文件夹列表"）
   locateTarget: { filePath: string; projectPath: string } | null;
@@ -72,6 +89,11 @@ interface SessionListState {
   ) => Promise<void>;
   polishSearchResults: (sessions: SessionSummary[]) => Promise<void>;
   setSearchQuery: (query: string) => void;
+  setSearchScopeMode: (mode: SearchScopeMode) => void;
+  /** 设置选中范围并切到 selected 模式（传入空数组时保留 selected 模式） */
+  setSearchScopes: (scopes: SearchScope[]) => void;
+  /** 切换单个范围项；操作后始终处于 selected 模式 */
+  toggleSearchScope: (scope: SearchScope) => void;
   clearError: () => void;
 }
 
@@ -92,6 +114,8 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
   locateTarget: null,
   searchQuery: "",
   highlightEnabled: true,
+  searchScopeMode: "all",
+  searchScopes: [],
 
   isLoadingAll: false,
   isLoadingProjects: false,
@@ -300,17 +324,32 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
 
   // 搜索
   search: async (query, settings) => {
+    // 先占用序号，空查询也要让在途请求失效
+    const seq = ++searchRequestSeq;
+
     if (!query.trim()) {
-      set({ searchResults: [], searchQuery: "" });
+      set({ searchResults: [], searchQuery: "", isLoadingSearch: false });
       return;
     }
+
+    const { searchScopeMode, searchScopes } = get();
     set({ isLoadingSearch: true, searchQuery: query, error: null });
+
+    // 指定了模式但一个目录都没选：不发请求，由 UI 提示选择
+    if (searchScopeMode === "selected" && searchScopes.length === 0) {
+      set({ searchResults: [], isLoadingSearch: false });
+      return;
+    }
+
     try {
-      const searchResults = await tauri.searchSessions(query, settings);
+      const scope = searchScopeMode === "selected" ? searchScopes : null;
+      const searchResults = await tauri.searchSessions(query, settings, scope);
+      if (seq !== searchRequestSeq) return;
       set({ searchResults, isLoadingSearch: false });
       // 渐进 polish 搜索结果，填充 display/clientType 等信息
       get().polishSearchResults(searchResults);
     } catch (err) {
+      if (seq !== searchRequestSeq) return;
       set({ error: String(err), isLoadingSearch: false });
     }
   },
@@ -339,5 +378,18 @@ export const useSessionListStore = create<SessionListState>((set, get) => ({
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),
+  setSearchScopeMode: (mode) => set({ searchScopeMode: mode }),
+  setSearchScopes: (scopes) =>
+    set({ searchScopes: scopes, searchScopeMode: "selected" }),
+  toggleSearchScope: (scope) => {
+    const { searchScopes } = get();
+    const exists = searchScopes.some((s) => sameScope(s, scope));
+    set({
+      searchScopes: exists
+        ? searchScopes.filter((s) => !sameScope(s, scope))
+        : [...searchScopes, scope],
+      searchScopeMode: "selected",
+    });
+  },
   clearError: () => set({ error: null }),
 }));

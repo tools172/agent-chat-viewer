@@ -67,6 +67,20 @@ export interface Project {
   providerName: string;
 }
 
+// ===== Scoped Search =====
+
+/** 搜索范围中的一个工作目录（用 provider + path 唯一标识） */
+export interface SearchScope {
+  projectPath: string;
+  providerName: string;
+}
+
+/** 搜索范围模式：全部工作目录 / 指定工作目录 */
+export type SearchScopeMode = "all" | "selected";
+
+/** 从文件夹列表发起范围搜索时的动作 */
+export type SearchInProjectAction = "replace" | "add" | "remove";
+
 export interface SessionSummary {
   id: string;
   projectName: string;

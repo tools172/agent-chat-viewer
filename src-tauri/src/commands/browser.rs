@@ -1,12 +1,19 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use crate::models::{AppSettings, FilterConfig, Project, SessionDetail, SessionSummary};
+use crate::models::{
+    AppSettings, FilterConfig, Project, SearchScope, SessionDetail, SessionSummary,
+};
+use crate::providers::base::ChatProvider;
 use crate::providers::ProviderRegistry;
 use crate::services::{filter_events, parse_session_detail};
 
 /// 递归扫描的最大深度（覆盖 `<root>/agents/<agent>/sessions/*.jsonl` 三层 + 一层余量）
 const MAX_SCAN_DEPTH: u32 = 4;
+
+/// 搜索结果上限（全局搜索与指定范围搜索保持一致）
+const SEARCH_RESULT_LIMIT: usize = 50;
 
 /// 收集所有需要扫描的基础路径。
 ///
@@ -114,6 +121,62 @@ pub(crate) fn detect_provider_from_file(
         }
     }
     None
+}
+
+/// 枚举 provider 的全部会话文件。
+///
+/// Codex 的目录结构是 `<base>/<年>/<月>/<日>/<file>.jsonl`，需要先遍历年份
+/// 目录；同时兼容扁平目录（如 Cursor cached JSONL）。
+fn enumerate_provider_session_files(provider: &Arc<dyn ChatProvider>) -> Vec<PathBuf> {
+    let base_dir = provider.default_base_dir();
+    let mut files = Vec::new();
+
+    if let Ok(year_entries) = std::fs::read_dir(&base_dir) {
+        for year_entry in year_entries.flatten() {
+            let year_path = year_entry.path();
+            if year_path.is_dir() {
+                files.extend(provider.enumerate_session_files(&year_path));
+            }
+        }
+    }
+
+    // Fallback: flat directory
+    if files.is_empty() {
+        files = provider.enumerate_session_files(&base_dir);
+    }
+
+    files
+}
+
+/// 按 cwd 过滤会话文件（用于 `use_cwd_grouping` 的 provider）。
+fn filter_session_files_by_cwd(
+    files: Vec<PathBuf>,
+    provider: &Arc<dyn ChatProvider>,
+    cwd: &str,
+) -> Vec<PathBuf> {
+    files
+        .into_iter()
+        .filter(|file_path| provider.read_session_cwd_from_file(file_path).as_deref() == Some(cwd))
+        .collect()
+}
+
+/// 收集某个项目对应的会话文件。
+///
+/// 这是 `list_sessions` 和范围搜索共用的唯一事实来源：
+/// 文件夹视图展示的会话，与指定工作目录搜索扫描的文件必须完全一致。
+fn collect_project_session_files(
+    project_path: &str,
+    provider: &Arc<dyn ChatProvider>,
+) -> Vec<PathBuf> {
+    if provider.use_cwd_grouping() {
+        filter_session_files_by_cwd(
+            enumerate_provider_session_files(provider),
+            provider,
+            project_path,
+        )
+    } else {
+        provider.enumerate_session_files(Path::new(project_path))
+    }
 }
 
 /// 扫描项目列表（纯同步函数，供 spawn_blocking 调用）
@@ -320,26 +383,9 @@ pub async fn list_sessions(
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| project_path.clone());
-            // 从 sessions 根目录遍历年份子目录，再用 enumerate_session_files
-            let mut session_files = Vec::new();
-            let base_dir = provider.default_base_dir();
-            if let Ok(year_entries) = std::fs::read_dir(&base_dir) {
-                for year_entry in year_entries.flatten() {
-                    let year_path = year_entry.path();
-                    if year_path.is_dir() {
-                        session_files.extend(provider.enumerate_session_files(&year_path));
-                    }
-                }
-            }
-            // Fallback: flat directory (e.g., Cursor cached JSONL)
-            if session_files.is_empty() {
-                session_files = provider.enumerate_session_files(&base_dir);
-            }
+            let session_files = collect_project_session_files(&project_path, &provider);
             let mut sessions: Vec<SessionSummary> = session_files
                 .iter()
-                .filter(|file_path| {
-                    provider.read_session_cwd_from_file(file_path).as_deref() == Some(&project_path)
-                })
                 .filter_map(|file_path| {
                     crate::services::parser::create_skeleton_summary(
                         file_path,
@@ -366,7 +412,7 @@ pub async fn list_sessions(
             .file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_default();
-        let session_files = provider.enumerate_session_files(&project_dir);
+        let session_files = collect_project_session_files(&project_path, &provider);
         let mut sessions: Vec<SessionSummary> = session_files
             .iter()
             .filter_map(|file_path| {
@@ -586,10 +632,14 @@ pub async fn get_conversation(
 }
 
 /// 搜索会话（异步）
+///
+/// `scope` 为 `None` 时搜索所有已启用目录（原有行为）；传入非空列表时，
+/// 只扫描这些项目对应的会话文件，匹配语义与全局搜索保持一致。
 #[tauri::command]
 pub async fn search_sessions(
     query: String,
     settings: AppSettings,
+    scope: Option<Vec<SearchScope>>,
     registry: tauri::State<'_, ProviderRegistry>,
 ) -> Result<Vec<SessionSummary>, String> {
     let base_paths = collect_base_paths(&settings, &registry);
@@ -598,6 +648,55 @@ pub async fn search_sessions(
     let provider_enabled = settings.provider_enabled.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
+        // 指定工作目录范围：并集去重后搜索，不依赖全量扫描路径
+        if let Some(scopes) = scope {
+            let mut targets: HashMap<PathBuf, (String, String, Arc<dyn ChatProvider>)> =
+                HashMap::new();
+
+            for scope in &scopes {
+                let provider = match reg.get(&scope.provider_name) {
+                    Some(p) => p.clone(),
+                    // 项目已随设置变更消失：跳过该项，不影响其余范围
+                    None => continue,
+                };
+                let project_name = Path::new(&scope.project_path)
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| scope.project_path.clone());
+
+                for file_path in collect_project_session_files(&scope.project_path, &provider) {
+                    targets.entry(file_path).or_insert_with(|| {
+                        (
+                            project_name.clone(),
+                            scope.project_path.clone(),
+                            provider.clone(),
+                        )
+                    });
+                }
+            }
+
+            let mut results = Vec::new();
+            for (file_path, (project_name, project_path, provider)) in targets {
+                if let Some(content) = crate::utils::path::read_session_text(&file_path) {
+                    if content.to_lowercase().contains(&query_lower) {
+                        if let Some(summary) = crate::services::parser::create_session_summary(
+                            &file_path,
+                            &project_name,
+                            &project_path,
+                            &provider,
+                            true,
+                        ) {
+                            results.push(summary);
+                        }
+                    }
+                }
+            }
+
+            results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+            results.truncate(SEARCH_RESULT_LIMIT);
+            return results;
+        }
+
         let mut results = Vec::new();
 
         for (provider_name, base_path) in &base_paths {
@@ -726,7 +825,7 @@ pub async fn search_sessions(
         }
 
         results.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-        results.truncate(50);
+        results.truncate(SEARCH_RESULT_LIMIT);
         results
     })
     .await
@@ -999,5 +1098,71 @@ mod tests {
                 .map(|(n, p)| (n.as_str(), p.to_string_lossy()))
                 .collect::<Vec<_>>()
         );
+    }
+
+    // ===== 项目范围会话文件枚举 =====
+
+    #[test]
+    fn test_collect_project_session_files_flat_directory() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+
+        write_file(
+            root,
+            "001.jsonl",
+            r#"{"type":"user","message":{"role":"user","content":"Hello"},"uuid":"u1","timestamp":"2026-06-09T10:00:00Z","sessionId":"s1"}"#,
+        );
+        write_file(
+            root,
+            "002.jsonl",
+            r#"{"type":"user","message":{"role":"user","content":"World"},"uuid":"u2","timestamp":"2026-06-09T10:00:01Z","sessionId":"s2"}"#,
+        );
+        write_file(root, "notes.txt", "not a session file");
+
+        let registry = ProviderRegistry::new();
+        let provider = registry.get("claude_code").unwrap().clone();
+        let files = collect_project_session_files(&root.to_string_lossy(), &provider);
+
+        assert_eq!(files.len(), 2);
+        assert!(files
+            .iter()
+            .all(|f| f.extension().is_some_and(|e| e == "jsonl")));
+    }
+
+    #[test]
+    fn test_filter_session_files_by_cwd() {
+        let tmp = tempfile::tempdir().unwrap();
+        let first = tmp.path().join("first.jsonl");
+        let second = tmp.path().join("second.jsonl");
+        std::fs::write(
+            &first,
+            r#"{"timestamp":"2026-06-14T16:19:09.155Z","type":"session_meta","payload":{"id":"a","cwd":"C:\\work\\alpha"}}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            &second,
+            r#"{"timestamp":"2026-06-14T16:19:09.155Z","type":"session_meta","payload":{"id":"b","cwd":"C:\\work\\beta"}}"#,
+        )
+        .unwrap();
+
+        let registry = ProviderRegistry::new();
+        let provider = registry.get("codex").unwrap().clone();
+        let files =
+            filter_session_files_by_cwd(vec![first.clone(), second], &provider, r"C:\work\alpha");
+
+        assert_eq!(files, vec![first]);
+    }
+
+    #[test]
+    fn test_filter_session_files_by_cwd_excludes_unreadable() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broken = tmp.path().join("broken.jsonl");
+        std::fs::write(&broken, "not json").unwrap();
+
+        let registry = ProviderRegistry::new();
+        let provider = registry.get("codex").unwrap().clone();
+        let files = filter_session_files_by_cwd(vec![broken], &provider, r"C:\work\alpha");
+
+        assert!(files.is_empty());
     }
 }

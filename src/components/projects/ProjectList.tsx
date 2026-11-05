@@ -5,8 +5,23 @@ import React, {
   useEffect,
   useLayoutEffect,
 } from "react";
-import { Folder, ChevronDown, ChevronRight, FolderOpen } from "lucide-react";
-import type { Project, SessionSummary, SortConfig } from "../../types";
+import {
+  Folder,
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Search,
+  Plus,
+  Minus,
+} from "lucide-react";
+import type {
+  Project,
+  SessionSummary,
+  SortConfig,
+  SearchScope,
+  SearchScopeMode,
+  SearchInProjectAction,
+} from "../../types";
 import { multiSort } from "../../utils/sort";
 import { SessionItem } from "../sessions/SessionItem";
 import { LoadingSkeleton } from "../common/LoadingSkeleton";
@@ -26,9 +41,12 @@ interface ProjectListProps {
   selectedProjectPath: string | null;
   selectedSessionPath: string | null;
   isLoadingProject?: boolean;
+  searchScopeMode?: SearchScopeMode;
+  searchScopes?: SearchScope[];
   onSelectProject: (path: string, providerName: string) => void;
   onSelectSession: (path: string, providerName: string, cwd?: string) => void;
   onOpenInNewTab?: (path: string, providerName: string, cwd?: string) => void;
+  onSearchInProject?: (project: Project, action: SearchInProjectAction) => void;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = ({
@@ -39,9 +57,12 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   selectedProjectPath,
   selectedSessionPath,
   isLoadingProject = false,
+  searchScopeMode = "all",
+  searchScopes = [],
   onSelectProject,
   onSelectSession,
   onOpenInNewTab,
+  onSearchInProject,
 }) => {
   const locateTarget = useSessionListStore((s) => s.locateTarget);
   const setLocateTarget = useSessionListStore((s) => s.setLocateTarget);
@@ -51,7 +72,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
-    projectPath: string;
+    project: Project;
   } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -135,17 +156,14 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     onSelectSession(filePath, providerName, cwd);
   };
 
-  const handleProjectContextMenu = (
-    e: React.MouseEvent,
-    projectPath: string,
-  ) => {
+  const handleProjectContextMenu = (e: React.MouseEvent, project: Project) => {
     e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, projectPath });
+    setContextMenu({ x: e.clientX, y: e.clientY, project });
   };
 
   const handleOpenWorkingDir = async () => {
     if (!contextMenu) return;
-    const projectPath = contextMenu.projectPath;
+    const projectPath = contextMenu.project.path;
     setContextMenu(null);
     // 优先使用会话中记录的实际工作目录(cwd)，回退到数据目录
     const session = allSessions?.find(
@@ -156,12 +174,25 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
   const handleOpenStorageDir = async () => {
     if (!contextMenu) return;
-    const path = contextMenu.projectPath;
+    const path = contextMenu.project.path;
     setContextMenu(null);
     await runOpenFolderAction("打开存储目录", () =>
       tauri.openContainingFolder(path),
     );
   };
+
+  const handleSearchInProject = (action: SearchInProjectAction) => {
+    if (!contextMenu || !onSearchInProject) return;
+    onSearchInProject(contextMenu.project, action);
+    setContextMenu(null);
+  };
+
+  const isProjectInSearchScope = (project: Project) =>
+    searchScopes.some(
+      (scope) =>
+        scope.projectPath === project.path &&
+        scope.providerName === project.providerName,
+    );
 
   // 对文件夹项排序
   const sortedProjects = useMemo(() => {
@@ -223,7 +254,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               onClick={() =>
                 handleProjectClick(project.path, project.providerName)
               }
-              onContextMenu={(e) => handleProjectContextMenu(e, project.path)}
+              onContextMenu={(e) => handleProjectContextMenu(e, project)}
               className={`flex items-center gap-2 w-full px-3 py-2 text-sm font-medium transition-colors ${
                 isSelected
                   ? "bg-primary-50 text-primary-700"
@@ -296,6 +327,36 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
+          {onSearchInProject && (
+            <>
+              <button
+                onClick={() => handleSearchInProject("replace")}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <Search className="h-4 w-4 text-gray-400" />
+                仅在此工作目录中搜索
+              </button>
+              {searchScopeMode === "selected" &&
+                (isProjectInSearchScope(contextMenu.project) ? (
+                  <button
+                    onClick={() => handleSearchInProject("remove")}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Minus className="h-4 w-4 text-gray-400" />
+                    从搜索范围中移除
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSearchInProject("add")}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Plus className="h-4 w-4 text-gray-400" />
+                    添加到搜索范围
+                  </button>
+                ))}
+              <div className="border-t border-gray-100 my-1" />
+            </>
+          )}
           <button
             onClick={handleOpenStorageDir}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
