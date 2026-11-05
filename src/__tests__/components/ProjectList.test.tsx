@@ -439,19 +439,13 @@ describe("ProjectList", () => {
   it("右键菜单：仅在此工作目录中搜索", () => {
     const onSearchInProject = vi.fn();
     render(
-      <ProjectList
-        {...defaultProps}
-        onSearchInProject={onSearchInProject}
-      />,
+      <ProjectList {...defaultProps} onSearchInProject={onSearchInProject} />,
     );
 
     fireEvent.contextMenu(screen.getByText("project-a").closest("button")!);
     fireEvent.click(screen.getByText("仅在此工作目录中搜索"));
 
-    expect(onSearchInProject).toHaveBeenCalledWith(
-      mockProjects[0],
-      "replace",
-    );
+    expect(onSearchInProject).toHaveBeenCalledWith(mockProjects[0], "replace");
   });
 
   it("selected 模式下未选中的项目显示添加项", () => {
@@ -487,10 +481,7 @@ describe("ProjectList", () => {
     fireEvent.contextMenu(screen.getByText("project-a").closest("button")!);
     fireEvent.click(screen.getByText("从搜索范围中移除"));
 
-    expect(onSearchInProject).toHaveBeenCalledWith(
-      mockProjects[0],
-      "remove",
-    );
+    expect(onSearchInProject).toHaveBeenCalledWith(mockProjects[0], "remove");
   });
 
   it("未提供 onSearchInProject 时不显示搜索菜单项", () => {
@@ -498,8 +489,6 @@ describe("ProjectList", () => {
 
     fireEvent.contextMenu(screen.getByText("project-a").closest("button")!);
 
-    expect(
-      screen.queryByText("仅在此工作目录中搜索"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("仅在此工作目录中搜索")).not.toBeInTheDocument();
   });
 });

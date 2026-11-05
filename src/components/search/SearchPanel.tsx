@@ -2,10 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { Search, X, Highlighter, Folder, ChevronDown } from "lucide-react";
 import { SessionItem } from "../sessions/SessionItem";
 import { LoadingSpinner } from "../common/LoadingSpinner";
-import {
-  SearchScopePicker,
-  type PickerAnchorRect,
-} from "./SearchScopePicker";
+import { SearchScopePicker, type PickerAnchorRect } from "./SearchScopePicker";
 import type {
   Project,
   SearchScope,

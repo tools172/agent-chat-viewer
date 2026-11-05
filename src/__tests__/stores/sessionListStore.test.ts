@@ -376,11 +376,10 @@ describe("sessionListStore", () => {
 
       await useSessionListStore.getState().search("hello", mockSettings);
 
-      expect(mockedSearchSessions).toHaveBeenCalledWith(
-        "hello",
-        mockSettings,
-        [scopeA, scopeB],
-      );
+      expect(mockedSearchSessions).toHaveBeenCalledWith("hello", mockSettings, [
+        scopeA,
+        scopeB,
+      ]);
     });
 
     it("selected 模式但未选目录时不调用 invoke，并清空结果", async () => {

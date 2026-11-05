@@ -51,10 +51,7 @@ export const SearchScopePicker: React.FC<SearchScopePickerProps> = ({
     top: anchorRect.bottom + 4,
   });
 
-  const selectedKeys = useMemo(
-    () => new Set(scopes.map(scopeKey)),
-    [scopes],
-  );
+  const selectedKeys = useMemo(() => new Set(scopes.map(scopeKey)), [scopes]);
 
   const filteredProjects = useMemo(() => {
     const query = filter.trim().toLowerCase();
