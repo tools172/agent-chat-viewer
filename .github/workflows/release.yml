@@ -23,6 +23,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # git-cliff 需要完整历史和所有 tag，才能计算出上一个版本到当前版本的范围
+          fetch-depth: 0
 
       - name: Verify tag matches version
         shell: pwsh
@@ -58,6 +61,15 @@ jobs:
       - name: Build Tauri application (produces .exe and .msi)
         run: pnpm tauri build
 
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff@2
+
+      - name: Generate changelog
+        shell: pwsh
+        run: git-cliff --config cliff.toml --latest --strip header --output release-notes.md
+
       - name: Publish installers to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
@@ -65,4 +77,4 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
           fail_on_unmatched_files: false
-          generate_release_notes: true
+          body_path: release-notes.md
