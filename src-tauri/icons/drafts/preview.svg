@@ -1,0 +1,595 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="560" viewBox="0 0 1300 560">
+  <rect width="1300" height="560" fill="#EDF2F7"/>
+  
+  <g>
+    <rect x="20" y="20" width="300" height="520" rx="24" fill="#F8FAFC" stroke="#DBE3EE" stroke-width="2"/>
+    <text x="170" y="64" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#0F172A" letter-spacing="3">DRAFT A</text>
+    <g transform="translate(42 82) scale(0.5)">
+  <!-- Draft A: vivid cyan-blue ring + deep navy bubble (closest to the sketch) -->
+  <defs>
+    <linearGradient id="aRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="aHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="aBubble" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#17457A"/>
+      <stop offset="100%" stop-color="#0A2344"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#aHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#aRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#aBubble)" d="M-82 -92 H82 A42 42 0 0 1 124 -50 V50 A42 42 0 0 1 82 92 H-4 L-64 124 L-56 92 H-82 A42 42 0 0 1 -124 50 V-50 A42 42 0 0 1 -82 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.92">
+      <path d="M-64 -26 H64"/>
+      <path d="M-64 26 H14"/>
+    </g>
+  </g>
+</g>
+    <text x="170" y="364" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#64748B">Vivid ring / navy bubble / tail</text>
+    <rect x="42" y="382" width="122" height="96" rx="16" fill="#0F172A"/>
+    <g transform="translate(56 400) scale(0.125)">
+  <!-- Draft A: vivid cyan-blue ring + deep navy bubble (closest to the sketch) -->
+  <defs>
+    <linearGradient id="aRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="aHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="aBubble" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#17457A"/>
+      <stop offset="100%" stop-color="#0A2344"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#aHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#aRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#aBubble)" d="M-82 -92 H82 A42 42 0 0 1 124 -50 V50 A42 42 0 0 1 82 92 H-4 L-64 124 L-56 92 H-82 A42 42 0 0 1 -124 50 V-50 A42 42 0 0 1 -82 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.92">
+      <path d="M-64 -26 H64"/>
+      <path d="M-64 26 H14"/>
+    </g>
+  </g>
+</g>
+    <g transform="translate(128 428) scale(0.0625)">
+  <!-- Draft A: vivid cyan-blue ring + deep navy bubble (closest to the sketch) -->
+  <defs>
+    <linearGradient id="aRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="aHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="aBubble" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#17457A"/>
+      <stop offset="100%" stop-color="#0A2344"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#aHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#aRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#aBubble)" d="M-82 -92 H82 A42 42 0 0 1 124 -50 V50 A42 42 0 0 1 82 92 H-4 L-64 124 L-56 92 H-82 A42 42 0 0 1 -124 50 V-50 A42 42 0 0 1 -82 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.92">
+      <path d="M-64 -26 H64"/>
+      <path d="M-64 26 H14"/>
+    </g>
+  </g>
+</g>
+    <rect x="164" y="382" width="134" height="96" rx="16" fill="#FFFFFF" stroke="#DBE3EE" stroke-width="2"/>
+    <g transform="translate(178 400) scale(0.125)">
+  <!-- Draft A: vivid cyan-blue ring + deep navy bubble (closest to the sketch) -->
+  <defs>
+    <linearGradient id="aRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="aHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="aBubble" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#17457A"/>
+      <stop offset="100%" stop-color="#0A2344"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#aHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#aRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#aBubble)" d="M-82 -92 H82 A42 42 0 0 1 124 -50 V50 A42 42 0 0 1 82 92 H-4 L-64 124 L-56 92 H-82 A42 42 0 0 1 -124 50 V-50 A42 42 0 0 1 -82 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.92">
+      <path d="M-64 -26 H64"/>
+      <path d="M-64 26 H14"/>
+    </g>
+  </g>
+</g>
+    <g transform="translate(250 428) scale(0.0625)">
+  <!-- Draft A: vivid cyan-blue ring + deep navy bubble (closest to the sketch) -->
+  <defs>
+    <linearGradient id="aRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="aHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="aBubble" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#17457A"/>
+      <stop offset="100%" stop-color="#0A2344"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#aHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#aRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#aBubble)" d="M-82 -92 H82 A42 42 0 0 1 124 -50 V50 A42 42 0 0 1 82 92 H-4 L-64 124 L-56 92 H-82 A42 42 0 0 1 -124 50 V-50 A42 42 0 0 1 -82 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.92">
+      <path d="M-64 -26 H64"/>
+      <path d="M-64 26 H14"/>
+    </g>
+  </g>
+</g>
+  </g>
+
+  <g>
+    <rect x="340" y="20" width="300" height="520" rx="24" fill="#F8FAFC" stroke="#DBE3EE" stroke-width="2"/>
+    <text x="490" y="64" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#0F172A" letter-spacing="3">DRAFT B</text>
+    <g transform="translate(362 82) scale(0.5)">
+  <!-- Draft B: vivid ring + white bubble with blue lines, no tail (largest bubble) -->
+  <defs>
+    <linearGradient id="bRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="bHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#bHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#DFEDFF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#bRing)" stroke-width="34"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-116" y="-104" width="232" height="208" rx="46" fill="#FFFFFF"/>
+    <g stroke="#1D4ED8" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H16"/>
+    </g>
+  </g>
+</g>
+    <text x="490" y="364" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#64748B">Vivid ring / white bubble</text>
+    <rect x="362" y="382" width="122" height="96" rx="16" fill="#0F172A"/>
+    <g transform="translate(376 400) scale(0.125)">
+  <!-- Draft B: vivid ring + white bubble with blue lines, no tail (largest bubble) -->
+  <defs>
+    <linearGradient id="bRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="bHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#bHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#DFEDFF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#bRing)" stroke-width="34"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-116" y="-104" width="232" height="208" rx="46" fill="#FFFFFF"/>
+    <g stroke="#1D4ED8" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H16"/>
+    </g>
+  </g>
+</g>
+    <g transform="translate(448 428) scale(0.0625)">
+  <!-- Draft B: vivid ring + white bubble with blue lines, no tail (largest bubble) -->
+  <defs>
+    <linearGradient id="bRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="bHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#bHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#DFEDFF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#bRing)" stroke-width="34"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-116" y="-104" width="232" height="208" rx="46" fill="#FFFFFF"/>
+    <g stroke="#1D4ED8" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H16"/>
+    </g>
+  </g>
+</g>
+    <rect x="484" y="382" width="134" height="96" rx="16" fill="#FFFFFF" stroke="#DBE3EE" stroke-width="2"/>
+    <g transform="translate(498 400) scale(0.125)">
+  <!-- Draft B: vivid ring + white bubble with blue lines, no tail (largest bubble) -->
+  <defs>
+    <linearGradient id="bRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="bHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#bHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#DFEDFF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#bRing)" stroke-width="34"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-116" y="-104" width="232" height="208" rx="46" fill="#FFFFFF"/>
+    <g stroke="#1D4ED8" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H16"/>
+    </g>
+  </g>
+</g>
+    <g transform="translate(570 428) scale(0.0625)">
+  <!-- Draft B: vivid ring + white bubble with blue lines, no tail (largest bubble) -->
+  <defs>
+    <linearGradient id="bRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5EE7FF"/>
+      <stop offset="50%" stop-color="#22A8F5"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="bHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#bHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#DFEDFF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#bRing)" stroke-width="34"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-116" y="-104" width="232" height="208" rx="46" fill="#FFFFFF"/>
+    <g stroke="#1D4ED8" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H16"/>
+    </g>
+  </g>
+</g>
+  </g>
+
+  <g>
+    <rect x="660" y="20" width="300" height="520" rx="24" fill="#F8FAFC" stroke="#DBE3EE" stroke-width="2"/>
+    <text x="810" y="64" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#0F172A" letter-spacing="3">DRAFT C</text>
+    <g transform="translate(682 82) scale(0.5)">
+  <!-- Draft C: solid vivid blue lens + white bubble (badge style, best at small sizes) -->
+  <defs>
+    <radialGradient id="cDisk" cx="0.35" cy="0.28" r="0.85">
+      <stop offset="0%" stop-color="#7FDBFF"/>
+      <stop offset="55%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </radialGradient>
+    <linearGradient id="cHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#cHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="176" fill="url(#cDisk)"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-120" y="-104" width="240" height="208" rx="44" fill="#FFFFFF"/>
+    <g stroke="#1E6BFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-66 -27 H66"/>
+      <path d="M-66 27 H16"/>
+    </g>
+  </g>
+</g>
+    <text x="810" y="364" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#64748B">Solid blue lens / white bubble</text>
+    <rect x="682" y="382" width="122" height="96" rx="16" fill="#0F172A"/>
+    <g transform="translate(696 400) scale(0.125)">
+  <!-- Draft C: solid vivid blue lens + white bubble (badge style, best at small sizes) -->
+  <defs>
+    <radialGradient id="cDisk" cx="0.35" cy="0.28" r="0.85">
+      <stop offset="0%" stop-color="#7FDBFF"/>
+      <stop offset="55%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </radialGradient>
+    <linearGradient id="cHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#cHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="176" fill="url(#cDisk)"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-120" y="-104" width="240" height="208" rx="44" fill="#FFFFFF"/>
+    <g stroke="#1E6BFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-66 -27 H66"/>
+      <path d="M-66 27 H16"/>
+    </g>
+  </g>
+</g>
+    <g transform="translate(768 428) scale(0.0625)">
+  <!-- Draft C: solid vivid blue lens + white bubble (badge style, best at small sizes) -->
+  <defs>
+    <radialGradient id="cDisk" cx="0.35" cy="0.28" r="0.85">
+      <stop offset="0%" stop-color="#7FDBFF"/>
+      <stop offset="55%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </radialGradient>
+    <linearGradient id="cHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#cHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="176" fill="url(#cDisk)"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-120" y="-104" width="240" height="208" rx="44" fill="#FFFFFF"/>
+    <g stroke="#1E6BFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-66 -27 H66"/>
+      <path d="M-66 27 H16"/>
+    </g>
+  </g>
+</g>
+    <rect x="804" y="382" width="134" height="96" rx="16" fill="#FFFFFF" stroke="#DBE3EE" stroke-width="2"/>
+    <g transform="translate(818 400) scale(0.125)">
+  <!-- Draft C: solid vivid blue lens + white bubble (badge style, best at small sizes) -->
+  <defs>
+    <radialGradient id="cDisk" cx="0.35" cy="0.28" r="0.85">
+      <stop offset="0%" stop-color="#7FDBFF"/>
+      <stop offset="55%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </radialGradient>
+    <linearGradient id="cHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#cHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="176" fill="url(#cDisk)"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-120" y="-104" width="240" height="208" rx="44" fill="#FFFFFF"/>
+    <g stroke="#1E6BFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-66 -27 H66"/>
+      <path d="M-66 27 H16"/>
+    </g>
+  </g>
+</g>
+    <g transform="translate(890 428) scale(0.0625)">
+  <!-- Draft C: solid vivid blue lens + white bubble (badge style, best at small sizes) -->
+  <defs>
+    <radialGradient id="cDisk" cx="0.35" cy="0.28" r="0.85">
+      <stop offset="0%" stop-color="#7FDBFF"/>
+      <stop offset="55%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </radialGradient>
+    <linearGradient id="cHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#cHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="176" fill="url(#cDisk)"/>
+
+  <g transform="translate(240 234)">
+    <rect x="-120" y="-104" width="240" height="208" rx="44" fill="#FFFFFF"/>
+    <g stroke="#1E6BFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-66 -27 H66"/>
+      <path d="M-66 27 H16"/>
+    </g>
+  </g>
+</g>
+  </g>
+
+  <g>
+    <rect x="980" y="20" width="300" height="520" rx="24" fill="#F8FAFC" stroke="#DBE3EE" stroke-width="2"/>
+    <text x="1130" y="64" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#0F172A" letter-spacing="3">DRAFT D</text>
+    <g transform="translate(1002 82) scale(0.5)">
+  <!-- Draft D: bright blue gradient bubble with specular highlight + tail -->
+  <defs>
+    <linearGradient id="dRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="55%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="dHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="dBubble" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#5BE1FF"/>
+      <stop offset="52%" stop-color="#1E7BFF"/>
+      <stop offset="100%" stop-color="#1246C8"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#dHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#dRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#dBubble)" d="M-76 -92 H76 A44 44 0 0 1 120 -48 V48 A44 44 0 0 1 76 92 H-2 L-62 124 L-54 92 H-76 A44 44 0 0 1 -120 48 V-48 A44 44 0 0 1 -76 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H12"/>
+    </g>
+  </g>
+</g>
+    <text x="1130" y="364" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#64748B">Bright gradient bubble / tail</text>
+    <rect x="1002" y="382" width="122" height="96" rx="16" fill="#0F172A"/>
+    <g transform="translate(1016 400) scale(0.125)">
+  <!-- Draft D: bright blue gradient bubble with specular highlight + tail -->
+  <defs>
+    <linearGradient id="dRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="55%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="dHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="dBubble" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#5BE1FF"/>
+      <stop offset="52%" stop-color="#1E7BFF"/>
+      <stop offset="100%" stop-color="#1246C8"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#dHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#dRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#dBubble)" d="M-76 -92 H76 A44 44 0 0 1 120 -48 V48 A44 44 0 0 1 76 92 H-2 L-62 124 L-54 92 H-76 A44 44 0 0 1 -120 48 V-48 A44 44 0 0 1 -76 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H12"/>
+    </g>
+  </g>
+</g>
+    <g transform="translate(1088 428) scale(0.0625)">
+  <!-- Draft D: bright blue gradient bubble with specular highlight + tail -->
+  <defs>
+    <linearGradient id="dRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="55%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="dHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="dBubble" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#5BE1FF"/>
+      <stop offset="52%" stop-color="#1E7BFF"/>
+      <stop offset="100%" stop-color="#1246C8"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#dHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#dRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#dBubble)" d="M-76 -92 H76 A44 44 0 0 1 120 -48 V48 A44 44 0 0 1 76 92 H-2 L-62 124 L-54 92 H-76 A44 44 0 0 1 -120 48 V-48 A44 44 0 0 1 -76 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H12"/>
+    </g>
+  </g>
+</g>
+    <rect x="1124" y="382" width="134" height="96" rx="16" fill="#FFFFFF" stroke="#DBE3EE" stroke-width="2"/>
+    <g transform="translate(1138 400) scale(0.125)">
+  <!-- Draft D: bright blue gradient bubble with specular highlight + tail -->
+  <defs>
+    <linearGradient id="dRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="55%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="dHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="dBubble" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#5BE1FF"/>
+      <stop offset="52%" stop-color="#1E7BFF"/>
+      <stop offset="100%" stop-color="#1246C8"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#dHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#dRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#dBubble)" d="M-76 -92 H76 A44 44 0 0 1 120 -48 V48 A44 44 0 0 1 76 92 H-2 L-62 124 L-54 92 H-76 A44 44 0 0 1 -120 48 V-48 A44 44 0 0 1 -76 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H12"/>
+    </g>
+  </g>
+</g>
+    <g transform="translate(1210 428) scale(0.0625)">
+  <!-- Draft D: bright blue gradient bubble with specular highlight + tail -->
+  <defs>
+    <linearGradient id="dRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="55%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="dHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#123A8A"/>
+    </linearGradient>
+    <linearGradient id="dBubble" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#5BE1FF"/>
+      <stop offset="52%" stop-color="#1E7BFF"/>
+      <stop offset="100%" stop-color="#1246C8"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M352 348 L412 408" fill="none" stroke="url(#dHandle)" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="240" cy="234" r="143" fill="#F4F9FF"/>
+  <circle cx="240" cy="234" r="160" fill="none" stroke="url(#dRing)" stroke-width="34"/>
+
+  <g transform="translate(240 232)">
+    <path fill="url(#dBubble)" d="M-76 -92 H76 A44 44 0 0 1 120 -48 V48 A44 44 0 0 1 76 92 H-2 L-62 124 L-54 92 H-76 A44 44 0 0 1 -120 48 V-48 A44 44 0 0 1 -76 -92 Z"/>
+    <g stroke="#FFFFFF" stroke-width="16" stroke-linecap="round">
+      <path d="M-62 -26 H62"/>
+      <path d="M-62 26 H12"/>
+    </g>
+  </g>
+</g>
+  </g>
+</svg>

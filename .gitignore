@@ -59,3 +59,10 @@ temp/
 
 # Windows NUL device file (accidentally created by tools that treat "nul" as a filename)
 nul
+
+# 图标设计草稿的临时文件
+src-tauri/icons/drafts/__pycache__/
+src-tauri/icons/drafts/_dbg_*
+
+# DSH 沙箱权限诊断记录
+.dsh-acl-recovery/

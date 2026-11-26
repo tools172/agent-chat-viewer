@@ -1,0 +1,1386 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>图标小尺寸对比 · 32px / 16px</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px 48px;
+    background: #eef2f7; color: #0f172a;
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  h1 { font-size: 24px; margin: 0 0 6px; letter-spacing: .2px; }
+  .sub { color: #64748b; font-size: 13px; margin: 0 0 22px; line-height: 1.7; }
+  .sub b { color: #334155; }
+  .section-title {
+    font-size: 16px; margin: 30px 0 4px; padding-left: 10px;
+    border-left: 4px solid #2563eb; line-height: 1.35;
+  }
+  .section-title:first-of-type { margin-top: 8px; }
+  .section-title small { font-weight: 400; color: #64748b; font-size: 12px; margin-left: 8px; }
+  .grid {
+    display: grid; gap: 16px; margin-top: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(286px, 1fr));
+    align-items: start;
+  }
+  .grid.old { opacity: .82; }
+  .card {
+    background: #fff; border: 1px solid #dbe3ee; border-radius: 18px;
+    padding: 16px 16px 18px; box-shadow: 0 6px 20px rgba(15,23,42,.05);
+  }
+  header { display: flex; gap: 10px; align-items: center; min-height: 42px; }
+  .badge {
+    flex: 0 0 38px; width: 38px; height: 38px; border-radius: 12px;
+    background: linear-gradient(145deg,#2563eb,#1d4ed8); color: #fff;
+    font: 700 17px/38px "Segoe UI", sans-serif; text-align: center;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 2px; }
+  .card header p { font-size: 11.5px; color: #64748b; margin: 0; }
+  .hero {
+    margin: 10px 0 6px; text-align: center;
+    background: #fff; border: 1px solid #eef2f7;
+    border-radius: 14px; padding: 6px;
+  }
+  .hero.checker {
+    background-color: #fff;
+    background-image:
+      linear-gradient(45deg, #dfe7f1 25%, transparent 25%, transparent 75%, #dfe7f1 75%),
+      linear-gradient(45deg, #dfe7f1 25%, transparent 25%, transparent 75%, #dfe7f1 75%);
+    background-size: 18px 18px;
+    background-position: 0 0, 9px 9px;
+  }
+  .hero img { width: 148px; height: 148px; display: block; margin: 0 auto; }
+  .size-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .size-label { width: 46px; text-align: right; color: #475569; }
+  .size-label b { font-size: 15px; }
+  .size-label small { font-size: 10px; color: #94a3b8; margin-left: 1px; }
+  .tile {
+    display: flex; align-items: center; justify-content: center;
+    width: 56px; height: 48px; border-radius: 10px;
+  }
+  .tile.dark { background: #0f172a; }
+  .tile.light { background: #fff; border: 1px solid #cbd5e1; }
+  .tile img { image-rendering: auto; display: block; }
+  .zooms {
+    display: flex; justify-content: center; align-items: flex-end;
+    gap: 12px; flex-wrap: wrap;
+    margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e2e8f0;
+  }
+  figure { margin: 0; text-align: center; }
+  figure img {
+    display: block; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 8px; image-rendering: pixelated;
+  }
+  figcaption { font-size: 10.5px; color: #94a3b8; margin-top: 4px; }
+  .taskbar-wrap { margin-top: 34px; }
+  .taskbar-wrap h2 { font-size: 15px; margin: 0 0 4px; }
+  .taskbar-wrap p { font-size: 12px; color: #64748b; margin: 0 0 10px; }
+  .taskbar {
+    display: flex; align-items: center; gap: 10px;
+    background: #101827; border-radius: 12px; padding: 10px 14px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    width: fit-content; flex-wrap: wrap;
+  }
+  .tb-item {
+    position: relative; width: 48px; height: 48px; border-radius: 10px;
+    background: rgba(255,255,255,.055);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tb-item img { display: block; }
+  .tb-item span {
+    position: absolute; right: 3px; bottom: 1px; font-size: 8px; color: #93a3b8;
+  }
+  .tray {
+    display: flex; align-items: center; gap: 2px;
+    background: #101827; border-radius: 8px; padding: 4px 8px; width: fit-content;
+    margin-top: 8px; flex-wrap: wrap;
+  }
+  .tray-item { display: flex; align-items: center; gap: 1px; margin-right: 4px; }
+  .tray-item img { display: block; }
+  .tray-item span { font-size: 7px; color: #93a3b8; }
+  .note {
+    margin-top: 26px; padding: 12px 16px; border-radius: 12px;
+    background: #fff; border: 1px solid #dbe3ee; color: #475569;
+    font-size: 12px; line-height: 1.8; max-width: 980px;
+  }
+  .note b { color: #0f172a; }
+  .note code { background: #f1f5f9; border-radius: 4px; padding: 1px 5px; font-size: 11.5px; }
+</style>
+</head>
+<body>
+  <h1>图标小尺寸对比 · 32px / 16px</h1>
+  <p class="sub">
+    页面里的 32/16 是<b>真实像素尺寸</b>（由 1024 原图直接缩放生成的 PNG，不经过浏览器二次缩放）；
+    下方放大图为最近邻 5×/8×，用来观察像素级可读性。每张卡片同时给出深色/浅色底。<br>
+    另见：<a href="desktop-mockup.html">桌面图标 / 任务栏 显示模拟</a>（配了一套 Windows 风格陪衬图标）。
+  </p>
+
+  <h2 class="section-title">最终采用：12A（透明底 · 纯净）<small>已导出到 src-tauri/icons：16/24/32/48/64/128/256/512 PNG · icon.ico（16–256）· icon.icns（16–1024）· 棋盘格即透明区域</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">12A</span>
+        <div><h2>透明底 · 纯净</h2><p>只有图形本身，无背景、无投影</p></div>
+      </header>
+      <div class="hero checker"><img src="w7-a-512.png" alt="透明底 · 纯净"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w7-a_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w7-a_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w7-a_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w7-a_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w7-a_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w7-a_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">12B</span>
+        <div><h2>透明底 · 接触影 + 微光</h2><p>带一层贴身接触影和一点青色柔光</p></div>
+      </header>
+      <div class="hero checker"><img src="w7-b-512.png" alt="透明底 · 接触影 + 微光"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w7-b_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w7-b_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w7-b_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w7-b_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w7-b_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w7-b_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">第十一轮（11A–11C）· 横线统一改成鲜亮深蓝<small>三条线同一个颜色（12,66,224）· 环抬高 13px · 四层投影 · 按内容自动裁切，画面填充约 92%</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">11A</span>
+        <div><h2>白底</h2><p>横线统一用鲜亮深蓝 · 环抬高 13px</p></div>
+      </header>
+      <div class="hero"><img src="w6-a-512.png" alt="白底"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w6-a_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w6-a_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w6-a_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w6-a_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w6-a_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w6-a_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">11B</span>
+        <div><h2>浅蓝底 · 光晕</h2><p>同一套几何，环外柔光</p></div>
+      </header>
+      <div class="hero"><img src="w6-b-512.png" alt="浅蓝底 · 光晕"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w6-b_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w6-b_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w6-b_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w6-b_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w6-b_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w6-b_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">11C</span>
+        <div><h2>深蓝底 · 强光晕</h2><p>深色底 + 强光晕</p></div>
+      </header>
+      <div class="hero"><img src="w6-c-512.png" alt="深蓝底 · 强光晕"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w6-c_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w6-c_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w6-c_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w6-c_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w6-c_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w6-c_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">第九轮（9A / 9B / 9C）· 放大镜做成有厚度的实体<small>顶面 + 外侧壁 + 内侧壁 + 两道投影 · 镜片是凹进去的玻璃 · 白条恢复成平的 · 手柄恢复金属箍细节</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">9A</span>
+        <div><h2>白底 · 厚镜圈</h2><p>顶面 + 外/内侧壁 + 深投影 · 平直白条</p></div>
+      </header>
+      <div class="hero"><img src="w4-a-512.png" alt="白底 · 厚镜圈"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w4-a_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w4-a_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w4-a_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w4-a_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w4-a_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w4-a_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">9B</span>
+        <div><h2>浅蓝底</h2><p>同上，加浅蓝渐变背景</p></div>
+      </header>
+      <div class="hero"><img src="w4-b-512.png" alt="浅蓝底"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w4-b_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w4-b_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w4-b_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w4-b_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w4-b_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w4-b_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">9C</span>
+        <div><h2>深蓝底 · 发光</h2><p>同上，深色底 + 青色光晕</p></div>
+      </header>
+      <div class="hero"><img src="w4-c-512.png" alt="深蓝底 · 发光"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w4-c_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w4-c_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w4-c_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w4-c_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w4-c_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w4-c_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">上一轮（6B）· 手柄加粗 + 尾巴加倍 + 气泡更凸<small>手柄半径 7.8 → 9.0 · 尾巴约 20×10.5 → 28×14.5（面积约 2 倍）· 侧面 3.2 → 4.4、倒角 3.4 → 4.0、投影 +15%</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">6B</span>
+        <div><h2>宝石蓝 · 偏靛</h2><p>镜环加深 · 手柄重画 · 尾巴加大</p></div>
+      </header>
+      <div class="hero"><img src="w2-b-512.png" alt="宝石蓝 · 偏靛"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-b_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w2-b_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-b_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w2-b_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w2-b_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w2-b_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">6D</span>
+        <div><h2>电光紫 · 偏紫</h2><p>同上，气泡偏紫</p></div>
+      </header>
+      <div class="hero"><img src="w2-d-512.png" alt="电光紫 · 偏紫"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-d_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w2-d_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-d_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w2-d_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w2-d_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w2-d_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">6E</span>
+        <div><h2>深海蓝 · 最深</h2><p>同上，气泡最深</p></div>
+      </header>
+      <div class="hero"><img src="w2-e-512.png" alt="深海蓝 · 最深"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-e_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w2-e_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-e_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w2-e_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w2-e_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w2-e_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">第六轮 · 厚度档位（6B 配色，从薄到厚）<small>三个档位只改"厚度/倒角/投影"，形状完全一样</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">薄</span>
+        <div><h2>厚度档位 · 薄</h2><p>倒角 1.6px · 侧面 2.2px · 投影较轻</p></div>
+      </header>
+      <div class="hero"><img src="w2-b-soft-512.png" alt="厚度档位 · 薄"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-b-soft_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w2-b-soft_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-b-soft_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w2-b-soft_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w2-b-soft_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w2-b-soft_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">中</span>
+        <div><h2>厚度档位 · 中</h2><p>倒角 2.2px · 侧面 3.2px · 投影适中</p></div>
+      </header>
+      <div class="hero"><img src="w2-b-512.png" alt="厚度档位 · 中"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-b_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w2-b_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-b_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w2-b_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w2-b_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w2-b_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">厚</span>
+        <div><h2>厚度档位 · 厚</h2><p>倒角 3.0px · 侧面 4.4px · 投影更重</p></div>
+      </header>
+      <div class="hero"><img src="w2-b-deep-512.png" alt="厚度档位 · 厚"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-b-deep_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_w2-b-deep_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_w2-b-deep_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_w2-b-deep_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_w2-b-deep_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_w2-b-deep_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">不用放大镜的方向（概念草案 2，供参考）<small>四个完全不同的讲法，细节未打磨 · E/F/G/H</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">E</span>
+        <div><h2>消息堆叠</h2><p>一叠消息卡，前面一张带两行字 · 讲"翻记录"</p></div>
+      </header>
+      <div class="hero"><img src="d-a-512.png" alt="消息堆叠"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_d-a_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_d-a_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_d-a_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_d-a_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_d-a_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_d-a_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">F</span>
+        <div><h2>对话线程</h2><p>一条主线，消息左右分列 · 讲"一条对话"</p></div>
+      </header>
+      <div class="hero"><img src="d-b-512.png" alt="对话线程"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_d-b_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_d-b_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_d-b_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_d-b_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_d-b_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_d-b_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">G</span>
+        <div><h2>双色气泡</h2><p>一个气泡，一半你一半 agent · 讲"对话双方"</p></div>
+      </header>
+      <div class="hero"><img src="d-c-512.png" alt="双色气泡"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_d-c_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_d-c_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_d-c_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_d-c_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_d-c_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_d-c_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">H</span>
+        <div><h2>气泡 + 时间轴</h2><p>气泡下面是带播放头的进度条 · 讲"回看"</p></div>
+      </header>
+      <div class="hero"><img src="d-d-512.png" alt="气泡 + 时间轴"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_d-d_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_d-d_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_d-d_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_d-d_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_d-d_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_d-d_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">还用放大镜的方向（概念草案 1，供参考）<small>除了"放大镜里放气泡"，还有这四种讲法 · A–D</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">A</span>
+        <div><h2>放大镜压在气泡上</h2><p>镜片里是被放大的两行字 · 讲"查聊天"</p></div>
+      </header>
+      <div class="hero"><img src="c-a-512.png" alt="放大镜压在气泡上"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_c-a_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_c-a_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_c-a_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_c-a_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_c-a_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_c-a_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">B</span>
+        <div><h2>镜片里就是聊天记录</h2><p>没有气泡，只有三行记录 · 讲"看记录"</p></div>
+      </header>
+      <div class="hero"><img src="c-b-512.png" alt="镜片里就是聊天记录"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_c-b_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_c-b_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_c-b_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_c-b_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_c-b_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_c-b_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">C</span>
+        <div><h2>气泡 + 小放大镜徽章</h2><p>气泡是主角，放大镜挂在角上</p></div>
+      </header>
+      <div class="hero"><img src="c-c-512.png" alt="气泡 + 小放大镜徽章"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_c-c_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_c-c_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_c-c_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_c-c_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_c-c_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_c-c_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">D</span>
+        <div><h2>气泡 + 眼睛</h2><p>用"看"代替"搜"</p></div>
+      </header>
+      <div class="hero"><img src="c-d-512.png" alt="气泡 + 眼睛"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_c-d_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_c-d_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_c-d_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_c-d_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_c-d_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_c-d_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">第四轮 · 圆环体着色 + 高度场立体<small>镜环做成圆管、气泡做成鼓面——形状走样，仅留作对比</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">4A</span>
+        <div><h2>冰川蓝 · 青到钴</h2><p>镜环再粗约 20% · 气泡为 3D 高度场</p></div>
+      </header>
+      <div class="hero"><img src="z-a-512.png" alt="冰川蓝 · 青到钴"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-a_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_z-a_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-a_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_z-a_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_z-a_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_z-a_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">4B</span>
+        <div><h2>宝石蓝 · 湛蓝到靛</h2><p>气泡更饱和 · 立体不变</p></div>
+      </header>
+      <div class="hero"><img src="z-b-512.png" alt="宝石蓝 · 湛蓝到靛"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-b_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_z-b_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-b_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_z-b_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_z-b_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_z-b_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">4C</span>
+        <div><h2>湖水青 · 偏绿</h2><p>气泡顶部偏青绿 · 立体不变</p></div>
+      </header>
+      <div class="hero"><img src="z-c-512.png" alt="湖水青 · 偏绿"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-c_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_z-c_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-c_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_z-c_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_z-c_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_z-c_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">4D</span>
+        <div><h2>电光蓝 · 偏紫</h2><p>气泡偏紫一档 · 立体不变</p></div>
+      </header>
+      <div class="hero"><img src="z-d-512.png" alt="电光蓝 · 偏紫"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-d_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_z-d_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-d_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_z-d_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_z-d_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_z-d_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">4E</span>
+        <div><h2>靛蓝 · 深邃</h2><p>气泡最深 · 立体不变</p></div>
+      </header>
+      <div class="hero"><img src="z-e-512.png" alt="靛蓝 · 深邃"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-e_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_z-e_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_z-e_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_z-e_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_z-e_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_z-e_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">第三轮 · 镜环重绘 + 气泡大尺度立体<small>镜环按圆环体重新渲染并略加粗 · 气泡用大范围明暗渐变，缩小后仍看得出立体</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">N</span>
+        <div><h2>霓虹蓝 · 青到紫</h2><p>镜环重绘加粗 · 气泡青顶紫底</p></div>
+      </header>
+      <div class="hero"><img src="y-n-512.png" alt="霓虹蓝 · 青到紫"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_y-n_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_y-n_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_y-n_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_y-n_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_y-n_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_y-n_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">O</span>
+        <div><h2>钴蓝 · 偏青</h2><p>镜环重绘加粗 · 气泡偏青</p></div>
+      </header>
+      <div class="hero"><img src="y-o-512.png" alt="钴蓝 · 偏青"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_y-o_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_y-o_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_y-o_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_y-o_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_y-o_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_y-o_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">P</span>
+        <div><h2>星蓝 · 偏紫</h2><p>镜环重绘加粗 · 气泡偏紫</p></div>
+      </header>
+      <div class="hero"><img src="y-p-512.png" alt="星蓝 · 偏紫"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_y-p_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_y-p_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_y-p_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_y-p_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_y-p_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_y-p_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">Q</span>
+        <div><h2>水晶蓝 · 更亮</h2><p>镜环重绘加粗 · 气泡更亮</p></div>
+      </header>
+      <div class="hero"><img src="y-q-512.png" alt="水晶蓝 · 更亮"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_y-q_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_y-q_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_y-q_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_y-q_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_y-q_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_y-q_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">第二轮 · 立体感加强<small>放大镜提亮 · 镜片边框重绘为立体金属圈 · 气泡加深加饱和 · 描边重做</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">J</span>
+        <div><h2>深湛蓝 · 高对比</h2><p>气泡更深 · 镜环提亮 · 镜片边框重绘</p></div>
+      </header>
+      <div class="hero"><img src="x-j-512.png" alt="深湛蓝 · 高对比"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_x-j_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_x-j_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_x-j_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_x-j_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_x-j_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_x-j_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">K</span>
+        <div><h2>宝蓝 · 更深</h2><p>气泡再深一档 · 镜环更亮</p></div>
+      </header>
+      <div class="hero"><img src="x-k-512.png" alt="宝蓝 · 更深"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_x-k_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_x-k_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_x-k_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_x-k_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_x-k_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_x-k_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">L</span>
+        <div><h2>亮蓝 · 饱和</h2><p>气泡略亮 · 仍明显深于镜环</p></div>
+      </header>
+      <div class="hero"><img src="x-l-512.png" alt="亮蓝 · 饱和"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_x-l_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_x-l_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_x-l_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_x-l_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_x-l_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_x-l_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">M</span>
+        <div><h2>深湖蓝 · 最接近青</h2><p>气泡偏青一档 · 对比靠明度</p></div>
+      </header>
+      <div class="hero"><img src="x-m-512.png" alt="深湖蓝 · 最接近青"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_x-m_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_x-m_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_x-m_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_x-m_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_x-m_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_x-m_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">第一轮 · 圆角方形气泡<small>圆角正方形 · 两条横线一长一短 · 鲜艳亮蓝（镜环未改）</small></h2>
+  <div class="grid">
+    <section class="card">
+      <header>
+        <span class="badge">C</span>
+        <div><h2>电光蓝 · 第一轮基准</h2><p>气泡 ×1.09 · 三行横线 · 偏深蓝</p></div>
+      </header>
+      <div class="hero"><img src="v-vivid-s109-512.png" alt="电光蓝 · 第一轮基准"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_v-vivid-s109_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_v-vivid-s109_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_v-vivid-s109_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_v-vivid-s109_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_v-vivid-s109_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_v-vivid-s109_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">E</span>
+        <div><h2>艳丽蓝 · 高饱和</h2><p>圆角方形 110×102 · 圆角 34 · 双横线</p></div>
+      </header>
+      <div class="hero"><img src="s-vivid-512.png" alt="艳丽蓝 · 高饱和"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-vivid_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_s-vivid_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-vivid_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_s-vivid_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_s-vivid_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_s-vivid_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">F</span>
+        <div><h2>湛蓝 · 亮蓝</h2><p>圆角方形 110×102 · 圆角 34 · 双横线</p></div>
+      </header>
+      <div class="hero"><img src="s-azure-512.png" alt="湛蓝 · 亮蓝"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-azure_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_s-azure_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-azure_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_s-azure_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_s-azure_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_s-azure_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">G</span>
+        <div><h2>湖水蓝</h2><p>圆角方形 110×102 · 圆角 34 · 双横线</p></div>
+      </header>
+      <div class="hero"><img src="s-lagoon-512.png" alt="湖水蓝"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-lagoon_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_s-lagoon_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-lagoon_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_s-lagoon_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_s-lagoon_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_s-lagoon_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">H</span>
+        <div><h2>青碧蓝 · 贴近镜环</h2><p>圆角方形 110×102 · 圆角 34 · 双横线</p></div>
+      </header>
+      <div class="hero"><img src="s-cyan-512.png" alt="青碧蓝 · 贴近镜环"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-cyan_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_s-cyan_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-cyan_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_s-cyan_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_s-cyan_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_s-cyan_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">I</span>
+        <div><h2>宝蓝 · 偏纯蓝</h2><p>圆角方形 110×102 · 圆角 34 · 双横线</p></div>
+      </header>
+      <div class="hero"><img src="s-sapphire-512.png" alt="宝蓝 · 偏纯蓝"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-sapphire_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_s-sapphire_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_s-sapphire_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_s-sapphire_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_s-sapphire_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_s-sapphire_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <h2 class="section-title">此前方案（供参考）<small>气泡沿用原始比例、三条横线</small></h2>
+  <div class="grid old">
+    <section class="card">
+      <header>
+        <span class="badge">原图</span>
+        <div><h2>原图参考</h2><p>深藏青 · 4 行 · 未修改</p></div>
+      </header>
+      <div class="hero"><img src="_orig_square.png" alt="原图参考"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_orig_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_orig_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_orig_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_orig_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_orig_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_orig_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">A</span>
+        <div><h2>宝石蓝 · 标准</h2><p>气泡 ×1.09 · 四角留细白边</p></div>
+      </header>
+      <div class="hero"><img src="v-azure-s109-512.png" alt="宝石蓝 · 标准"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_v-azure-s109_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_v-azure-s109_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_v-azure-s109_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_v-azure-s109_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_v-azure-s109_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_v-azure-s109_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">B</span>
+        <div><h2>宝石蓝 · 贴边</h2><p>气泡 ×1.13 · 四角接近镜片</p></div>
+      </header>
+      <div class="hero"><img src="v-azure-s113-512.png" alt="宝石蓝 · 贴边"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_v-azure-s113_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_v-azure-s113_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_v-azure-s113_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_v-azure-s113_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_v-azure-s113_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_v-azure-s113_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <header>
+        <span class="badge">D</span>
+        <div><h2>电光蓝 · 贴边</h2><p>气泡 ×1.13 · 更亮 + 贴边</p></div>
+      </header>
+      <div class="hero"><img src="v-vivid-s113-512.png" alt="电光蓝 · 贴边"></div>
+
+      <div class="size-row">
+        <span class="size-label"><b>32</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_v-vivid-s113_32.png" width="32" height="32" alt=""></div>
+        <div class="tile light"><img src="_small_v-vivid-s113_32.png" width="32" height="32" alt=""></div>
+      </div>
+      <div class="size-row">
+        <span class="size-label"><b>16</b><small>px</small></span>
+        <div class="tile dark"><img src="_small_v-vivid-s113_16.png" width="16" height="16" alt=""></div>
+        <div class="tile light"><img src="_small_v-vivid-s113_16.png" width="16" height="16" alt=""></div>
+      </div>
+
+      <div class="zooms">
+        <figure><img src="_small_v-vivid-s113_32_x5.png" width="160" height="160" alt="">
+          <figcaption>32px · 5×</figcaption></figure>
+        <figure><img src="_small_v-vivid-s113_16_x8.png" width="128" height="128" alt="">
+          <figcaption>16px · 8×</figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <div class="taskbar-wrap">
+    <h2>Windows 任务栏模拟</h2>
+    <p>32px（任务栏图标）与 16px（托盘/标题栏小图标）实际尺寸并排对比。</p>
+    <div class="taskbar"><div class="tb-item"><img src="_small_w7-a_32.png" width="32" height="32" alt=""><span>12A</span></div><div class="tb-item"><img src="_small_w7-b_32.png" width="32" height="32" alt=""><span>12B</span></div><div class="tb-item"><img src="_small_w6-a_32.png" width="32" height="32" alt=""><span>11A</span></div><div class="tb-item"><img src="_small_w6-b_32.png" width="32" height="32" alt=""><span>11B</span></div><div class="tb-item"><img src="_small_w6-c_32.png" width="32" height="32" alt=""><span>11C</span></div><div class="tb-item"><img src="_small_w4-a_32.png" width="32" height="32" alt=""><span>9A</span></div><div class="tb-item"><img src="_small_w4-b_32.png" width="32" height="32" alt=""><span>9B</span></div><div class="tb-item"><img src="_small_w4-c_32.png" width="32" height="32" alt=""><span>9C</span></div><div class="tb-item"><img src="_small_w2-b-soft_32.png" width="32" height="32" alt=""><span>薄</span></div><div class="tb-item"><img src="_small_w2-b_32.png" width="32" height="32" alt=""><span>中</span></div><div class="tb-item"><img src="_small_w2-b-deep_32.png" width="32" height="32" alt=""><span>厚</span></div><div class="tb-item"><img src="_small_w2-b_32.png" width="32" height="32" alt=""><span>6B</span></div><div class="tb-item"><img src="_small_w2-d_32.png" width="32" height="32" alt=""><span>6D</span></div><div class="tb-item"><img src="_small_w2-e_32.png" width="32" height="32" alt=""><span>6E</span></div><div class="tb-item"><img src="_small_z-a_32.png" width="32" height="32" alt=""><span>4A</span></div><div class="tb-item"><img src="_small_z-b_32.png" width="32" height="32" alt=""><span>4B</span></div><div class="tb-item"><img src="_small_z-c_32.png" width="32" height="32" alt=""><span>4C</span></div><div class="tb-item"><img src="_small_z-d_32.png" width="32" height="32" alt=""><span>4D</span></div><div class="tb-item"><img src="_small_z-e_32.png" width="32" height="32" alt=""><span>4E</span></div><div class="tb-item"><img src="_small_y-n_32.png" width="32" height="32" alt=""><span>N</span></div><div class="tb-item"><img src="_small_y-o_32.png" width="32" height="32" alt=""><span>O</span></div><div class="tb-item"><img src="_small_y-p_32.png" width="32" height="32" alt=""><span>P</span></div><div class="tb-item"><img src="_small_y-q_32.png" width="32" height="32" alt=""><span>Q</span></div><div class="tb-item"><img src="_small_x-j_32.png" width="32" height="32" alt=""><span>J</span></div><div class="tb-item"><img src="_small_x-k_32.png" width="32" height="32" alt=""><span>K</span></div><div class="tb-item"><img src="_small_x-l_32.png" width="32" height="32" alt=""><span>L</span></div><div class="tb-item"><img src="_small_x-m_32.png" width="32" height="32" alt=""><span>M</span></div><div class="tb-item"><img src="_small_v-vivid-s109_32.png" width="32" height="32" alt=""><span>C</span></div><div class="tb-item"><img src="_small_s-vivid_32.png" width="32" height="32" alt=""><span>E</span></div><div class="tb-item"><img src="_small_s-azure_32.png" width="32" height="32" alt=""><span>F</span></div><div class="tb-item"><img src="_small_s-lagoon_32.png" width="32" height="32" alt=""><span>G</span></div><div class="tb-item"><img src="_small_s-cyan_32.png" width="32" height="32" alt=""><span>H</span></div><div class="tb-item"><img src="_small_s-sapphire_32.png" width="32" height="32" alt=""><span>I</span></div><div class="tb-item"><img src="_small_orig_32.png" width="32" height="32" alt=""><span>原图</span></div><div class="tb-item"><img src="_small_v-azure-s109_32.png" width="32" height="32" alt=""><span>A</span></div><div class="tb-item"><img src="_small_v-azure-s113_32.png" width="32" height="32" alt=""><span>B</span></div><div class="tb-item"><img src="_small_v-vivid-s113_32.png" width="32" height="32" alt=""><span>D</span></div></div>
+    <div class="tray"><div class="tray-item"><img src="_small_w7-a_16.png" width="16" height="16" alt=""><span>12A</span></div><div class="tray-item"><img src="_small_w7-b_16.png" width="16" height="16" alt=""><span>12B</span></div><div class="tray-item"><img src="_small_w6-a_16.png" width="16" height="16" alt=""><span>11A</span></div><div class="tray-item"><img src="_small_w6-b_16.png" width="16" height="16" alt=""><span>11B</span></div><div class="tray-item"><img src="_small_w6-c_16.png" width="16" height="16" alt=""><span>11C</span></div><div class="tray-item"><img src="_small_w4-a_16.png" width="16" height="16" alt=""><span>9A</span></div><div class="tray-item"><img src="_small_w4-b_16.png" width="16" height="16" alt=""><span>9B</span></div><div class="tray-item"><img src="_small_w4-c_16.png" width="16" height="16" alt=""><span>9C</span></div><div class="tray-item"><img src="_small_w2-b-soft_16.png" width="16" height="16" alt=""><span>薄</span></div><div class="tray-item"><img src="_small_w2-b_16.png" width="16" height="16" alt=""><span>中</span></div><div class="tray-item"><img src="_small_w2-b-deep_16.png" width="16" height="16" alt=""><span>厚</span></div><div class="tray-item"><img src="_small_w2-b_16.png" width="16" height="16" alt=""><span>6B</span></div><div class="tray-item"><img src="_small_w2-d_16.png" width="16" height="16" alt=""><span>6D</span></div><div class="tray-item"><img src="_small_w2-e_16.png" width="16" height="16" alt=""><span>6E</span></div><div class="tray-item"><img src="_small_z-a_16.png" width="16" height="16" alt=""><span>4A</span></div><div class="tray-item"><img src="_small_z-b_16.png" width="16" height="16" alt=""><span>4B</span></div><div class="tray-item"><img src="_small_z-c_16.png" width="16" height="16" alt=""><span>4C</span></div><div class="tray-item"><img src="_small_z-d_16.png" width="16" height="16" alt=""><span>4D</span></div><div class="tray-item"><img src="_small_z-e_16.png" width="16" height="16" alt=""><span>4E</span></div><div class="tray-item"><img src="_small_y-n_16.png" width="16" height="16" alt=""><span>N</span></div><div class="tray-item"><img src="_small_y-o_16.png" width="16" height="16" alt=""><span>O</span></div><div class="tray-item"><img src="_small_y-p_16.png" width="16" height="16" alt=""><span>P</span></div><div class="tray-item"><img src="_small_y-q_16.png" width="16" height="16" alt=""><span>Q</span></div><div class="tray-item"><img src="_small_x-j_16.png" width="16" height="16" alt=""><span>J</span></div><div class="tray-item"><img src="_small_x-k_16.png" width="16" height="16" alt=""><span>K</span></div><div class="tray-item"><img src="_small_x-l_16.png" width="16" height="16" alt=""><span>L</span></div><div class="tray-item"><img src="_small_x-m_16.png" width="16" height="16" alt=""><span>M</span></div><div class="tray-item"><img src="_small_v-vivid-s109_16.png" width="16" height="16" alt=""><span>C</span></div><div class="tray-item"><img src="_small_s-vivid_16.png" width="16" height="16" alt=""><span>E</span></div><div class="tray-item"><img src="_small_s-azure_16.png" width="16" height="16" alt=""><span>F</span></div><div class="tray-item"><img src="_small_s-lagoon_16.png" width="16" height="16" alt=""><span>G</span></div><div class="tray-item"><img src="_small_s-cyan_16.png" width="16" height="16" alt=""><span>H</span></div><div class="tray-item"><img src="_small_s-sapphire_16.png" width="16" height="16" alt=""><span>I</span></div><div class="tray-item"><img src="_small_orig_16.png" width="16" height="16" alt=""><span>原图</span></div><div class="tray-item"><img src="_small_v-azure-s109_16.png" width="16" height="16" alt=""><span>A</span></div><div class="tray-item"><img src="_small_v-azure-s113_16.png" width="16" height="16" alt=""><span>B</span></div><div class="tray-item"><img src="_small_v-vivid-s113_16.png" width="16" height="16" alt=""><span>D</span></div></div>
+  </div>
+
+  <div class="note">
+    <b>第十二轮（12A / 12B）——透明背景：</b><br>
+    同一个图形（11Ax 的立体结构 + 鲜亮深蓝横线 + 92% 填充），但背景不再是白色 / 浅蓝 / 深蓝渐变，
+    而是真正的<b>透明通道（RGBA PNG）</b>，所以放到任何底色上都干净：白色卡片、深色任务栏、
+    彩色壁纸都行。<br>
+    12A 只有图形本身；12B 多一层贴身接触影（偏移 3px、模糊 2.6px、40%）和一点青色柔光，
+    适合放在浅色桌面上时仍有一点"落下去"的重量感。原先的四层长投影去掉了——透明图标带着大块阴影
+    会在深色底上变成一圈脏灰。<br>
+    <b>文件：</b><code>w7-a/b.png</code>（1024 / 512，RGBA，由 <code>edit_icon_sq11.py</code> 生成，
+    用法 <code>edit_icon_sq11.py b</code>）。<br>
+    <b>第十一轮（11A–11C）——横线统一成一种颜色，立体再加强：</b><br>
+    上一版（10A–10D，三色横线）已删除——三条线不同颜色看着太花。这一版三条线统一用
+    <b>鲜亮刺眼的深蓝 (12, 66, 224)</b>，在浅蓝玻璃上对比最强，缩到 32/16px 也认得出。<br>
+    立体部分沿用并加强：环抬高 13px（顶面 + 外侧壁 + 内侧壁 + 落地反光）、顶面抛光高光带、
+    侧壁深浅渐变 + 底部环境遮蔽、四层投影（接触 / 近 / 中 / 远）、环外可选柔光。
+    横线本身仍然是平的，没有浮雕和投影。<br>
+    <b>文件：</b><code>w6-a/b/c.png</code>（1024 / 512，由 <code>edit_icon_sq10.py</code> 生成，
+    用法 <code>edit_icon_sq10.py c</code>）。<br>
+    <b>第九轮（9A / 9B / 9C）——把放大镜做成有厚度的实体：</b><br>
+    上一版（8A–8C）已删除。这一版重做了整个立体结构：<br>
+    ① <b>镜环有厚度了</b>：不再是一张贴在纸上的环，而是一个"凸起 11px"的圆环体——你看到的是
+    它的<b>顶面</b>、右下方露出的<b>外侧壁</b>，以及透过镜片看到的左上<b>内侧壁</b>（所以环内侧有一道暗带），
+    底部落在纸面上的位置再补一条<b>反光</b>。这三个面一起才让它"站起来"。<br>
+    ② <b>镜片是凹进去的玻璃</b>：向下沉的渐变 + 内侧壁投下的阴影 + 顶部弧形反光 + 玻璃边缘的亮唇。<br>
+    ③ <b>横线恢复成平的</b>：没有倒角、没有浮雕、没有投影，就是印在玻璃上的三条白线。<br>
+    ④ <b>手柄恢复细节</b>：金属箍（两道车线 + 高光）+ 圆柱握柄（窄高光 + 宽反光）+ 圆头，
+    并且从环里"伸出来"的位置被侧壁挡住，符合结构。<br>
+    ⑤ <b>投影加深、加远</b>：贴地的接触影 + 中距影 + 远距散影三层；深色版改成青色光晕。<br>
+    ⑥ 三种背景：9A 白底、9B 浅蓝渐变、9C 深海军蓝 + 光晕（都是满幅，背景铺满整张）。<br>
+    <b>文件：</b><code>w4-a/b/c.png</code>（1024 / 512，由 <code>edit_icon_sq8.py</code> 生成，
+    用法 <code>edit_icon_sq8.py c</code>）。<br>
+    <b>不用放大镜的四个方向（E–H，概念草案）：</b><br>
+    <b>E 消息堆叠</b>：后面三张浅色卡 + 前面一张带两行字的聊天气泡，像"一叠消息、正在翻最上面一条"。<br>
+    <b>F 对话线程</b>：中间一条主线，消息气泡左右分列、尾巴指向主线——一条对话本身，而不是"找"它。<br>
+    <b>G 双色气泡</b>：一个气泡斜分成两色，一半是你、一半是 agent，最简洁也最抽象。<br>
+    <b>H 气泡 + 时间轴</b>：气泡下面一条带播放头的进度条——"顺着时间看回放"，最贴"viewer"。<br>
+    这四个都不再需要放大镜：E/F/G/H 分别讲"翻记录 / 一条对话 / 对话双方 / 回看"。<br>
+    <b>还用放大镜的四个方向（A–D，概念草案）：</b><br>
+    <b>A 放大镜压在气泡上</b>：气泡是主体，放大镜压在右下，镜片里那两行字被放大——
+    讲的是"在聊天里查找"，比"镜片里塞一个气泡"更像真实动作，但元素多，16px 会有点挤。<br>
+    <b>B 镜片里就是聊天记录</b>：不放气泡，镜片里直接是三行记录。缩到 16px 最清楚，
+    但丢掉了"气泡"这个聊天符号，更像通用的"搜索文本"。<br>
+    <b>C 气泡 + 小放大镜徽章</b>：气泡当主角，放大镜缩成右下角的小徽章。友好、易懂，
+    但徽章在 16px 基本会糊掉。<br>
+    <b>D 气泡 + 眼睛</b>：用"看"代替"搜"，最简洁、最抓眼，但会偏向"已读"的意思，
+    而且不再是放大镜。<br>
+    <b>6E（当前暂定）</b>：镜片里放气泡——两个符号都保住，16px 也认得出来，是最稳的一个。
+    如果只是想要"更好看"，6E 继续打磨就够；如果想要"更不一样的讲法"，A 或 C 是最接近的替代。<br>
+    <b>草案文件：</b>E–H <code>d-a.png</code> … <code>d-d.png</code>（<code>concept_drafts2.py</code>）；
+    A–D <code>c-a.png</code> … <code>c-d.png</code>（<code>concept_drafts.py</code>）。<br>
+    <b>第六轮改动（6B / 6D / 6E）——按你的反馈：</b><br>
+    ① <b>镜环颜色加深</b>：底色从浅青（42,198,219）压到深灰青（14,156,184），饱和度更高，
+    所以缩到 32/16px 时环色仍然"有颜色"，不再是发白的一圈。<br>
+    ② <b>手柄重画</b>：原来的金属颈 + 方块旋钮看着像秒表按钮。现在是从镜环沿 45° 伸出的
+    <b>金属箍 + 圆柱握柄 + 圆头</b>：握柄按圆柱面着色（左上一条窄高光、右下压深），
+    端头是半球，并且在纸面上有自己的投影。手柄根部藏在镜环后面。<br>
+    ③ <b>尾巴加大</b>：从约 10×8px 加到 20×11px（底边 84→104，尖端下移并左移），
+    形状是"左边近垂直、斜边回收"的经典聊天尾巴，倒角也一并跟着走，
+    所以它和气泡是同一块面，不是贴上去的折角纸片。<br>
+    ④ 这一版（6B 为基础）：<b>手柄加粗</b>（握柄半径 7.8 → 9.0，金属箍 8.3 → 9.4）；
+    <b>尾巴放大一倍</b>（底边 20 → 28、深度 10.5 → 14.5，面积约 2 倍），
+    气泡相应上移 5.5px 给尾巴腾地方，尾巴尖仍在镜片以内；
+    <b>气泡立体加强</b>（侧面 3.2 → 4.4、倒角高度 3.4 → 4.0、投影强度 +15%），
+    底边那道厚边和影子更明显，压得住"跃然纸上"。<br>
+    ⑤ 上一版：<b>手柄再缩短 1/4</b>（可见长度约 48px → 36px），腾出来的空间给镜圈——
+    外半径 87.5 → 92.5、环宽 19.5 → 24.5，所以镜圈更"厚实"、手柄更短；
+    手柄的金属箍仍然露在环外，握柄按圆柱面着色。<br>
+    ⑤ 镜环/气泡的厚度仍是第五轮那套"平顶面 + 倒角 + 侧面 + 两道投影"，只是环色、
+    手柄、尾巴三处改了；页面第二排是 6B 的三种厚度，只改厚度不改形状。<br>
+    <b>第六轮文件：</b>6B <code>w2-b.png</code> · 6D <code>w2-d.png</code> · 6E <code>w2-e.png</code>；
+    厚度档位 <code>w2-b-soft.png</code> / <code>w2-b-deep.png</code>，
+    均为 1024 / 512 两个尺寸，由 <code>edit_icon_sq6.py</code> 生成
+    （用法 <code>edit_icon_sq6.py b deep</code>；环宽、环色、倒角、侧面厚度、手柄角度/长度/粗细都是参数）。<br>
+    <b>第五轮文件（上一版）：</b>5A–5E <code>w-a.png</code> … <code>w-e.png</code>，
+    厚度档位 <code>w-a-soft.png</code> / <code>w-a-deep.png</code>（由 <code>edit_icon_sq5.py</code> 生成）。<br>
+    <b>第四轮文件：</b>4A <code>z-a.png</code> · 4B <code>z-b.png</code> · 4C <code>z-c.png</code> ·
+    4D <code>z-d.png</code> · 4E <code>z-e.png</code>（由 <code>edit_icon_sq4.py</code> 生成）。<br>
+    <b>第三轮文件：</b>N <code>y-n.png</code> · O <code>y-o.png</code> · P <code>y-p.png</code> ·
+    Q <code>y-q.png</code>（由 <code>edit_icon_sq3.py</code> 生成）。<br>
+    <b>第二轮文件：</b>J <code>x-j.png</code> · K <code>x-k.png</code> · L <code>x-l.png</code> ·
+    M <code>x-m.png</code>（由 <code>edit_icon_sq2.py</code> 生成）。<br>
+    <b>第一轮文件：</b>C <code>v-vivid-s109.png</code> 基准；E <code>s-vivid.png</code> ·
+    F <code>s-azure.png</code> · G <code>s-lagoon.png</code> · H <code>s-cyan.png</code> ·
+    I <code>s-sapphire.png</code>（由 <code>edit_icon_sq.py</code> 生成）。
+  </div>
+</body>
+</html>
